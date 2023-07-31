@@ -1,5 +1,69 @@
 #include "Renderer.h"
 
+#pragma region DebugMessengerSetup
+static VKAPI_ATTR VkBool32 VKAPI_CALL VulkanDebugCallback(
+	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+	VkDebugUtilsMessageTypeFlagsEXT messageType,
+	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+	void* pUserData)
+{
+	LogCategory category = Log;
+
+	switch (messageSeverity)
+	{
+	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
+		category = Warning;
+		break;
+
+	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+		category = Error;
+		break;
+	}
+
+	LOG(category, "%s", pCallbackData->pMessage);
+	return VK_FALSE;
+}
+
+static VkResult CreateDebugUtilsMessengerEXT(
+	VkInstance instance,
+	const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+	const VkAllocationCallbacks* pAllocator,
+	VkDebugUtilsMessengerEXT* pDebugMessenger)
+{
+	if (auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"))
+	{
+		return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
+	}
+	else
+	{
+		return VK_ERROR_EXTENSION_NOT_PRESENT;
+	}
+}
+
+static void DestroyDebugUtilsMessengerEXT(
+	VkInstance instance,
+	VkDebugUtilsMessengerEXT debugMessenger,
+	const VkAllocationCallbacks* pAllocator)
+{
+	auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+	if (func != nullptr)
+	{
+		func(instance, debugMessenger, pAllocator);
+	}
+}
+
+static void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
+{
+	createInfo = {};
+	createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+	createInfo.messageSeverity =
+		VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+	createInfo.messageType =
+		VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+	createInfo.pfnUserCallback = VulkanDebugCallback;
+}
+#pragma endregion DebugMessengerSetup
+
 #pragma region NamespaceFunctions
 vge::Renderer* vge::CreateRenderer(GLFWwindow* window)
 {
@@ -26,6 +90,12 @@ void vge::GetGlfwExtensions(std::vector<const char*>& outExtensions)
 	}
 }
 
+void vge::GetRequriedExtensions(std::vector<const char*>& outExtensions)
+{
+	GetGlfwExtensions(outExtensions);
+	outExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+}
+
 bool vge::SupportInstanceExtensions(const std::vector<const char*>& checkExtensions)
 {
 	uint32_t extensionCount = 0;
@@ -39,7 +109,7 @@ bool vge::SupportInstanceExtensions(const std::vector<const char*>& checkExtensi
 		bool hasExtension = false;
 		for (const auto& availableExtension : availableExtensions)
 		{
-			if (strcmp(checkExtension, availableExtension.extensionName))
+			if (strcmp(checkExtension, availableExtension.extensionName) == 0)
 			{
 				hasExtension = true;
 				break;
@@ -62,13 +132,13 @@ bool vge::SuitableGpu(VkPhysicalDevice gpu)
 
 	//VkPhysicalDeviceFeatures gpuFeatures;
 	//vkGetPhysicalDeviceFeatures(gpu, &gpuFeatures);
-	
+
 	QueueFamilyIndices indices = GetQueueFamilies(gpu);
 
 	return indices.IsValid();
 }
 
-QueueFamilyIndices vge::GetQueueFamilies(VkPhysicalDevice gpu)
+vge::QueueFamilyIndices vge::GetQueueFamilies(VkPhysicalDevice gpu)
 {
 	uint32_t queueFamilyCount = 0;
 	vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queueFamilyCount, nullptr);
@@ -95,25 +165,24 @@ QueueFamilyIndices vge::GetQueueFamilies(VkPhysicalDevice gpu)
 
 	return indices;
 }
-
 #pragma endregion NamespaceFunctions
 
 vge::Renderer::Renderer(GLFWwindow* window) : m_Window(window)
 {
-	CreateInstance();
 }
 
 int32_t vge::Renderer::Initialize()
 {
-	try 
+	try
 	{
 		CreateInstance();
+		SetupDebugMessenger();
 		FindGpu();
 		CreateDevice();
 	}
 	catch (const std::runtime_error& err)
 	{
-		printf("Runtime Error in %s: %s", __FUNCTION__, err.what());
+		LOG(Error, "%s", err.what());
 		return EXIT_FAILURE;
 	}
 
@@ -122,12 +191,22 @@ int32_t vge::Renderer::Initialize()
 
 void vge::Renderer::Cleanup()
 {
+	if (GEnableValidationLayers)
+	{
+		DestroyDebugUtilsMessengerEXT(m_Instance, m_DebugMessenger, nullptr);
+	}
+
 	vkDestroyDevice(m_Device, nullptr);
 	vkDestroyInstance(m_Instance, nullptr);
 }
 
 void vge::Renderer::CreateInstance()
 {
+	if (GEnableValidationLayers && !SupportValidationLayers())
+	{
+		throw std::runtime_error("Validation layers requested, but not supported.");
+	}
+
 	VkApplicationInfo appInfo = {};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 	appInfo.pApplicationName = "Vulkan Game Engine";
@@ -137,7 +216,7 @@ void vge::Renderer::CreateInstance()
 	appInfo.apiVersion = VK_API_VERSION_1_0;
 
 	std::vector<const char*> instanceExtensions = {};
-	GetGlfwExtensions(instanceExtensions);
+	GetRequriedExtensions(instanceExtensions);
 
 	if (!SupportInstanceExtensions(instanceExtensions))
 	{
@@ -149,12 +228,45 @@ void vge::Renderer::CreateInstance()
 	createInfo.pApplicationInfo = &appInfo;
 	createInfo.enabledExtensionCount = static_cast<uint32_t>(instanceExtensions.size());
 	createInfo.ppEnabledExtensionNames = instanceExtensions.data();
-	createInfo.enabledLayerCount = 0;
-	createInfo.ppEnabledLayerNames = nullptr;
+
+	if (GEnableValidationLayers) 
+	{
+		createInfo.enabledLayerCount = static_cast<uint32_t>(C_ARRAY_NUM(GValidationLayers));
+		createInfo.ppEnabledLayerNames = GValidationLayers;
+
+		// Validate VkCreateInstance and VkDestroyInstance function calls.
+		VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
+		PopulateDebugMessengerCreateInfo(debugCreateInfo);
+		createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
+
+		LOG(Log, "Validation layers in use:");
+		for (int32_t i = C_ARRAY_NUM(GValidationLayers) - 1; i >= 0; --i)
+		{
+			LOG(Log, "\t%s", GValidationLayers[i]);
+		}
+	}
+	else 
+	{
+		createInfo.enabledLayerCount = 0;
+		createInfo.ppEnabledLayerNames = nullptr;
+	}
 
 	if (vkCreateInstance(&createInfo, nullptr, &m_Instance) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create Vulkan instance.");
+	}
+}
+
+void vge::Renderer::SetupDebugMessenger()
+{
+	if (!GEnableValidationLayers) return;
+
+	VkDebugUtilsMessengerCreateInfoEXT createInfo;
+	PopulateDebugMessengerCreateInfo(createInfo);
+
+	if (CreateDebugUtilsMessengerEXT(m_Instance, &createInfo, nullptr, &m_DebugMessenger) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to set up debug messenger.");
 	}
 }
 
@@ -176,6 +288,16 @@ void vge::Renderer::FindGpu()
 		if (SuitableGpu(gpu))
 		{
 			m_Gpu = gpu;
+
+			VkPhysicalDeviceProperties gpuProps;
+			vkGetPhysicalDeviceProperties(m_Gpu, &gpuProps);
+			LOG(Log, "Chosen GPU properties:");
+			LOG(Log, "\tName: %s", gpuProps.deviceName);
+			LOG(Log, "\tDevice ID: %d", gpuProps.deviceID);
+			LOG(Log, "\tVendor ID: %d", gpuProps.vendorID);
+			LOG(Log, "\tDevice type: %d", gpuProps.deviceType);
+			LOG(Log, "\tDriver version: %d", gpuProps.driverVersion);
+
 			break;
 		}
 	}

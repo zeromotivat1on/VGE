@@ -141,13 +141,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Macros.h" />
     <ClCompile Include="Source\Main.cpp" />
     <ClCompile Include="Source\Renderer.cpp" />
+    <ClCompile Include="Source\VulkanUtils.cpp" />
     <ClCompile Include="Source\Window.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Common.h" />
+    <ClInclude Include="Source\Logging.h" />
     <ClInclude Include="Source\Renderer.h" />
+    <ClInclude Include="Source\VulkanGlobals.h" />
     <ClInclude Include="Source\VulkanUtils.h" />
     <ClInclude Include="Source\Window.h" />
   </ItemGroup>

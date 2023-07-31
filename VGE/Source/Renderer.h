@@ -23,8 +23,11 @@ namespace vge
 		VkDevice m_Device = VK_NULL_HANDLE;
 		VkQueue m_GrpahicsQueue = VK_NULL_HANDLE;
 
+		VkDebugUtilsMessengerEXT m_DebugMessenger;
+
 	private:
 		void CreateInstance();
+		void SetupDebugMessenger();
 		void FindGpu();
 		void CreateDevice();
 	};
@@ -33,6 +36,7 @@ namespace vge
 	bool DestroyRenderer();
 
 	void GetGlfwExtensions(std::vector<const char*>& outExtensions);
+	void GetRequriedExtensions(std::vector<const char*>& outExtensions);
 	bool SupportInstanceExtensions(const std::vector<const char*>& extensions);
 	bool SuitableGpu(VkPhysicalDevice gpu);
 	QueueFamilyIndices GetQueueFamilies(VkPhysicalDevice gpu);

@@ -24,6 +24,12 @@
     <ClCompile Include="Source\Window.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Macros.h">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\VulkanUtils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Renderer.h">
@@ -36,6 +42,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\VulkanUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Logging.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\VulkanGlobals.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

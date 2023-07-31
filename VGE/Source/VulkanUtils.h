@@ -2,12 +2,17 @@
 
 #include <stdint.h>
 
-struct QueueFamilyIndices
+namespace vge
 {
-	int32_t GraphicsFamily = -1;
-
-	inline bool IsValid()
+	struct QueueFamilyIndices
 	{
-		return GraphicsFamily >= 0;
-	}
-};
+		int32_t GraphicsFamily = -1;
+
+		inline bool IsValid()
+		{
+			return GraphicsFamily >= 0;
+		}
+	};
+
+	bool SupportValidationLayers();
+}
