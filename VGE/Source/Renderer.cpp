@@ -79,7 +79,7 @@ bool vge::DestroyRenderer()
 	return true;
 }
 
-void vge::GetGlfwExtensions(std::vector<const char*>& outExtensions)
+void vge::GetGlfwInstanceExtensions(std::vector<const char*>& outExtensions)
 {
 	uint32_t glfwExtensionCount = 0;
 	const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
@@ -90,9 +90,9 @@ void vge::GetGlfwExtensions(std::vector<const char*>& outExtensions)
 	}
 }
 
-void vge::GetRequriedExtensions(std::vector<const char*>& outExtensions)
+void vge::GetRequriedInstanceExtensions(std::vector<const char*>& outExtensions)
 {
-	GetGlfwExtensions(outExtensions);
+	GetGlfwInstanceExtensions(outExtensions);
 	outExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 }
 
@@ -216,7 +216,7 @@ void vge::Renderer::CreateInstance()
 	appInfo.apiVersion = VK_API_VERSION_1_0;
 
 	std::vector<const char*> instanceExtensions = {};
-	GetRequriedExtensions(instanceExtensions);
+	GetRequriedInstanceExtensions(instanceExtensions);
 
 	if (!SupportInstanceExtensions(instanceExtensions))
 	{

@@ -35,8 +35,8 @@ namespace vge
 	Renderer* CreateRenderer(GLFWwindow* window);
 	bool DestroyRenderer();
 
-	void GetGlfwExtensions(std::vector<const char*>& outExtensions);
-	void GetRequriedExtensions(std::vector<const char*>& outExtensions);
+	void GetGlfwInstanceExtensions(std::vector<const char*>& outExtensions);
+	void GetRequriedInstanceExtensions(std::vector<const char*>& outExtensions);
 	bool SupportInstanceExtensions(const std::vector<const char*>& extensions);
 	bool SuitableGpu(VkPhysicalDevice gpu);
 	QueueFamilyIndices GetQueueFamilies(VkPhysicalDevice gpu);
