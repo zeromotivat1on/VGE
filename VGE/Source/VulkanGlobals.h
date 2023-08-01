@@ -2,8 +2,14 @@
 
 namespace vge
 {
-	inline const char* GValidationLayers[] = {
+	inline const char* GValidationLayers[] = 
+	{
 		"VK_LAYER_KHRONOS_validation"
+	};
+
+	inline const char* GDeviceExtensions[] =
+	{
+		VK_KHR_SWAPCHAIN_EXTENSION_NAME
 	};
 
 #ifdef NDEBUG
