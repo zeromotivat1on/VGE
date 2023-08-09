@@ -28,11 +28,16 @@ namespace vge
 		VkSwapchainKHR m_Swapchain = VK_NULL_HANDLE;
 		VkFormat m_SwapchainImageFormat = {};
 		VkExtent2D m_SwapchainExtent = {};
+
 		std::vector<SwapchainImage> m_SwapchainImages = {};
+		std::vector<VkFramebuffer> m_SwapchainFramebuffers = {};
+		std::vector<VkCommandBuffer> m_CommandBuffers = {};
 
 		VkPipeline m_GfxPipeline = VK_NULL_HANDLE;
 		VkPipelineLayout m_GfxPipelineLayout = VK_NULL_HANDLE;
 		VkRenderPass m_RenderPass = VK_NULL_HANDLE;
+
+		VkCommandPool m_GfxCommandPool = VK_NULL_HANDLE;
 
 		VkDebugUtilsMessengerEXT m_DebugMessenger = VK_NULL_HANDLE;
 
@@ -45,6 +50,11 @@ namespace vge
 		void CreateSwapchain();
 		void CreateRenderPass();
 		void CreateGraphicsPipeline();
+		void CreateFramebuffers();
+		void CreateCommandPool();
+		void CreateCommandBuffers();
+
+		void RecordCommandBuffers();
 	};
 
 	Renderer* CreateRenderer(GLFWwindow* window);

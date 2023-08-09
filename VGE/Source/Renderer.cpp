@@ -341,6 +341,10 @@ int32_t vge::Renderer::Initialize()
 		CreateSwapchain();
 		CreateRenderPass();
 		CreateGraphicsPipeline();
+		CreateFramebuffers();
+		CreateCommandPool();
+		CreateCommandBuffers();
+		RecordCommandBuffers();
 	}
 	catch (const std::runtime_error& err)
 	{
@@ -353,6 +357,13 @@ int32_t vge::Renderer::Initialize()
 
 void vge::Renderer::Cleanup()
 {
+	vkDestroyCommandPool(m_Device, m_GfxCommandPool, nullptr);
+
+	for (auto framebuffer : m_SwapchainFramebuffers)
+	{
+		vkDestroyFramebuffer(m_Device, framebuffer, nullptr);
+	}
+
 	vkDestroyPipeline(m_Device, m_GfxPipeline, nullptr);
 	vkDestroyPipelineLayout(m_Device, m_GfxPipelineLayout, nullptr);
 	vkDestroyRenderPass(m_Device, m_RenderPass, nullptr);
@@ -551,19 +562,19 @@ void vge::Renderer::CreateSwapchain()
 		imageCount = swapchainDetails.SurfaceCapabilities.maxImageCount;
 	}
 
-	VkSwapchainCreateInfoKHR createInfo = {};
-	createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-	createInfo.surface = m_Surface;
-	createInfo.imageFormat = surfaceFormat.format;
-	createInfo.imageColorSpace = surfaceFormat.colorSpace;
-	createInfo.presentMode = presentMode;
-	createInfo.imageExtent = extent;
-	createInfo.minImageCount = imageCount;
-	createInfo.imageArrayLayers = 1;
-	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-	createInfo.preTransform = swapchainDetails.SurfaceCapabilities.currentTransform;
-	createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-	createInfo.clipped = VK_TRUE;
+	VkSwapchainCreateInfoKHR swapchainCreateInfo = {};
+	swapchainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+	swapchainCreateInfo.surface = m_Surface;
+	swapchainCreateInfo.imageFormat = surfaceFormat.format;
+	swapchainCreateInfo.imageColorSpace = surfaceFormat.colorSpace;
+	swapchainCreateInfo.presentMode = presentMode;
+	swapchainCreateInfo.imageExtent = extent;
+	swapchainCreateInfo.minImageCount = imageCount;
+	swapchainCreateInfo.imageArrayLayers = 1;
+	swapchainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	swapchainCreateInfo.preTransform = swapchainDetails.SurfaceCapabilities.currentTransform;
+	swapchainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+	swapchainCreateInfo.clipped = VK_TRUE;
 	
 	QueueFamilyIndices indices = GetQueueFamilies(m_Gpu, m_Surface);
 	if (indices.GraphicsFamily != indices.PresentFamily)
@@ -574,20 +585,20 @@ void vge::Renderer::CreateSwapchain()
 			static_cast<uint32_t>(indices.PresentFamily) 
 		};
 
-		createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-		createInfo.queueFamilyIndexCount = 2;
-		createInfo.pQueueFamilyIndices = queueFamilyIndices;
+		swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+		swapchainCreateInfo.queueFamilyIndexCount = 2;
+		swapchainCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
 	}
 	else 
 	{
-		createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		createInfo.queueFamilyIndexCount = 0;
-		createInfo.pQueueFamilyIndices = nullptr;
+		swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		swapchainCreateInfo.queueFamilyIndexCount = 0;
+		swapchainCreateInfo.pQueueFamilyIndices = nullptr;
 	}
 
-	createInfo.oldSwapchain = VK_NULL_HANDLE;
+	swapchainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
 
-	if (vkCreateSwapchainKHR(m_Device, &createInfo, nullptr, &m_Swapchain) != VK_SUCCESS)
+	if (vkCreateSwapchainKHR(m_Device, &swapchainCreateInfo, nullptr, &m_Swapchain) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create swapchain.");
 	}
@@ -799,4 +810,101 @@ void vge::Renderer::CreateGraphicsPipeline()
 
 	vkDestroyShaderModule(m_Device, fragmentShaderModule, nullptr);
 	vkDestroyShaderModule(m_Device, vertexShaderModule, nullptr);
+}
+
+void vge::Renderer::CreateFramebuffers()
+{
+	m_SwapchainFramebuffers.resize(m_SwapchainImages.size());
+
+	for (size_t i = 0; i < m_SwapchainFramebuffers.size(); ++i)
+	{
+		std::array<VkImageView, 1> attachments = { m_SwapchainImages[i].ImageView };
+
+		VkFramebufferCreateInfo framebufferCreateInfo = {};
+		framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		framebufferCreateInfo.renderPass = m_RenderPass;
+		framebufferCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+		framebufferCreateInfo.pAttachments = attachments.data();
+		framebufferCreateInfo.width = m_SwapchainExtent.width;
+		framebufferCreateInfo.height = m_SwapchainExtent.height;
+		framebufferCreateInfo.layers = 1;
+
+		if (vkCreateFramebuffer(m_Device, &framebufferCreateInfo, nullptr, &m_SwapchainFramebuffers[i]) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create framebuffer.");
+		}
+	}
+}
+
+void vge::Renderer::CreateCommandPool()
+{
+	QueueFamilyIndices queueIndices = GetQueueFamilies(m_Gpu, m_Surface);
+
+	VkCommandPoolCreateInfo cmdPoolCreateInfo = {};
+	cmdPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	cmdPoolCreateInfo.queueFamilyIndex = queueIndices.GraphicsFamily;
+
+	if (vkCreateCommandPool(m_Device, &cmdPoolCreateInfo, nullptr, &m_GfxCommandPool) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create graphics command pool");
+	}
+}
+
+void vge::Renderer::CreateCommandBuffers()
+{
+	m_CommandBuffers.resize(m_SwapchainFramebuffers.size());
+
+	VkCommandBufferAllocateInfo cmdBufferAllocInfo = {};
+	cmdBufferAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	cmdBufferAllocInfo.commandPool = m_GfxCommandPool;
+	cmdBufferAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	cmdBufferAllocInfo.commandBufferCount = static_cast<uint32_t>(m_CommandBuffers.size());
+
+	if (vkAllocateCommandBuffers(m_Device, &cmdBufferAllocInfo, m_CommandBuffers.data()) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to allocate command buffers.");
+	}
+}
+
+void vge::Renderer::RecordCommandBuffers()
+{
+	VkCommandBufferBeginInfo cmdBufferBeginInfo = {};
+	cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	cmdBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+
+	std::array<VkClearValue, 1> clearValues = 
+	{
+		{ 0.6f, 0.65f, 0.4f, 1.0f },
+	};
+
+	VkRenderPassBeginInfo renderPassBeginInfo = {};
+	renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	renderPassBeginInfo.renderPass = m_RenderPass;
+	renderPassBeginInfo.renderArea.offset = { 0, 0 };
+	renderPassBeginInfo.renderArea.extent = m_SwapchainExtent;
+	renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+	renderPassBeginInfo.pClearValues = clearValues.data();
+
+	for (size_t i = 0; i < m_CommandBuffers.size(); ++i)
+	{
+		renderPassBeginInfo.framebuffer = m_SwapchainFramebuffers[i];
+
+		if (vkBeginCommandBuffer(m_CommandBuffers[i], &cmdBufferBeginInfo) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to start command buffer record.");
+		}
+
+		vkCmdBeginRenderPass(m_CommandBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+		vkCmdBindPipeline(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_GfxPipeline);
+
+		vkCmdDraw(m_CommandBuffers[i], 3, 1, 0, 0);
+
+		vkCmdEndRenderPass(m_CommandBuffers[i]);
+
+		if (vkEndCommandBuffer(m_CommandBuffers[i]) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to stop command buffer record.");
+		}
+	}
 }
