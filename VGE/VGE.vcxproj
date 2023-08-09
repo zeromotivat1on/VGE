@@ -141,8 +141,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Shader.cpp" />
     <ClCompile Include="Source\Application.cpp" />
     <ClCompile Include="Source\EngineLoop.cpp" />
+    <ClCompile Include="Source\File.cpp" />
     <ClCompile Include="Source\Macros.h" />
     <ClCompile Include="Source\Main.cpp" />
     <ClCompile Include="Source\Renderer.cpp" />
@@ -150,9 +152,11 @@
     <ClCompile Include="Source\Window.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Shader.h" />
     <ClInclude Include="Source\Application.h" />
     <ClInclude Include="Source\Common.h" />
     <ClInclude Include="Source\EngineLoop.h" />
+    <ClInclude Include="Source\File.h" />
     <ClInclude Include="Source\Logging.h" />
     <ClInclude Include="Source\Renderer.h" />
     <ClInclude Include="Source\VulkanGlobals.h" />

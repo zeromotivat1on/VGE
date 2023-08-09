@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <array>
 #include <vector>
 #include <iostream>
 #include <stdexcept>

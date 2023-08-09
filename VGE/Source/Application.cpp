@@ -53,6 +53,8 @@ int32_t vge::Application::Initialize()
 	{
 		return EXIT_FAILURE;
 	}
+
+	return EXIT_SUCCESS;
 }
 
 void vge::Application::Close()

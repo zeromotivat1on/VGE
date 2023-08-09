@@ -30,7 +30,11 @@ namespace vge
 		VkExtent2D m_SwapchainExtent = {};
 		std::vector<SwapchainImage> m_SwapchainImages = {};
 
-		VkDebugUtilsMessengerEXT m_DebugMessenger;
+		VkPipeline m_GfxPipeline = VK_NULL_HANDLE;
+		VkPipelineLayout m_GfxPipelineLayout = VK_NULL_HANDLE;
+		VkRenderPass m_RenderPass = VK_NULL_HANDLE;
+
+		VkDebugUtilsMessengerEXT m_DebugMessenger = VK_NULL_HANDLE;
 
 	private:
 		void CreateInstance();
@@ -39,6 +43,8 @@ namespace vge
 		void FindGpu();
 		void CreateDevice();
 		void CreateSwapchain();
+		void CreateRenderPass();
+		void CreateGraphicsPipeline();
 	};
 
 	Renderer* CreateRenderer(GLFWwindow* window);
