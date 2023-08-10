@@ -34,6 +34,17 @@ namespace vge
 	};
 
 	bool SupportValidationLayers();
+	void GetRequriedInstanceExtensions(std::vector<const char*>& outExtensions);
+	bool SupportInstanceExtensions(const std::vector<const char*>& checkExtensions);
+	bool SupportDeviceExtensions(VkPhysicalDevice gpu, const std::vector<const char*>& checkExtensions);
+	bool SuitableGpu(VkPhysicalDevice gpu, VkSurfaceKHR surface);
+	
+	QueueFamilyIndices GetQueueFamilies(VkPhysicalDevice gpu, VkSurfaceKHR surface);
+	SwapchainDetails GetSwapchainDetails(VkPhysicalDevice gpu, VkSurfaceKHR surface);
+	
+	VkSurfaceFormatKHR GetBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats);
+	VkPresentModeKHR GetBestPresentMode(const std::vector<VkPresentModeKHR>& modes);
+	VkExtent2D GetBestSwapchainExtent(VkSurfaceCapabilitiesKHR surfaceCapabilities);
 
 	const char* GpuTypeToString(VkPhysicalDeviceType gpuType);
 }

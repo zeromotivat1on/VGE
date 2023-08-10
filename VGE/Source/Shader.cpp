@@ -10,7 +10,8 @@ VkShaderModule vge::CreateShaderModule(VkDevice device, const std::vector<char>&
 	VkShaderModule shaderModule;
 	if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
 	{
-		throw std::runtime_error("Failed to create shader module.");
+		LOG(Error, "Failed to create shader module.");
+		return VK_NULL_HANDLE;
 	}
 
 	return shaderModule;

@@ -13,11 +13,8 @@ int32_t vge::Main(int argc, const char** argv)
 	specs.Window.Height = 600;
 
 	CreateApplication(specs);
-
-	if (GApplication->Initialize() == EXIT_FAILURE)
-	{
-		return EXIT_FAILURE;
-	}
+	if (!GApplication) return EXIT_FAILURE;
+	GApplication->Initialize();
 
 	MainLoop();
 
@@ -44,21 +41,16 @@ bool vge::DestroyApplication()
 vge::Application::Application(const ApplicationSpecs& specs) : Specs(specs)
 {}
 
-int32_t vge::Application::Initialize()
+void vge::Application::Initialize()
 {
-	vge::CreateWindow(Specs.Window.Name, Specs.Window.Width, Specs.Window.Height);
-	vge::CreateRenderer(vge::GWindow);
+	CreateWindow(Specs.Window.Name, Specs.Window.Width, Specs.Window.Height);
+	CreateRenderer(vge::GWindow);
 
-	if (vge::GRenderer->Initialize() == EXIT_FAILURE)
-	{
-		return EXIT_FAILURE;
-	}
-
-	return EXIT_SUCCESS;
+	GRenderer->Initialize();
 }
 
 void vge::Application::Close()
 {
-	vge::DestroyRenderer();
-	vge::DestroyWindow();
+	DestroyRenderer();
+	DestroyWindow();
 }

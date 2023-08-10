@@ -22,8 +22,10 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL VulkanDebugCallback(
 		break;
 	}
 
-	// Do not log verbose info.
-	//LOG(Log, "%s", pCallbackData->pMessage);
+#if LOG_VK_VERBOSE
+	LOG(Log, "%s", pCallbackData->pMessage);
+#endif
+
 	return VK_FALSE;
 }
 
@@ -83,222 +85,6 @@ bool vge::DestroyRenderer()
 	return true;
 }
 
-void vge::GetGlfwInstanceExtensions(std::vector<const char*>& outExtensions)
-{
-	uint32_t glfwExtensionCount = 0;
-	const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-
-	for (uint32_t i = 0; i < glfwExtensionCount; ++i)
-	{
-		outExtensions.push_back(glfwExtensions[i]);
-	}
-}
-
-void vge::GetRequriedInstanceExtensions(std::vector<const char*>& outExtensions)
-{
-	GetGlfwInstanceExtensions(outExtensions);
-	outExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-}
-
-bool vge::SupportInstanceExtensions(const std::vector<const char*>& checkExtensions)
-{
-	uint32_t extensionCount = 0;
-	vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-
-	if (extensionCount == 0) return false;
-
-	std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-	vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, availableExtensions.data());
-
-	for (const auto& checkExtension : checkExtensions)
-	{
-		bool hasExtension = false;
-		for (const auto& availableExtension : availableExtensions)
-		{
-			if (strcmp(checkExtension, availableExtension.extensionName) == 0)
-			{
-				hasExtension = true;
-				break;
-			}
-		}
-
-		if (!hasExtension)
-		{
-			return false;
-		}
-	}
-
-	return true;
-}
-
-bool vge::SupportDeviceExtensions(VkPhysicalDevice gpu, const std::vector<const char*>& checkExtensions)
-{
-	uint32_t extensionCount = 0;
-	vkEnumerateDeviceExtensionProperties(gpu, nullptr, &extensionCount, nullptr);
-
-	if (extensionCount == 0) return false;
-
-	std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-	vkEnumerateDeviceExtensionProperties(gpu, nullptr, &extensionCount, availableExtensions.data());
-
-	for (const auto& checkExtension : checkExtensions)
-	{
-		bool hasExtension = false;
-		for (const auto& availableExtension : availableExtensions)
-		{
-			if (strcmp(checkExtension, availableExtension.extensionName) == 0)
-			{
-				hasExtension = true;
-				break;
-			}
-		}
-
-		if (!hasExtension)
-		{
-			return false;
-		}
-	}
-
-	return true;
-}
-
-bool vge::SuitableGpu(VkPhysicalDevice gpu, VkSurfaceKHR surface)
-{
-	//VkPhysicalDeviceProperties gpuProps;
-	//vkGetPhysicalDeviceProperties(gpu, &gpuProps);
-
-	//VkPhysicalDeviceFeatures gpuFeatures;
-	//vkGetPhysicalDeviceFeatures(gpu, &gpuFeatures);
-
-	QueueFamilyIndices indices = GetQueueFamilies(gpu, surface);
-
-	std::vector<const char*> deviceExtensions;
-	deviceExtensions.assign(GDeviceExtensions, GDeviceExtensions + C_ARRAY_NUM(GDeviceExtensions));
-
-	SwapchainDetails swapchainDetails = GetSwapchainDetails(gpu, surface);
-
-	return indices.IsValid() && SupportDeviceExtensions(gpu, deviceExtensions) && swapchainDetails.IsValid();
-}
-
-vge::QueueFamilyIndices vge::GetQueueFamilies(VkPhysicalDevice gpu, VkSurfaceKHR surface)
-{
-	uint32_t queueFamilyCount = 0;
-	vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queueFamilyCount, nullptr);
-
-	std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-	vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queueFamilyCount, queueFamilies.data());
-
-	QueueFamilyIndices indices = {};
-	int32_t queueFamilyIndex = 0;
-	for (const auto& queueFamily : queueFamilies)
-	{
-		if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
-		{
-			indices.GraphicsFamily = queueFamilyIndex;
-		}
-
-		if (surface)
-		{
-			VkBool32 presentSupport = false;
-			vkGetPhysicalDeviceSurfaceSupportKHR(gpu, queueFamilyIndex, surface, &presentSupport);
-			if (queueFamily.queueCount > 0 && presentSupport)
-			{
-				indices.PresentFamily = queueFamilyIndex;
-			}
-		}
-
-		if (indices.IsValid())
-		{
-			break;
-		}
-
-		queueFamilyIndex++;
-	}
-
-	return indices;
-}
-
-vge::SwapchainDetails vge::GetSwapchainDetails(VkPhysicalDevice gpu, VkSurfaceKHR surface)
-{
-	SwapchainDetails details;
-	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(gpu, surface, &details.SurfaceCapabilities);
-
-	uint32_t formatCount = 0;
-	vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, surface, &formatCount, nullptr);
-
-	if (formatCount != 0)
-	{
-		details.SurfaceFormats.resize(formatCount);
-		vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, surface, &formatCount, details.SurfaceFormats.data());
-	}
-
-	uint32_t presentCount = 0;
-	vkGetPhysicalDeviceSurfacePresentModesKHR(gpu, surface, &presentCount, nullptr);
-	
-	if (presentCount != 0)
-	{
-		details.PresentModes.resize(presentCount);
-		vkGetPhysicalDeviceSurfacePresentModesKHR(gpu, surface, &presentCount, details.PresentModes.data());
-	}
-
-	return details;
-}
-
-VkSurfaceFormatKHR vge::GetBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats)
-{
-	static constexpr VkSurfaceFormatKHR defaultFormat = { VK_FORMAT_R8G8B8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
-
-	if (formats.size() == 1 && formats[0].format == VK_FORMAT_UNDEFINED)
-	{
-		LOG(Warning, "Given format is undefined, returning default surface format.");
-		return defaultFormat;
-	}
-
-	for (const VkSurfaceFormatKHR& format : formats)
-	{
-		if ((format.format == VK_FORMAT_R8G8B8A8_UNORM || format.format == VK_FORMAT_B8G8R8A8_UNORM) &&
-			format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
-		{
-			return format;
-		}
-	}
-
-	return formats[0];
-}
-
-VkPresentModeKHR vge::GetBestPresentMode(const std::vector<VkPresentModeKHR>& modes)
-{
-	static constexpr VkPresentModeKHR desiredMode = VK_PRESENT_MODE_MAILBOX_KHR;
-	static constexpr VkPresentModeKHR defaultMode = VK_PRESENT_MODE_FIFO_KHR;
-
-	for (const VkPresentModeKHR& mode : modes)
-	{
-		if (mode == desiredMode)
-		{
-			return desiredMode;
-		}
-	}
-
-	return defaultMode;
-}
-
-VkExtent2D vge::GetBestSwapchainExtent(VkSurfaceCapabilitiesKHR surfaceCapabilities)
-{
-	if (surfaceCapabilities.currentExtent.width != UINT32_MAX)
-	{
-		return surfaceCapabilities.currentExtent;
-	}
-
-	int width, height;
-	glfwGetFramebufferSize(GWindow, &width, &height);
-
-	VkExtent2D newExtent = {};
-	newExtent.width = std::clamp(static_cast<uint32_t>(width), surfaceCapabilities.minImageExtent.width, surfaceCapabilities.maxImageExtent.width);
-	newExtent.height = std::clamp(static_cast<uint32_t>(height), surfaceCapabilities.minImageExtent.height, surfaceCapabilities.maxImageExtent.height);
-	
-	return newExtent;
-}
-
 VkImageView vge::CreateImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlagBits aspectFlags)
 {
 	VkImageViewCreateInfo createInfo = {};
@@ -334,31 +120,21 @@ void vge::IncrementCurrentFrame()
 vge::Renderer::Renderer(GLFWwindow* window) : m_Window(window)
 {}
 
-int32_t vge::Renderer::Initialize()
+void vge::Renderer::Initialize()
 {
-	try
-	{
-		CreateInstance();
-		SetupDebugMessenger();
-		CreateSurface();
-		FindGpu();
-		CreateDevice();
-		CreateSwapchain();
-		CreateRenderPass();
-		CreateGraphicsPipeline();
-		CreateFramebuffers();
-		CreateCommandPool();
-		CreateCommandBuffers();
-		RecordCommandBuffers();
-		CreateSyncObjects();
-	}
-	catch (const std::runtime_error& err)
-	{
-		LOG(Error, "%s", err.what());
-		return EXIT_FAILURE;
-	}
-
-	return EXIT_SUCCESS;
+	CreateInstance();
+	SetupDebugMessenger();
+	CreateSurface();
+	FindGpu();
+	CreateDevice();
+	CreateSwapchain();
+	CreateRenderPass();
+	CreateGraphicsPipeline();
+	CreateFramebuffers();
+	CreateCommandPool();
+	CreateCommandBuffers();
+	RecordCommandBuffers();
+	CreateSyncObjects();
 }
 
 void vge::Renderer::Draw()
@@ -383,7 +159,8 @@ void vge::Renderer::Draw()
 
 	if (vkQueueSubmit(m_GrpahicsQueue, 1, &submitInfo, m_DrawFences[GCurrentFrame]) != VK_SUCCESS) // open fence after successful render
 	{
-		throw std::runtime_error("Failed to submit info to graphics queue.");
+		LOG(Error, "Failed to submit info to graphics queue.");
+		return;
 	}
 
 	VkPresentInfoKHR presentInfo = {};
@@ -396,7 +173,8 @@ void vge::Renderer::Draw()
 
 	if (vkQueuePresentKHR(m_PresentQueue, &presentInfo) != VK_SUCCESS)
 	{
-		throw std::runtime_error("Failed to present info on present queue.");
+		LOG(Error, "Failed to present info to present queue.");
+		return;
 	}
 }
 
@@ -443,7 +221,8 @@ void vge::Renderer::CreateInstance()
 {
 	if (GEnableValidationLayers && !SupportValidationLayers())
 	{
-		throw std::runtime_error("Validation layers requested, but not supported.");
+		LOG(Error, "Validation layers requested, but not supported.");
+		return;
 	}
 
 	VkApplicationInfo appInfo = {};
@@ -459,7 +238,8 @@ void vge::Renderer::CreateInstance()
 
 	if (!SupportInstanceExtensions(instanceExtensions))
 	{
-		throw std::runtime_error("Instance does not support requried extensions.");
+		LOG(Error, "Instance does not support requried extensions.");
+		return;
 	}
 
 	VkInstanceCreateInfo createInfo = {};
@@ -495,7 +275,8 @@ void vge::Renderer::CreateInstance()
 
 	if (vkCreateInstance(&createInfo, nullptr, &m_Instance) != VK_SUCCESS)
 	{
-		throw std::runtime_error("Failed to create Vulkan instance.");
+		LOG(Error, "Failed to create Vulkan instance.");
+		return;
 	}
 }
 
@@ -508,7 +289,8 @@ void vge::Renderer::SetupDebugMessenger()
 
 	if (CreateDebugUtilsMessengerEXT(m_Instance, &createInfo, nullptr, &m_DebugMessenger) != VK_SUCCESS)
 	{
-		throw std::runtime_error("Failed to set up debug messenger.");
+		LOG(Error, "Failed to set up debug messenger.");
+		return;
 	}
 }
 
@@ -516,7 +298,8 @@ void vge::Renderer::CreateSurface()
 {
 	if (glfwCreateWindowSurface(m_Instance, m_Window, nullptr, &m_Surface) != VK_SUCCESS)
 	{
-		throw std::runtime_error("Failed to create window surface.");
+		LOG(Error, "Failed to create window surface.");
+		return;
 	}
 }
 
@@ -527,7 +310,8 @@ void vge::Renderer::FindGpu()
 
 	if (gpuCount == 0)
 	{
-		throw std::runtime_error("Can't find GPUs that support Vulkan.");
+		LOG(Error, "Can't find GPUs that support Vulkan.");
+		return;
 	}
 
 	std::vector<VkPhysicalDevice> availableGpus(gpuCount);
@@ -538,6 +322,7 @@ void vge::Renderer::FindGpu()
 		if (SuitableGpu(gpu, m_Surface))
 		{
 			m_Gpu = gpu;
+			m_QueueIndices = GetQueueFamilies(m_Gpu, m_Surface);
 
 			VkPhysicalDeviceProperties gpuProps;
 			vkGetPhysicalDeviceProperties(m_Gpu, &gpuProps);
@@ -552,14 +337,12 @@ void vge::Renderer::FindGpu()
 		}
 	}
 
-	throw std::runtime_error("Can't find suitable GPUs.");
+	LOG(Error, "Can't find suitable GPUs.");
 }
 
 void vge::Renderer::CreateDevice()
 {
-	QueueFamilyIndices indices = GetQueueFamilies(m_Gpu, m_Surface);
-
-	std::unordered_set<int32_t> queueFamilyIndices = { indices.GraphicsFamily, indices.PresentFamily };
+	std::unordered_set<int32_t> queueFamilyIndices = { m_QueueIndices.GraphicsFamily, m_QueueIndices.PresentFamily };
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 	for (int32_t queueFamilyIndex : queueFamilyIndices)
 	{
@@ -595,11 +378,12 @@ void vge::Renderer::CreateDevice()
 
 	if (vkCreateDevice(m_Gpu, &deviceCreateInfo, nullptr, &m_Device) != VK_SUCCESS)
 	{
-		throw std::runtime_error("Failed to create Vulkan device.");
+		LOG(Error, "Failed to create Vulkan device.");
+		return;
 	}
 
-	vkGetDeviceQueue(m_Device, indices.GraphicsFamily, 0, &m_GrpahicsQueue);
-	vkGetDeviceQueue(m_Device, indices.PresentFamily, 0, &m_PresentQueue);
+	vkGetDeviceQueue(m_Device, m_QueueIndices.GraphicsFamily, 0, &m_GrpahicsQueue);
+	vkGetDeviceQueue(m_Device, m_QueueIndices.PresentFamily, 0, &m_PresentQueue);
 }
 
 void vge::Renderer::CreateSwapchain()
@@ -630,13 +414,12 @@ void vge::Renderer::CreateSwapchain()
 	swapchainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 	swapchainCreateInfo.clipped = VK_TRUE;
 	
-	QueueFamilyIndices indices = GetQueueFamilies(m_Gpu, m_Surface);
-	if (indices.GraphicsFamily != indices.PresentFamily)
+	if (m_QueueIndices.GraphicsFamily != m_QueueIndices.PresentFamily)
 	{
 		const uint32_t queueFamilyIndices[] = 
 		{ 
-			static_cast<uint32_t>(indices.GraphicsFamily), 
-			static_cast<uint32_t>(indices.PresentFamily) 
+			static_cast<uint32_t>(m_QueueIndices.GraphicsFamily),
+			static_cast<uint32_t>(m_QueueIndices.PresentFamily)
 		};
 
 		swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
@@ -654,7 +437,8 @@ void vge::Renderer::CreateSwapchain()
 
 	if (vkCreateSwapchainKHR(m_Device, &swapchainCreateInfo, nullptr, &m_Swapchain) != VK_SUCCESS)
 	{
-		throw std::runtime_error("Failed to create swapchain.");
+		LOG(Error, "Failed to create swapchain.");
+		return;
 	}
 
 	m_SwapchainImageFormat = surfaceFormat.format;
@@ -728,7 +512,8 @@ void vge::Renderer::CreateRenderPass()
 
 	if (vkCreateRenderPass(m_Device, &renderPassCreateInfo, nullptr, &m_RenderPass) != VK_SUCCESS)
 	{
-		throw std::runtime_error("Failed to create render pass.");
+		LOG(Error, "Failed to create render pass.");
+		return;
 	}
 }
 
@@ -836,7 +621,8 @@ void vge::Renderer::CreateGraphicsPipeline()
 
 	if (vkCreatePipelineLayout(m_Device, &pipelineLayoutCreateInfo, nullptr, &m_GfxPipelineLayout) != VK_SUCCESS)
 	{
-		throw std::runtime_error("Failed to create graphics pipeline layout.");
+		LOG(Error, "Failed to create graphics pipeline layout.");
+		return;
 	}
 
 	VkGraphicsPipelineCreateInfo gfxPipelineCreateInfo = {};
@@ -859,7 +645,8 @@ void vge::Renderer::CreateGraphicsPipeline()
 
 	if (vkCreateGraphicsPipelines(m_Device, nullptr, 1, &gfxPipelineCreateInfo, nullptr, &m_GfxPipeline) != VK_SUCCESS)
 	{
-		throw std::runtime_error("Failed to create graphics pipeline.");
+		LOG(Error, "Failed to create graphics pipeline.");
+		return;
 	}
 
 	vkDestroyShaderModule(m_Device, fragmentShaderModule, nullptr);
@@ -885,22 +672,22 @@ void vge::Renderer::CreateFramebuffers()
 
 		if (vkCreateFramebuffer(m_Device, &framebufferCreateInfo, nullptr, &m_SwapchainFramebuffers[i]) != VK_SUCCESS)
 		{
-			throw std::runtime_error("Failed to create framebuffer.");
+			LOG(Error, "Failed to create framebuffer.");
+			return;
 		}
 	}
 }
 
 void vge::Renderer::CreateCommandPool()
 {
-	QueueFamilyIndices queueIndices = GetQueueFamilies(m_Gpu, m_Surface);
-
 	VkCommandPoolCreateInfo cmdPoolCreateInfo = {};
 	cmdPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	cmdPoolCreateInfo.queueFamilyIndex = queueIndices.GraphicsFamily;
+	cmdPoolCreateInfo.queueFamilyIndex = m_QueueIndices.GraphicsFamily;
 
 	if (vkCreateCommandPool(m_Device, &cmdPoolCreateInfo, nullptr, &m_GfxCommandPool) != VK_SUCCESS)
 	{
-		throw std::runtime_error("Failed to create graphics command pool");
+		LOG(Error, "Failed to create graphics command pool.");
+		return;
 	}
 }
 
@@ -916,7 +703,8 @@ void vge::Renderer::CreateCommandBuffers()
 
 	if (vkAllocateCommandBuffers(m_Device, &cmdBufferAllocInfo, m_CommandBuffers.data()) != VK_SUCCESS)
 	{
-		throw std::runtime_error("Failed to allocate command buffers.");
+		LOG(Error, "Failed to allocate command buffers.");
+		return;
 	}
 }
 
@@ -946,20 +734,24 @@ void vge::Renderer::RecordCommandBuffers()
 
 		if (vkBeginCommandBuffer(m_CommandBuffers[i], &cmdBufferBeginInfo) != VK_SUCCESS)
 		{
-			throw std::runtime_error("Failed to start command buffer record.");
+			LOG(Error, "Failed to start command buffer record.");
+			return;
 		}
 
 		vkCmdBeginRenderPass(m_CommandBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-		vkCmdBindPipeline(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_GfxPipeline);
+		{
+			vkCmdBindPipeline(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_GfxPipeline);
 
-		vkCmdDraw(m_CommandBuffers[i], 3, 1, 0, 0);
+			vkCmdDraw(m_CommandBuffers[i], 3, 1, 0, 0);
+		}
 
 		vkCmdEndRenderPass(m_CommandBuffers[i]);
 
 		if (vkEndCommandBuffer(m_CommandBuffers[i]) != VK_SUCCESS)
 		{
-			throw std::runtime_error("Failed to stop command buffer record.");
+			LOG(Error, "Failed to stop command buffer record.");
+			return;
 		}
 	}
 }
@@ -982,12 +774,14 @@ void vge::Renderer::CreateSyncObjects()
 		if (vkCreateSemaphore(m_Device, &semaphoreCreateInfo, nullptr, &m_ImageAvailableSemas[i]) != VK_SUCCESS ||
 			vkCreateSemaphore(m_Device, &semaphoreCreateInfo, nullptr, &m_RenderFinishedSemas[i]) != VK_SUCCESS)
 		{
-			throw std::runtime_error("Failed to create semaphore.");
+			LOG(Error, "Failed to create semaphore.");
+			return;
 		}
 
 		if (vkCreateFence(m_Device, &fenceCreateInfo, nullptr, &m_DrawFences[i]) != VK_SUCCESS)
 		{
-			throw std::runtime_error("Failed to create fence.");
+			LOG(Error, "Failed to create fence.");
+			return;
 		}
 	}
 }

@@ -16,3 +16,14 @@ bool vge::DestroyWindow()
 	GWindow = nullptr;
 	return true;
 }
+
+void vge::GetGlfwInstanceExtensions(std::vector<const char*>& outExtensions)
+{
+	uint32_t glfwExtensionCount = 0;
+	const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+	for (uint32_t i = 0; i < glfwExtensionCount; ++i)
+	{
+		outExtensions.push_back(glfwExtensions[i]);
+	}
+}

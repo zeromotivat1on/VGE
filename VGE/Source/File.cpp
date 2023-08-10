@@ -1,4 +1,5 @@
 #include "File.h"
+#include "Logging.h"
 
 std::vector<char> vge::file::ReadShader(const char* filename)
 {
@@ -6,7 +7,8 @@ std::vector<char> vge::file::ReadShader(const char* filename)
 
 	if (!file.is_open())
 	{
-		throw std::runtime_error("Failed to open a file.");
+		LOG(Error, "Failed to open a file %s.", filename);
+		return {};
 	}
 
 	size_t fileSize = static_cast<size_t>(file.tellg());

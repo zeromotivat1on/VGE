@@ -8,4 +8,6 @@ namespace vge
 
 	GLFWwindow* CreateWindow(const char* name, const int32_t width, const int32_t height);
 	bool DestroyWindow();
+
+	void GetGlfwInstanceExtensions(std::vector<const char*>& outExtensions);
 }

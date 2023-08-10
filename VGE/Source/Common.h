@@ -5,7 +5,6 @@
 #include <array>
 #include <vector>
 #include <iostream>
-#include <stdexcept>
 #include <algorithm>
 #include <unordered_set>
 

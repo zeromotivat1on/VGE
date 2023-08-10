@@ -3,6 +3,8 @@
 #include <cstdarg>
 #include <string>
 
+#define LOG_VK_VERBOSE 0
+
 #ifdef NDEBUG
 #define LOG(Category, Message, ...)
 #else
@@ -36,10 +38,8 @@ private:
 			{
 			case LogCategory::Warning:
 				return "Warning: ";
-
 			case LogCategory::Error:
 				return "Error: ";
-
 			default:
 				return "Log: ";
 			}

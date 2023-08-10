@@ -23,7 +23,7 @@ namespace vge
 	public:
 		Application(const ApplicationSpecs& specs);
 
-		int32_t Initialize();
+		void Initialize();
 		void Close();
 
 	public:
