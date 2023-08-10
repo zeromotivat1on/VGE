@@ -6,6 +6,9 @@
 namespace vge
 {
 	inline class Renderer* GRenderer = nullptr;
+	
+	inline constexpr int32_t GMaxDrawFrames = 2;
+	inline			 int32_t GCurrentFrame  = 0;
 
 	class Renderer final
 	{
@@ -14,6 +17,7 @@ namespace vge
 		~Renderer() = default;
 
 		int32_t Initialize();
+		void Draw();
 		void Cleanup();
 
 	private:
@@ -28,6 +32,10 @@ namespace vge
 		VkSwapchainKHR m_Swapchain = VK_NULL_HANDLE;
 		VkFormat m_SwapchainImageFormat = {};
 		VkExtent2D m_SwapchainExtent = {};
+
+		std::vector<VkSemaphore> m_ImageAvailableSemas;
+		std::vector<VkSemaphore> m_RenderFinishedSemas;
+		std::vector<VkFence> m_DrawFences;
 
 		std::vector<SwapchainImage> m_SwapchainImages = {};
 		std::vector<VkFramebuffer> m_SwapchainFramebuffers = {};
@@ -53,8 +61,8 @@ namespace vge
 		void CreateFramebuffers();
 		void CreateCommandPool();
 		void CreateCommandBuffers();
-
 		void RecordCommandBuffers();
+		void CreateSyncObjects();
 	};
 
 	Renderer* CreateRenderer(GLFWwindow* window);
@@ -71,4 +79,6 @@ namespace vge
 	VkPresentModeKHR GetBestPresentMode(const std::vector<VkPresentModeKHR>& modes);
 	VkExtent2D GetBestSwapchainExtent(VkSurfaceCapabilitiesKHR surfaceCapabilities);
 	VkImageView CreateImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlagBits aspectFlags);
+
+	inline void IncrementCurrentFrame();
 }

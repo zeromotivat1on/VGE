@@ -324,6 +324,11 @@ VkImageView vge::CreateImageView(VkDevice device, VkImage image, VkFormat format
 
 	return imageView;
 }
+
+void vge::IncrementCurrentFrame()
+{
+	GCurrentFrame = (GCurrentFrame + 1) % GMaxDrawFrames;
+}
 #pragma endregion NamespaceFunctions
 
 vge::Renderer::Renderer(GLFWwindow* window) : m_Window(window)
@@ -345,6 +350,7 @@ int32_t vge::Renderer::Initialize()
 		CreateCommandPool();
 		CreateCommandBuffers();
 		RecordCommandBuffers();
+		CreateSyncObjects();
 	}
 	catch (const std::runtime_error& err)
 	{
@@ -355,8 +361,56 @@ int32_t vge::Renderer::Initialize()
 	return EXIT_SUCCESS;
 }
 
+void vge::Renderer::Draw()
+{
+	vkWaitForFences(m_Device, 1, &m_DrawFences[GCurrentFrame], VK_TRUE, UINT64_MAX);	// wait till open
+	vkResetFences(m_Device, 1, &m_DrawFences[GCurrentFrame]);							// close after enter
+
+	uint32_t AcquiredImageIndex = 0;
+	vkAcquireNextImageKHR(m_Device, m_Swapchain, UINT64_MAX, m_ImageAvailableSemas[GCurrentFrame], VK_NULL_HANDLE, &AcquiredImageIndex);
+
+	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+
+	VkSubmitInfo submitInfo = {};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.waitSemaphoreCount = 1;
+	submitInfo.pWaitSemaphores = &m_ImageAvailableSemas[GCurrentFrame];
+	submitInfo.pWaitDstStageMask = waitStages;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &m_CommandBuffers[AcquiredImageIndex];
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores = &m_RenderFinishedSemas[GCurrentFrame];
+
+	if (vkQueueSubmit(m_GrpahicsQueue, 1, &submitInfo, m_DrawFences[GCurrentFrame]) != VK_SUCCESS) // open fence after successful render
+	{
+		throw std::runtime_error("Failed to submit info to graphics queue.");
+	}
+
+	VkPresentInfoKHR presentInfo = {};
+	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+	presentInfo.waitSemaphoreCount = 1;
+	presentInfo.pWaitSemaphores = &m_RenderFinishedSemas[GCurrentFrame];
+	presentInfo.swapchainCount = 1;
+	presentInfo.pSwapchains = &m_Swapchain;
+	presentInfo.pImageIndices = &AcquiredImageIndex;
+
+	if (vkQueuePresentKHR(m_PresentQueue, &presentInfo) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to present info on present queue.");
+	}
+}
+
 void vge::Renderer::Cleanup()
 {
+	vkDeviceWaitIdle(m_Device);
+
+	for (int32_t i = 0; i < GMaxDrawFrames; ++i)
+	{
+		vkDestroyFence(m_Device, m_DrawFences[i], nullptr);
+		vkDestroySemaphore(m_Device, m_RenderFinishedSemas[i], nullptr);
+		vkDestroySemaphore(m_Device, m_ImageAvailableSemas[i], nullptr);
+	}
+
 	vkDestroyCommandPool(m_Device, m_GfxCommandPool, nullptr);
 
 	for (auto framebuffer : m_SwapchainFramebuffers)
@@ -870,7 +924,8 @@ void vge::Renderer::RecordCommandBuffers()
 {
 	VkCommandBufferBeginInfo cmdBufferBeginInfo = {};
 	cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	cmdBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+	// No need in this flag now as we control synchronization by ourselves.
+	// cmdBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
 	std::array<VkClearValue, 1> clearValues = 
 	{
@@ -905,6 +960,34 @@ void vge::Renderer::RecordCommandBuffers()
 		if (vkEndCommandBuffer(m_CommandBuffers[i]) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to stop command buffer record.");
+		}
+	}
+}
+
+void vge::Renderer::CreateSyncObjects()
+{
+	m_ImageAvailableSemas.resize(GMaxDrawFrames);
+	m_RenderFinishedSemas.resize(GMaxDrawFrames);
+	m_DrawFences.resize(GMaxDrawFrames);
+
+	VkSemaphoreCreateInfo semaphoreCreateInfo = {};
+	semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+	VkFenceCreateInfo fenceCreateInfo = {};
+	fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+	for (int32_t i = 0; i < GMaxDrawFrames; ++i)
+	{
+		if (vkCreateSemaphore(m_Device, &semaphoreCreateInfo, nullptr, &m_ImageAvailableSemas[i]) != VK_SUCCESS ||
+			vkCreateSemaphore(m_Device, &semaphoreCreateInfo, nullptr, &m_RenderFinishedSemas[i]) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create semaphore.");
+		}
+
+		if (vkCreateFence(m_Device, &fenceCreateInfo, nullptr, &m_DrawFences[i]) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create fence.");
 		}
 	}
 }
