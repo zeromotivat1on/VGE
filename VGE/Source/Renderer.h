@@ -21,7 +21,7 @@ namespace vge
 		void Cleanup();
 
 	private:
-		Mesh m_Mesh;
+		std::vector<Mesh> m_Meshes;
 
 		GLFWwindow* m_Window = nullptr;
 		VkInstance m_Instance = VK_NULL_HANDLE;

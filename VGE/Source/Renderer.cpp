@@ -135,13 +135,25 @@ void vge::Renderer::Initialize()
 
 	const std::vector<Vertex> vertices =
 	{
-		{ {0.0f, -0.4f, 0.0f}, {1.0f, 0.0f, 0.0f} },
-		{ {0.4f, 0.4f, 0.0f}, {0.0f, 1.0f, 0.0f} },
-		{ {-0.4f, 0.4f, 0.0f }, {0.0f, 0.0f, 1.0f} },
+		{ {-0.1f, -0.4f, 0.0f}, {1.0f, 0.0f, 0.0f} },
+		{ {-0.1f, 0.4f, 0.0f}, {0.0f, 1.0f, 0.0f} },
+		{ {-0.9f, 0.4f, 0.0f }, {0.0f, 0.0f, 1.0f} },
+		{ {-0.9f, -0.4f, 0.0f }, {1.0f, 1.0f, 0.0f} },
 	};
 
+	const std::vector<Vertex> vertices2 =
+	{
+		{ {0.9f, -0.4f, 0.0f}, {1.0f, 0.0f, 0.0f} },
+		{ {0.9f, 0.4f, 0.0f}, {0.0f, 1.0f, 0.0f} },
+		{ {0.1f, 0.4f, 0.0f }, {0.0f, 0.0f, 1.0f} },
+		{ {0.1f, -0.4f, 0.0f }, {1.0f, 1.0f, 0.0f} },
+	};
+
+	const std::vector<uint32_t> indices = { 0, 1, 2, 2, 3, 0 };
+
 	// Transfer queue = Graphics queue.
-	m_Mesh = Mesh(m_Gpu, m_Device, m_GfxQueue, m_GfxCommandPool, vertices);
+	m_Meshes.push_back(Mesh(m_Gpu, m_Device, m_GfxQueue, m_GfxCommandPool, vertices, indices));
+	m_Meshes.push_back(Mesh(m_Gpu, m_Device, m_GfxQueue, m_GfxCommandPool, vertices2, indices));
 
 	CreateCommandBuffers();
 	RecordCommandBuffers();
@@ -193,7 +205,11 @@ void vge::Renderer::Cleanup()
 {
 	vkDeviceWaitIdle(m_Device);
 
-	m_Mesh.DestroyVertexBuffer();
+	for (const Mesh& mesh : m_Meshes)
+	{
+		mesh.DestroyVertexBuffer();
+		mesh.DestroyIndexBuffer();
+	}
 
 	for (int32_t i = 0; i < GMaxDrawFrames; ++i)
 	{
@@ -771,11 +787,16 @@ void vge::Renderer::RecordCommandBuffers()
 		{
 			vkCmdBindPipeline(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_GfxPipeline);
 
-			VkBuffer vertexBuffers[] = { m_Mesh.GetVertexBuffer() };
-			VkDeviceSize offsets[] = { 0 };
-			vkCmdBindVertexBuffers(m_CommandBuffers[i], 0, 1, vertexBuffers, offsets);
+			for (const Mesh& mesh : m_Meshes)
+			{
+				VkBuffer vertexBuffers[] = { mesh.GetVertexBuffer() };
+				VkDeviceSize offsets[] = { 0 };
+				vkCmdBindVertexBuffers(m_CommandBuffers[i], 0, 1, vertexBuffers, offsets);
 
-			vkCmdDraw(m_CommandBuffers[i], static_cast<uint32_t>(m_Mesh.GetVertexCount()), 1, 0, 0);
+				vkCmdBindIndexBuffer(m_CommandBuffers[i], mesh.GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
+
+				vkCmdDrawIndexed(m_CommandBuffers[i], static_cast<uint32_t>(mesh.GetIndexCount()), 1, 0, 0, 0);
+			}
 		}
 
 		vkCmdEndRenderPass(m_CommandBuffers[i]);
