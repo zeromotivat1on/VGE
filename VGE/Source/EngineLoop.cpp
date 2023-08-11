@@ -14,7 +14,7 @@ void vge::MainLoop()
 		SCOPE_TIMER("Tick");
 		glfwPollEvents();
 
-		float now = glfwGetTime();
+		float now = static_cast<float>(glfwGetTime());
 		deltaTime = now - lastTime;
 		lastTime = now;
 
