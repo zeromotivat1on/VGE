@@ -10,6 +10,13 @@ namespace vge
 	inline constexpr int32_t GMaxDrawFrames = 2;
 	inline			 int32_t GCurrentFrame  = 0;
 
+	struct MVP
+	{
+		glm::mat4 Projection;	// how camera see the world
+		glm::mat4 View;			// where and from what angle camera is viewing
+		glm::mat4 Model;		// world position
+	};
+
 	class Renderer final
 	{
 	public:
@@ -20,8 +27,12 @@ namespace vge
 		void Draw();
 		void Cleanup();
 
+		void UpdateModel(glm::mat4 model) { m_Mvp.Model = model; }
+
 	private:
-		std::vector<Mesh> m_Meshes;
+		std::vector<Mesh> m_Meshes = {};
+
+		MVP m_Mvp = {};
 
 		GLFWwindow* m_Window = nullptr;
 		VkInstance m_Instance = VK_NULL_HANDLE;
@@ -37,13 +48,20 @@ namespace vge
 		VkFormat m_SwapchainImageFormat = {};
 		VkExtent2D m_SwapchainExtent = {};
 
-		std::vector<VkSemaphore> m_ImageAvailableSemas;
-		std::vector<VkSemaphore> m_RenderFinishedSemas;
-		std::vector<VkFence> m_DrawFences;
+		std::vector<VkSemaphore> m_ImageAvailableSemas = {};
+		std::vector<VkSemaphore> m_RenderFinishedSemas = {};
+		std::vector<VkFence> m_DrawFences = {};
 
 		std::vector<SwapchainImage> m_SwapchainImages = {};
 		std::vector<VkFramebuffer> m_SwapchainFramebuffers = {};
 		std::vector<VkCommandBuffer> m_CommandBuffers = {};
+
+		VkDescriptorSetLayout m_DescriptorSetLayout = VK_NULL_HANDLE;
+		VkDescriptorPool m_DescriptorPool = VK_NULL_HANDLE;
+		std::vector<VkDescriptorSet> m_DescriptorSets = {};
+
+		std::vector<VkBuffer> m_UniformBuffers = {};
+		std::vector<VkDeviceMemory> m_UniformBuffersMemory = {};
 
 		VkPipeline m_GfxPipeline = VK_NULL_HANDLE;
 		VkPipelineLayout m_GfxPipelineLayout = VK_NULL_HANDLE;
@@ -61,12 +79,18 @@ namespace vge
 		void CreateDevice();
 		void CreateSwapchain();
 		void CreateRenderPass();
+		void CreateDescriptorSetLayout();
 		void CreateGraphicsPipeline();
 		void CreateFramebuffers();
 		void CreateCommandPool();
 		void CreateCommandBuffers();
+		void CreateUniformBuffers();
+		void CreateDescriptorPool();
+		void CreateDescriptorSets();
 		void RecordCommandBuffers();
 		void CreateSyncObjects();
+
+		void UpdateUniformBuffer(uint32_t ImageIndex);
 	};
 
 	Renderer* CreateRenderer(GLFWwindow* window);

@@ -129,6 +129,7 @@ void vge::Renderer::Initialize()
 	CreateDevice();
 	CreateSwapchain();
 	CreateRenderPass();
+	CreateDescriptorSetLayout();
 	CreateGraphicsPipeline();
 	CreateFramebuffers();
 	CreateCommandPool();
@@ -155,7 +156,17 @@ void vge::Renderer::Initialize()
 	m_Meshes.push_back(Mesh(m_Gpu, m_Device, m_GfxQueue, m_GfxCommandPool, vertices, indices));
 	m_Meshes.push_back(Mesh(m_Gpu, m_Device, m_GfxQueue, m_GfxCommandPool, vertices2, indices));
 
+	const float aspectRation = static_cast<float>(m_SwapchainExtent.width) / static_cast<float>(m_SwapchainExtent.width);
+	m_Mvp.Projection = glm::perspective(glm::radians(45.0f), aspectRation, 0.1f, 100.0f);
+	m_Mvp.View = glm::lookAt(glm::vec3(3.0f, 1.0f, 2.0f), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	m_Mvp.Model = glm::mat4(1.0f);
+
+	m_Mvp.Projection[1][1] *= -1; // invert y-axis as glm uses positive y-axis for up, but vulkan uses it for down
+
 	CreateCommandBuffers();
+	CreateUniformBuffers();
+	CreateDescriptorPool();
+	CreateDescriptorSets();
 	RecordCommandBuffers();
 	CreateSyncObjects();
 }
@@ -167,6 +178,8 @@ void vge::Renderer::Draw()
 
 	uint32_t AcquiredImageIndex = 0;
 	vkAcquireNextImageKHR(m_Device, m_Swapchain, UINT64_MAX, m_ImageAvailableSemas[GCurrentFrame], VK_NULL_HANDLE, &AcquiredImageIndex);
+
+	UpdateUniformBuffer(AcquiredImageIndex);
 
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 
@@ -204,6 +217,15 @@ void vge::Renderer::Draw()
 void vge::Renderer::Cleanup()
 {
 	vkDeviceWaitIdle(m_Device);
+
+	vkDestroyDescriptorPool(m_Device, m_DescriptorPool, nullptr);
+	vkDestroyDescriptorSetLayout(m_Device, m_DescriptorSetLayout, nullptr);
+
+	for (size_t i = 0; i < m_UniformBuffers.size(); ++i)
+	{
+		vkDestroyBuffer(m_Device, m_UniformBuffers[i], nullptr);
+		vkFreeMemory(m_Device, m_UniformBuffersMemory[i], nullptr);
+	}
 
 	for (const Mesh& mesh : m_Meshes)
 	{
@@ -546,6 +568,27 @@ void vge::Renderer::CreateRenderPass()
 	}
 }
 
+void vge::Renderer::CreateDescriptorSetLayout()
+{
+	VkDescriptorSetLayoutBinding mvpLayoutBinding = {};
+	mvpLayoutBinding.binding = 0;
+	mvpLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	mvpLayoutBinding.descriptorCount = 1;
+	mvpLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	mvpLayoutBinding.pImmutableSamplers = nullptr;
+
+	VkDescriptorSetLayoutCreateInfo layoutCreateInfo = {};
+	layoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layoutCreateInfo.bindingCount = 1;
+	layoutCreateInfo.pBindings = &mvpLayoutBinding;
+
+	if (vkCreateDescriptorSetLayout(m_Device, &layoutCreateInfo, nullptr, &m_DescriptorSetLayout) != VK_SUCCESS)
+	{
+		LOG(Error, "Failed to create descriptor set layout.");
+		return;
+	}
+}
+
 void vge::Renderer::CreateGraphicsPipeline()
 {
 	std::vector<char> vertexShaderCode = file::ReadShader("Shaders/vert.spv");
@@ -632,7 +675,7 @@ void vge::Renderer::CreateGraphicsPipeline()
 	rasterizerCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
 	rasterizerCreateInfo.lineWidth = 1.0f;
 	rasterizerCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
-	rasterizerCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
+	rasterizerCreateInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE; // projection matrix y-axis is inverted, so use counter-clockwise
 	rasterizerCreateInfo.depthBiasEnable = VK_FALSE;
 
 	VkPipelineMultisampleStateCreateInfo multisamplingCreateInfo = {};
@@ -658,8 +701,8 @@ void vge::Renderer::CreateGraphicsPipeline()
 
 	VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
 	pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutCreateInfo.setLayoutCount = 0;
-	pipelineLayoutCreateInfo.pSetLayouts = nullptr;
+	pipelineLayoutCreateInfo.setLayoutCount = 1;
+	pipelineLayoutCreateInfo.pSetLayouts = &m_DescriptorSetLayout;
 	pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
 	pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
 
@@ -752,6 +795,79 @@ void vge::Renderer::CreateCommandBuffers()
 	}
 }
 
+void vge::Renderer::CreateUniformBuffers()
+{
+	const VkDeviceSize bufferSize = sizeof(MVP);
+
+	m_UniformBuffers.resize(m_SwapchainImages.size());
+	m_UniformBuffersMemory.resize(m_SwapchainImages.size());
+
+	const VkBufferUsageFlags usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+	const VkMemoryPropertyFlags props = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+	for (size_t i = 0; i < m_SwapchainImages.size(); ++i)
+	{
+		CreateBuffer(m_Gpu, m_Device, bufferSize, usage, props, m_UniformBuffers[i], m_UniformBuffersMemory[i]);
+	}
+}
+
+void vge::Renderer::CreateDescriptorPool()
+{
+	VkDescriptorPoolSize poolSize = {};
+	poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	poolSize.descriptorCount = static_cast<uint32_t>(m_UniformBuffers.size());
+
+	VkDescriptorPoolCreateInfo poolCreateInfo = {};
+	poolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	poolCreateInfo.maxSets = static_cast<uint32_t>(m_UniformBuffers.size());
+	poolCreateInfo.poolSizeCount = 1;
+	poolCreateInfo.pPoolSizes = &poolSize;
+
+	if (vkCreateDescriptorPool(m_Device, &poolCreateInfo, nullptr, &m_DescriptorPool) != VK_SUCCESS)
+	{
+		LOG(Error, "Failed to create descriptor pool.");
+		return;
+	}
+}
+
+void vge::Renderer::CreateDescriptorSets()
+{
+	m_DescriptorSets.resize(m_UniformBuffers.size());
+
+	std::vector<VkDescriptorSetLayout> setLayouts(m_UniformBuffers.size(), m_DescriptorSetLayout);
+
+	VkDescriptorSetAllocateInfo setAllocInfo = {};
+	setAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	setAllocInfo.descriptorPool = m_DescriptorPool;
+	setAllocInfo.descriptorSetCount = static_cast<uint32_t>(m_UniformBuffers.size());
+	setAllocInfo.pSetLayouts = setLayouts.data(); // 1 to 1 relationship with layout and set
+
+	if (vkAllocateDescriptorSets(m_Device, &setAllocInfo, m_DescriptorSets.data()) != VK_SUCCESS)
+	{
+		LOG(Error, "Failed to allocate descriptor sets.");
+		return;
+	}
+
+	for (size_t i = 0; i < m_UniformBuffers.size(); ++i)
+	{
+		VkDescriptorBufferInfo mvpDescriptorBufferInfo = {};
+		mvpDescriptorBufferInfo.buffer = m_UniformBuffers[i];
+		mvpDescriptorBufferInfo.offset = 0;
+		mvpDescriptorBufferInfo.range = sizeof(MVP);
+
+		VkWriteDescriptorSet mvpSetWrite = {};
+		mvpSetWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		mvpSetWrite.dstSet = m_DescriptorSets[i];
+		mvpSetWrite.dstBinding = 0;
+		mvpSetWrite.dstArrayElement = 0;
+		mvpSetWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		mvpSetWrite.descriptorCount = 1;
+		mvpSetWrite.pBufferInfo = &mvpDescriptorBufferInfo;
+
+		vkUpdateDescriptorSets(m_Device, 1, &mvpSetWrite, 0, nullptr);
+	}
+}
+
 void vge::Renderer::RecordCommandBuffers()
 {
 	VkCommandBufferBeginInfo cmdBufferBeginInfo = {};
@@ -761,7 +877,7 @@ void vge::Renderer::RecordCommandBuffers()
 
 	std::array<VkClearValue, 1> clearValues = 
 	{
-		{ 0.6f, 0.65f, 0.4f, 1.0f },
+		{ 0.3f, 0.3f, 0.2f, 1.0f },
 	};
 
 	VkRenderPassBeginInfo renderPassBeginInfo = {};
@@ -794,6 +910,8 @@ void vge::Renderer::RecordCommandBuffers()
 				vkCmdBindVertexBuffers(m_CommandBuffers[i], 0, 1, vertexBuffers, offsets);
 
 				vkCmdBindIndexBuffer(m_CommandBuffers[i], mesh.GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
+
+				vkCmdBindDescriptorSets(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_GfxPipelineLayout, 0, 1, &m_DescriptorSets[i], 0, nullptr);
 
 				vkCmdDrawIndexed(m_CommandBuffers[i], static_cast<uint32_t>(mesh.GetIndexCount()), 1, 0, 0, 0);
 			}
@@ -837,4 +955,12 @@ void vge::Renderer::CreateSyncObjects()
 			return;
 		}
 	}
+}
+
+void vge::Renderer::UpdateUniformBuffer(uint32_t ImageIndex)
+{
+	void* data;
+	vkMapMemory(m_Device, m_UniformBuffersMemory[ImageIndex], 0, sizeof(MVP), 0, &data);
+	memcpy(data, &m_Mvp, sizeof(MVP));
+	vkUnmapMemory(m_Device, m_UniformBuffersMemory[ImageIndex]);
 }
