@@ -1,8 +1,8 @@
 #include "Renderer.h"
-#include "Window.h"
 #include "Application.h"
-#include "File.h"
+#include "Window.h"
 #include "Shader.h"
+#include "File.h"
 
 #pragma region DebugMessengerSetup
 static VKAPI_ATTR VkBool32 VKAPI_CALL VulkanDebugCallback(
@@ -132,6 +132,17 @@ void vge::Renderer::Initialize()
 	CreateGraphicsPipeline();
 	CreateFramebuffers();
 	CreateCommandPool();
+
+	const std::vector<Vertex> vertices =
+	{
+		{ {0.0f, -0.4f, 0.0f}, {1.0f, 0.0f, 0.0f} },
+		{ {0.4f, 0.4f, 0.0f}, {0.0f, 1.0f, 0.0f} },
+		{ {-0.4f, 0.4f, 0.0f }, {0.0f, 0.0f, 1.0f} },
+	};
+
+	// Transfer queue = Graphics queue.
+	m_Mesh = Mesh(m_Gpu, m_Device, m_GfxQueue, m_GfxCommandPool, vertices);
+
 	CreateCommandBuffers();
 	RecordCommandBuffers();
 	CreateSyncObjects();
@@ -157,7 +168,7 @@ void vge::Renderer::Draw()
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = &m_RenderFinishedSemas[GCurrentFrame];
 
-	if (vkQueueSubmit(m_GrpahicsQueue, 1, &submitInfo, m_DrawFences[GCurrentFrame]) != VK_SUCCESS) // open fence after successful render
+	if (vkQueueSubmit(m_GfxQueue, 1, &submitInfo, m_DrawFences[GCurrentFrame]) != VK_SUCCESS) // open fence after successful render
 	{
 		LOG(Error, "Failed to submit info to graphics queue.");
 		return;
@@ -181,6 +192,8 @@ void vge::Renderer::Draw()
 void vge::Renderer::Cleanup()
 {
 	vkDeviceWaitIdle(m_Device);
+
+	m_Mesh.DestroyVertexBuffer();
 
 	for (int32_t i = 0; i < GMaxDrawFrames; ++i)
 	{
@@ -382,7 +395,7 @@ void vge::Renderer::CreateDevice()
 		return;
 	}
 
-	vkGetDeviceQueue(m_Device, m_QueueIndices.GraphicsFamily, 0, &m_GrpahicsQueue);
+	vkGetDeviceQueue(m_Device, m_QueueIndices.GraphicsFamily, 0, &m_GfxQueue);
 	vkGetDeviceQueue(m_Device, m_QueueIndices.PresentFamily, 0, &m_PresentQueue);
 }
 
@@ -539,12 +552,27 @@ void vge::Renderer::CreateGraphicsPipeline()
 
 	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages = { vertexStageCreateInfo, fragmentStageCreateInfo };
 
+	VkVertexInputBindingDescription vertexBindingDescription = {};
+	vertexBindingDescription.binding = 0;
+	vertexBindingDescription.stride = sizeof(Vertex);
+	vertexBindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+	std::array<VkVertexInputAttributeDescription, 2> vertexAttributeDescriptions;
+	vertexAttributeDescriptions[0].binding = 0;
+	vertexAttributeDescriptions[0].location = 0;
+	vertexAttributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+	vertexAttributeDescriptions[0].offset = offsetof(Vertex, Position);
+	vertexAttributeDescriptions[1].binding = 0;
+	vertexAttributeDescriptions[1].location = 1;
+	vertexAttributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+	vertexAttributeDescriptions[1].offset = offsetof(Vertex, Color);
+
 	VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo = {};
 	vertexInputCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	vertexInputCreateInfo.vertexBindingDescriptionCount = 0;
-	vertexInputCreateInfo.pVertexBindingDescriptions = nullptr;
-	vertexInputCreateInfo.vertexAttributeDescriptionCount = 0;
-	vertexInputCreateInfo.pVertexAttributeDescriptions = nullptr;
+	vertexInputCreateInfo.vertexBindingDescriptionCount = 1;
+	vertexInputCreateInfo.pVertexBindingDescriptions = &vertexBindingDescription;
+	vertexInputCreateInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(vertexAttributeDescriptions.size());
+	vertexInputCreateInfo.pVertexAttributeDescriptions = vertexAttributeDescriptions.data();
 
 	VkPipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo = {};
 	inputAssemblyCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -743,7 +771,11 @@ void vge::Renderer::RecordCommandBuffers()
 		{
 			vkCmdBindPipeline(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_GfxPipeline);
 
-			vkCmdDraw(m_CommandBuffers[i], 3, 1, 0, 0);
+			VkBuffer vertexBuffers[] = { m_Mesh.GetVertexBuffer() };
+			VkDeviceSize offsets[] = { 0 };
+			vkCmdBindVertexBuffers(m_CommandBuffers[i], 0, 1, vertexBuffers, offsets);
+
+			vkCmdDraw(m_CommandBuffers[i], static_cast<uint32_t>(m_Mesh.GetVertexCount()), 1, 0, 0);
 		}
 
 		vkCmdEndRenderPass(m_CommandBuffers[i]);

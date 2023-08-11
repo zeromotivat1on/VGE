@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Common.h"
-#include "VulkanUtils.h"
+#include "Mesh.h"
 
 namespace vge
 {
@@ -21,6 +21,8 @@ namespace vge
 		void Cleanup();
 
 	private:
+		Mesh m_Mesh;
+
 		GLFWwindow* m_Window = nullptr;
 		VkInstance m_Instance = VK_NULL_HANDLE;
 		VkPhysicalDevice m_Gpu = VK_NULL_HANDLE;
@@ -28,7 +30,7 @@ namespace vge
 		VkSurfaceKHR m_Surface = VK_NULL_HANDLE;
 		
 		QueueFamilyIndices m_QueueIndices = {};
-		VkQueue m_GrpahicsQueue = VK_NULL_HANDLE;
+		VkQueue m_GfxQueue = VK_NULL_HANDLE;
 		VkQueue m_PresentQueue = VK_NULL_HANDLE;
 
 		VkSwapchainKHR m_Swapchain = VK_NULL_HANDLE;

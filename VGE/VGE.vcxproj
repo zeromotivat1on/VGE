@@ -147,6 +147,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Mesh.cpp" />
     <ClCompile Include="Source\Shader.cpp" />
     <ClCompile Include="Source\Application.cpp" />
     <ClCompile Include="Source\EngineLoop.cpp" />
@@ -158,6 +159,8 @@
     <ClCompile Include="Source\Window.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Mesh.h" />
+    <ClInclude Include="Source\Profiling.h" />
     <ClInclude Include="Source\Shader.h" />
     <ClInclude Include="Source\Application.h" />
     <ClInclude Include="Source\Common.h" />

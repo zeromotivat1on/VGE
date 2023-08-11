@@ -30,23 +30,6 @@ bool vge::SupportValidationLayers()
 	return true;
 }
 
-const char* vge::GpuTypeToString(VkPhysicalDeviceType gpuType)
-{
-	switch (gpuType)
-	{
-	case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:
-		return "Integrated";
-	case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:
-		return "Discrete";
-	case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:
-		return "Virtual";
-	case VK_PHYSICAL_DEVICE_TYPE_CPU:
-		return "CPU";
-	default:
-		return "Other";
-	}
-}
-
 void vge::GetRequriedInstanceExtensions(std::vector<const char*>& outExtensions)
 {
 	GetGlfwInstanceExtensions(outExtensions);
@@ -133,6 +116,23 @@ bool vge::SuitableGpu(VkPhysicalDevice gpu, VkSurfaceKHR surface)
 	return indices.IsValid() && SupportDeviceExtensions(gpu, deviceExtensions) && swapchainDetails.IsValid();
 }
 
+const char* vge::GpuTypeToString(VkPhysicalDeviceType gpuType)
+{
+	switch (gpuType)
+	{
+	case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:
+		return "Integrated";
+	case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:
+		return "Discrete";
+	case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:
+		return "Virtual";
+	case VK_PHYSICAL_DEVICE_TYPE_CPU:
+		return "CPU";
+	default:
+		return "Other";
+	}
+}
+
 vge::QueueFamilyIndices vge::GetQueueFamilies(VkPhysicalDevice gpu, VkSurfaceKHR surface)
 {
 	uint32_t queueFamilyCount = 0;
@@ -197,6 +197,26 @@ vge::SwapchainDetails vge::GetSwapchainDetails(VkPhysicalDevice gpu, VkSurfaceKH
 	return details;
 }
 
+uint32_t vge::FindMemoryTypeIndex(VkPhysicalDevice gpu, uint32_t allowedTypes, VkMemoryPropertyFlags flags)
+{
+	VkPhysicalDeviceMemoryProperties memoryProperties = {};
+	vkGetPhysicalDeviceMemoryProperties(gpu, &memoryProperties);
+
+	for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; ++i)
+	{
+		const bool typeIsAllowed = allowedTypes & (1 << i);
+		const bool propsHaveGivenFlags = (memoryProperties.memoryTypes[i].propertyFlags & flags) == flags;
+
+		if (typeIsAllowed && propsHaveGivenFlags)
+		{
+			return i;
+		}
+	}
+
+	LOG(Error, "Failed to find memory type index. Returning 0.");
+	return 0;
+}
+
 VkSurfaceFormatKHR vge::GetBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats)
 {
 	static constexpr VkSurfaceFormatKHR defaultFormat = { VK_FORMAT_R8G8B8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
@@ -250,4 +270,79 @@ VkExtent2D vge::GetBestSwapchainExtent(VkSurfaceCapabilitiesKHR surfaceCapabilit
 	newExtent.height = std::clamp(static_cast<uint32_t>(height), surfaceCapabilities.minImageExtent.height, surfaceCapabilities.maxImageExtent.height);
 
 	return newExtent;
+}
+
+void vge::CreateBuffer(VkPhysicalDevice gpu, VkDevice device, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags props, VkBuffer& outBuffer, VkDeviceMemory& outMemory)
+{
+	VkBufferCreateInfo bufferCreateInfo = {};
+	bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	bufferCreateInfo.size = size;
+	bufferCreateInfo.usage = usage;
+	bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+	if (vkCreateBuffer(device, &bufferCreateInfo, nullptr, &outBuffer) != VK_SUCCESS)
+	{
+		LOG(Error, "Failed to create buffer.");
+		return;
+	}
+
+	VkMemoryRequirements memoryRequirements = {};
+	vkGetBufferMemoryRequirements(device, outBuffer, &memoryRequirements);
+
+	VkMemoryAllocateInfo memoryAllocateInfo = {};
+	memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	memoryAllocateInfo.allocationSize = memoryRequirements.size;
+	memoryAllocateInfo.memoryTypeIndex = FindMemoryTypeIndex(gpu, memoryRequirements.memoryTypeBits, props);
+
+	if (vkAllocateMemory(device, &memoryAllocateInfo, nullptr, &outMemory) != VK_SUCCESS)
+	{
+		LOG(Error, "Failed to allocate memory for buffer.");
+		return;
+	}
+
+	vkBindBufferMemory(device, outBuffer, outMemory, 0);
+}
+
+void vge::CopyBuffer(VkDevice device, VkQueue transferQueue, VkCommandPool transferCmdPool, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
+{
+	VkCommandBuffer transferCmdBuffer = VK_NULL_HANDLE;
+
+	VkCommandBufferAllocateInfo cmdBufferAllocInfo = {};
+	cmdBufferAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	cmdBufferAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	cmdBufferAllocInfo.commandPool = transferCmdPool;
+	cmdBufferAllocInfo.commandBufferCount = 1;
+
+	if (vkAllocateCommandBuffers(device, &cmdBufferAllocInfo, &transferCmdBuffer) != VK_SUCCESS)
+	{
+		LOG(Error, "Failed to allcoate transfer command buffer.");
+		return;
+	}
+
+	VkCommandBufferBeginInfo cmdBufferBeginInfo = {};
+	cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	cmdBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+	vkBeginCommandBuffer(transferCmdBuffer, &cmdBufferBeginInfo);
+
+	{
+		VkBufferCopy bufferCopyRegion = {};
+		bufferCopyRegion.srcOffset = 0;
+		bufferCopyRegion.dstOffset = 0;
+		bufferCopyRegion.size = size;
+
+		vkCmdCopyBuffer(transferCmdBuffer, srcBuffer, dstBuffer, 1, &bufferCopyRegion);
+	}
+
+	vkEndCommandBuffer(transferCmdBuffer);
+
+	VkSubmitInfo submitInfo = {};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &transferCmdBuffer;
+
+	vkQueueSubmit(transferQueue, 1, &submitInfo, VK_NULL_HANDLE);
+	vkQueueWaitIdle(transferQueue); // not good if we have a lot of calls to this
+
+	vkFreeCommandBuffers(device, transferCmdPool, 1, &transferCmdBuffer);
 }
