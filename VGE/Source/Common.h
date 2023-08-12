@@ -17,6 +17,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "Types.h"
 #include "Macros.h"
 #include "Logging.h"
 #include "VulkanGlobals.h"

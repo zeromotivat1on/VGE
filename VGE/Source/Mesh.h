@@ -5,16 +5,24 @@
 
 namespace vge
 {
+	struct UboModel
+	{
+		glm::mat4 Model;
+	};
+
 	class Mesh
 	{
 	public:
 		Mesh() = default;
-		Mesh(VkPhysicalDevice gpu, VkDevice device, VkQueue transferQueue, VkCommandPool transferCmdPool, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
+		Mesh(VkPhysicalDevice gpu, VkDevice device, VkQueue transferQueue, VkCommandPool transferCmdPool, const std::vector<Vertex>& vertices, const std::vector<uint32>& indices);
 
 		size_t GetVertexCount() const { return m_VertexCount; }
 		size_t GetIndexCount() const { return m_IndexCount; }
 		VkBuffer GetVertexBuffer() const { return m_VertexBuffer; }
 		VkBuffer GetIndexBuffer() const { return m_IndexBuffer; }
+
+		void SetModelMatrix(glm::mat4 model) { m_UboModel.Model = model; }
+		UboModel GetModel() const { return m_UboModel; }
 
 		void DestroyVertexBuffer() const;
 		void DestroyIndexBuffer() const;
@@ -22,6 +30,8 @@ namespace vge
 	private:
 		VkPhysicalDevice m_Gpu = VK_NULL_HANDLE;
 		VkDevice m_Device = VK_NULL_HANDLE;
+
+		UboModel m_UboModel = {};
 
 		size_t m_VertexCount = 0;
 		VkBuffer m_VertexBuffer = {};
@@ -33,6 +43,6 @@ namespace vge
 
 	private:
 		void CreateVertexBuffer(VkQueue transferQueue, VkCommandPool transferCmdPool, const std::vector<Vertex>& vertices);
-		void CreateIndexBuffer(VkQueue transferQueue, VkCommandPool transferCmdPool, const std::vector<uint32_t>& indices);
+		void CreateIndexBuffer(VkQueue transferQueue, VkCommandPool transferCmdPool, const std::vector<uint32>& indices);
 	};
 }

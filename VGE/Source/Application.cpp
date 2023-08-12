@@ -3,7 +3,7 @@
 #include "Renderer.h"
 #include "EngineLoop.h"
 
-int32_t vge::Main(int argc, const char** argv)
+int32 vge::Main(int argc, const char** argv)
 {
 	ApplicationSpecs specs = {};
 	specs.Name = "Vulkan Game Engine";

@@ -1,10 +1,12 @@
 #include "Mesh.h"
 
-vge::Mesh::Mesh(VkPhysicalDevice gpu, VkDevice device, VkQueue transferQueue, VkCommandPool transferCmdPool, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices)
+vge::Mesh::Mesh(VkPhysicalDevice gpu, VkDevice device, VkQueue transferQueue, VkCommandPool transferCmdPool, const std::vector<Vertex>& vertices, const std::vector<uint32>& indices)
 	: m_Gpu(gpu), m_Device(device), m_VertexCount(vertices.size()), m_IndexCount(indices.size())
 {
 	CreateVertexBuffer(transferQueue, transferCmdPool, vertices);
 	CreateIndexBuffer(transferQueue, transferCmdPool, indices);
+
+	m_UboModel.Model = glm::mat4(1.0f);
 }
 
 void vge::Mesh::DestroyVertexBuffer() const
@@ -47,7 +49,7 @@ void vge::Mesh::CreateVertexBuffer(VkQueue transferQueue, VkCommandPool transfer
 	vkFreeMemory(m_Device, stageBufferMemory, nullptr);
 }
 
-void vge::Mesh::CreateIndexBuffer(VkQueue transferQueue, VkCommandPool transferCmdPool, const std::vector<uint32_t>& indices)
+void vge::Mesh::CreateIndexBuffer(VkQueue transferQueue, VkCommandPool transferCmdPool, const std::vector<uint32>& indices)
 {
 	const VkDeviceSize bufferSize = STD_VECTOR_ALLOC_SIZE(indices);
 

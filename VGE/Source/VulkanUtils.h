@@ -4,6 +4,8 @@
 
 namespace vge
 {
+	static constexpr size_t GPtrSize = sizeof(void*);
+
 	struct Vertex
 	{
 		glm::vec3 Position;
@@ -12,8 +14,8 @@ namespace vge
 
 	struct QueueFamilyIndices
 	{
-		int32_t GraphicsFamily = -1;
-		int32_t PresentFamily = -1;
+		int32 GraphicsFamily = -1;
+		int32 PresentFamily = -1;
 
 		inline bool IsValid()
 		{
@@ -49,7 +51,7 @@ namespace vge
 
 	QueueFamilyIndices GetQueueFamilies(VkPhysicalDevice gpu, VkSurfaceKHR surface);
 	SwapchainDetails GetSwapchainDetails(VkPhysicalDevice gpu, VkSurfaceKHR surface);
-	uint32_t FindMemoryTypeIndex(VkPhysicalDevice gpu, uint32_t allowedTypes, VkMemoryPropertyFlags flags);
+	uint32 FindMemoryTypeIndex(VkPhysicalDevice gpu, uint32 allowedTypes, VkMemoryPropertyFlags flags);
 
 	VkSurfaceFormatKHR GetBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats);
 	VkPresentModeKHR GetBestPresentMode(const std::vector<VkPresentModeKHR>& modes);

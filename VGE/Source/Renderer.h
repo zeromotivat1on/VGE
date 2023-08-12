@@ -7,14 +7,15 @@ namespace vge
 {
 	inline class Renderer* GRenderer = nullptr;
 	
-	inline constexpr int32_t GMaxDrawFrames = 2;
-	inline			 int32_t GCurrentFrame  = 0;
+	inline constexpr int32 GMaxDrawFrames = 2;
+	inline			 int32 GCurrentFrame  = 0;
 
-	struct MVP
+	inline constexpr int32 GMaxSceneObjects = 2;
+
+	struct UboViewProjection
 	{
 		glm::mat4 Projection;	// how camera see the world
 		glm::mat4 View;			// where and from what angle camera is viewing
-		glm::mat4 Model;		// world position
 	};
 
 	class Renderer final
@@ -27,12 +28,12 @@ namespace vge
 		void Draw();
 		void Cleanup();
 
-		void UpdateModel(glm::mat4 model) { m_Mvp.Model = model; }
+		void UpdateModel(int32 modelIndex, glm::mat4 model) { m_Meshes[modelIndex].SetModelMatrix(model); }
 
 	private:
 		std::vector<Mesh> m_Meshes = {};
 
-		MVP m_Mvp = {};
+		UboViewProjection m_UboViewProjection = {};
 
 		GLFWwindow* m_Window = nullptr;
 		VkInstance m_Instance = VK_NULL_HANDLE;
@@ -60,8 +61,15 @@ namespace vge
 		VkDescriptorPool m_DescriptorPool = VK_NULL_HANDLE;
 		std::vector<VkDescriptorSet> m_DescriptorSets = {};
 
-		std::vector<VkBuffer> m_UniformBuffers = {};
-		std::vector<VkDeviceMemory> m_UniformBuffersMemory = {};
+		std::vector<VkBuffer> m_VpUniformBuffers = {};
+		std::vector<VkDeviceMemory> m_VpUniformBuffersMemory = {};
+
+		std::vector<VkBuffer> m_ModelDynamicUniformBuffers = {};
+		std::vector<VkDeviceMemory> m_ModelDynamicUniformBuffersMemory = {};
+
+		VkDeviceSize m_MinUniformBufferOffset = 0;
+		size_t m_ModelUniformAlignment = 0;
+		UboModel* m_ModelTransferSpace = nullptr;
 
 		VkPipeline m_GfxPipeline = VK_NULL_HANDLE;
 		VkPipelineLayout m_GfxPipelineLayout = VK_NULL_HANDLE;
@@ -84,13 +92,14 @@ namespace vge
 		void CreateFramebuffers();
 		void CreateCommandPool();
 		void CreateCommandBuffers();
+		void AllocateDynamicBufferTransferSpace();
 		void CreateUniformBuffers();
 		void CreateDescriptorPool();
 		void CreateDescriptorSets();
 		void RecordCommandBuffers();
 		void CreateSyncObjects();
 
-		void UpdateUniformBuffer(uint32_t ImageIndex);
+		void UpdateUniformBuffers(uint32 ImageIndex);
 	};
 
 	Renderer* CreateRenderer(GLFWwindow* window);

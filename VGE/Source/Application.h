@@ -10,8 +10,8 @@ namespace vge
 	{
 		struct {
 			const char* Name = nullptr;
-			uint32_t Width = 0;
-			uint32_t Height = 0;
+			uint32 Width = 0;
+			uint32 Height = 0;
 		} Window;
 
 		const char* Name = "";
@@ -30,7 +30,7 @@ namespace vge
 		const ApplicationSpecs Specs = {};
 	};
 
-	int32_t Main(int argc, const char** argv);
+	int32 Main(int argc, const char** argv);
 
 	Application* CreateApplication(const ApplicationSpecs& specs);
 	bool DestroyApplication();

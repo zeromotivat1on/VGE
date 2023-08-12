@@ -168,6 +168,7 @@
     <ClInclude Include="Source\File.h" />
     <ClInclude Include="Source\Logging.h" />
     <ClInclude Include="Source\Renderer.h" />
+    <ClInclude Include="Source\Types.h" />
     <ClInclude Include="Source\VulkanGlobals.h" />
     <ClInclude Include="Source\VulkanUtils.h" />
     <ClInclude Include="Source\Window.h" />

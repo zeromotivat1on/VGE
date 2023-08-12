@@ -3,7 +3,7 @@
 
 bool vge::SupportValidationLayers()
 {
-	uint32_t layerCount;
+	uint32 layerCount;
 	vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 
 	std::vector<VkLayerProperties> availableLayers(layerCount);
@@ -38,7 +38,7 @@ void vge::GetRequriedInstanceExtensions(std::vector<const char*>& outExtensions)
 
 bool vge::SupportInstanceExtensions(const std::vector<const char*>& checkExtensions)
 {
-	uint32_t extensionCount = 0;
+	uint32 extensionCount = 0;
 	vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
 
 	if (extensionCount == 0) return false;
@@ -69,7 +69,7 @@ bool vge::SupportInstanceExtensions(const std::vector<const char*>& checkExtensi
 
 bool vge::SupportDeviceExtensions(VkPhysicalDevice gpu, const std::vector<const char*>& checkExtensions)
 {
-	uint32_t extensionCount = 0;
+	uint32 extensionCount = 0;
 	vkEnumerateDeviceExtensionProperties(gpu, nullptr, &extensionCount, nullptr);
 
 	if (extensionCount == 0) return false;
@@ -135,14 +135,14 @@ const char* vge::GpuTypeToString(VkPhysicalDeviceType gpuType)
 
 vge::QueueFamilyIndices vge::GetQueueFamilies(VkPhysicalDevice gpu, VkSurfaceKHR surface)
 {
-	uint32_t queueFamilyCount = 0;
+	uint32 queueFamilyCount = 0;
 	vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queueFamilyCount, nullptr);
 
 	std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
 	vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queueFamilyCount, queueFamilies.data());
 
 	QueueFamilyIndices indices = {};
-	int32_t queueFamilyIndex = 0;
+	int32 queueFamilyIndex = 0;
 	for (const auto& queueFamily : queueFamilies)
 	{
 		if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
@@ -176,7 +176,7 @@ vge::SwapchainDetails vge::GetSwapchainDetails(VkPhysicalDevice gpu, VkSurfaceKH
 	SwapchainDetails details;
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(gpu, surface, &details.SurfaceCapabilities);
 
-	uint32_t formatCount = 0;
+	uint32 formatCount = 0;
 	vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, surface, &formatCount, nullptr);
 
 	if (formatCount != 0)
@@ -185,7 +185,7 @@ vge::SwapchainDetails vge::GetSwapchainDetails(VkPhysicalDevice gpu, VkSurfaceKH
 		vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, surface, &formatCount, details.SurfaceFormats.data());
 	}
 
-	uint32_t presentCount = 0;
+	uint32 presentCount = 0;
 	vkGetPhysicalDeviceSurfacePresentModesKHR(gpu, surface, &presentCount, nullptr);
 
 	if (presentCount != 0)
@@ -197,12 +197,12 @@ vge::SwapchainDetails vge::GetSwapchainDetails(VkPhysicalDevice gpu, VkSurfaceKH
 	return details;
 }
 
-uint32_t vge::FindMemoryTypeIndex(VkPhysicalDevice gpu, uint32_t allowedTypes, VkMemoryPropertyFlags flags)
+uint32 vge::FindMemoryTypeIndex(VkPhysicalDevice gpu, uint32 allowedTypes, VkMemoryPropertyFlags flags)
 {
 	VkPhysicalDeviceMemoryProperties memoryProperties = {};
 	vkGetPhysicalDeviceMemoryProperties(gpu, &memoryProperties);
 
-	for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; ++i)
+	for (uint32 i = 0; i < memoryProperties.memoryTypeCount; ++i)
 	{
 		const bool typeIsAllowed = allowedTypes & (1 << i);
 		const bool propsHaveGivenFlags = (memoryProperties.memoryTypes[i].propertyFlags & flags) == flags;
@@ -266,8 +266,8 @@ VkExtent2D vge::GetBestSwapchainExtent(VkSurfaceCapabilitiesKHR surfaceCapabilit
 	glfwGetFramebufferSize(GWindow, &width, &height);
 
 	VkExtent2D newExtent = {};
-	newExtent.width = std::clamp(static_cast<uint32_t>(width), surfaceCapabilities.minImageExtent.width, surfaceCapabilities.maxImageExtent.width);
-	newExtent.height = std::clamp(static_cast<uint32_t>(height), surfaceCapabilities.minImageExtent.height, surfaceCapabilities.maxImageExtent.height);
+	newExtent.width = std::clamp(static_cast<uint32>(width), surfaceCapabilities.minImageExtent.width, surfaceCapabilities.maxImageExtent.width);
+	newExtent.height = std::clamp(static_cast<uint32>(height), surfaceCapabilities.minImageExtent.height, surfaceCapabilities.maxImageExtent.height);
 
 	return newExtent;
 }
