@@ -57,6 +57,11 @@ namespace vge
 		std::vector<VkFramebuffer> m_SwapchainFramebuffers = {};
 		std::vector<VkCommandBuffer> m_CommandBuffers = {};
 
+		VkImage m_DepthBufferImage = VK_NULL_HANDLE;
+		VkImageView m_DepthBufferImageView = VK_NULL_HANDLE;
+		VkDeviceMemory m_DepthBufferImageMemory = VK_NULL_HANDLE;
+		VkFormat m_DepthFormat = VK_FORMAT_UNDEFINED;
+
 		VkDescriptorSetLayout m_DescriptorSetLayout = VK_NULL_HANDLE;
 		VkDescriptorPool m_DescriptorPool = VK_NULL_HANDLE;
 		std::vector<VkDescriptorSet> m_DescriptorSets = {};
@@ -88,6 +93,7 @@ namespace vge
 		void FindGpu();
 		void CreateDevice();
 		void CreateSwapchain();
+		void CreateDepthBufferImage();
 		void CreateRenderPass();
 		void CreateDescriptorSetLayout();
 		void CreatePushConstantRange();
@@ -107,8 +113,6 @@ namespace vge
 
 	Renderer* CreateRenderer(GLFWwindow* window);
 	bool DestroyRenderer();
-
-	VkImageView CreateImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlagBits aspectFlags);
 
 	inline void IncrementCurrentFrame();
 }

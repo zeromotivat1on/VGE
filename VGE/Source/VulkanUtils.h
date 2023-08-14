@@ -37,8 +37,8 @@ namespace vge
 
 	struct SwapchainImage
 	{
-		VkImage Image = VK_NULL_HANDLE;
-		VkImageView ImageView = VK_NULL_HANDLE;
+		VkImage Handle = VK_NULL_HANDLE;
+		VkImageView View = VK_NULL_HANDLE;
 	};
 
 	bool SupportValidationLayers();
@@ -56,6 +56,10 @@ namespace vge
 	VkSurfaceFormatKHR GetBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats);
 	VkPresentModeKHR GetBestPresentMode(const std::vector<VkPresentModeKHR>& modes);
 	VkExtent2D GetBestSwapchainExtent(VkSurfaceCapabilitiesKHR surfaceCapabilities);
+	VkFormat GetBestImageFormat(VkPhysicalDevice gpu, const std::vector<VkFormat>& formats, VkImageTiling tiling, VkFormatFeatureFlags features);
+
+	VkImage CreateImage2D(VkPhysicalDevice gpu, VkDevice device, VkExtent2D extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags memProps, VkDeviceMemory& outImageMemory);
+	VkImageView CreateImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlagBits aspectFlags);
 
 	void CreateBuffer(VkPhysicalDevice gpu, VkDevice device, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags props, VkBuffer& outBuffer, VkDeviceMemory& outMemory);
 	void CopyBuffer(VkDevice device, VkQueue transferQueue, VkCommandPool transferCmdPool, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);

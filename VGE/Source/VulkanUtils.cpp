@@ -1,4 +1,4 @@
-#include "VulkanUtils.h"
+﻿#include "VulkanUtils.h"
 #include "Window.h"
 
 bool vge::SupportValidationLayers()
@@ -270,6 +270,97 @@ VkExtent2D vge::GetBestSwapchainExtent(VkSurfaceCapabilitiesKHR surfaceCapabilit
 	newExtent.height = std::clamp(static_cast<uint32>(height), surfaceCapabilities.minImageExtent.height, surfaceCapabilities.maxImageExtent.height);
 
 	return newExtent;
+}
+
+VkFormat vge::GetBestImageFormat(VkPhysicalDevice gpu, const std::vector<VkFormat>& formats, VkImageTiling tiling, VkFormatFeatureFlags features)
+{
+	for (const VkFormat& format : formats)
+	{
+		VkFormatProperties formatProps;
+		vkGetPhysicalDeviceFormatProperties(gpu, format, &formatProps);
+
+		if (tiling == VK_IMAGE_TILING_LINEAR && (formatProps.linearTilingFeatures & features) == features)
+		{
+			return format;
+		}
+		else if (tiling == VK_IMAGE_TILING_OPTIMAL && (formatProps.optimalTilingFeatures & features) == features)
+		{
+			return format;
+		}
+	}
+
+	LOG(Error, "Failed to find matching format, returning VK_FORMAT_UNDEFINED.");
+	return VK_FORMAT_UNDEFINED;
+
+}
+
+VkImage vge::CreateImage2D(VkPhysicalDevice gpu, VkDevice device, VkExtent2D extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags memProps, VkDeviceMemory& outImageMemory)
+{
+	VkImageCreateInfo imageCreateInfo = {};
+	imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+	imageCreateInfo.extent.width = extent.width;
+	imageCreateInfo.extent.height = extent.height;
+	imageCreateInfo.extent.depth = 1;
+	imageCreateInfo.mipLevels = 1;
+	imageCreateInfo.arrayLayers = 1;
+	imageCreateInfo.format = format;
+	imageCreateInfo.tiling = tiling;
+	imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; // dont care
+	imageCreateInfo.usage = usage;
+	imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE; // whether can be shared between queues
+
+	VkImage image = VK_NULL_HANDLE;
+	if (vkCreateImage(device, &imageCreateInfo, nullptr, &image) != VK_SUCCESS)
+	{
+		LOG(Error, "Failed to create image.");
+		return VK_NULL_HANDLE;
+	}
+
+	VkMemoryRequirements memRequriements = {};
+	vkGetImageMemoryRequirements(device, image, &memRequriements);
+
+	VkMemoryAllocateInfo imageMemoryAllocInfo = {};
+	imageMemoryAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	imageMemoryAllocInfo.allocationSize = memRequriements.size;
+	imageMemoryAllocInfo.memoryTypeIndex = FindMemoryTypeIndex(gpu, memRequriements.memoryTypeBits, memProps);
+
+	if (vkAllocateMemory(device, &imageMemoryAllocInfo, nullptr, &outImageMemory) != VK_SUCCESS)
+	{
+		LOG(Error, "Failed to allocate image memory.");
+		return VK_NULL_HANDLE;
+	}
+
+	vkBindImageMemory(device, image, outImageMemory, 0);
+
+	return image;
+}
+
+VkImageView vge::CreateImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlagBits aspectFlags)
+{
+	VkImageViewCreateInfo createInfo = {};
+	createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	createInfo.image = image;
+	createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	createInfo.format = format;
+	createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+	createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+	createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+	createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+	createInfo.subresourceRange.aspectMask = aspectFlags;
+	createInfo.subresourceRange.baseMipLevel = 0;
+	createInfo.subresourceRange.levelCount = 1;
+	createInfo.subresourceRange.baseArrayLayer = 0;
+	createInfo.subresourceRange.layerCount = 1;
+
+	VkImageView imageView = VK_NULL_HANDLE;
+	if (vkCreateImageView(device, &createInfo, nullptr, &imageView) != VK_SUCCESS)
+	{
+		LOG(Error, "Failed to create image view");
+	}
+
+	return imageView;
 }
 
 void vge::CreateBuffer(VkPhysicalDevice gpu, VkDevice device, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags props, VkBuffer& outBuffer, VkDeviceMemory& outMemory)

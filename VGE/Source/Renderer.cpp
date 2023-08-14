@@ -85,32 +85,6 @@ bool vge::DestroyRenderer()
 	return true;
 }
 
-VkImageView vge::CreateImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlagBits aspectFlags)
-{
-	VkImageViewCreateInfo createInfo = {};
-	createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-	createInfo.image = image;
-	createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	createInfo.format = format;
-	createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-	createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-	createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-	createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-	createInfo.subresourceRange.aspectMask = aspectFlags;
-	createInfo.subresourceRange.baseMipLevel = 0;
-	createInfo.subresourceRange.levelCount = 1;
-	createInfo.subresourceRange.baseArrayLayer = 0;
-	createInfo.subresourceRange.layerCount = 1;
-
-	VkImageView imageView = VK_NULL_HANDLE;
-	if (vkCreateImageView(device, &createInfo, nullptr, &imageView) != VK_SUCCESS)
-	{
-		LOG(Error, "Failed to create image view");
-	}
-
-	return imageView;
-}
-
 void vge::IncrementCurrentFrame()
 {
 	GCurrentFrame = (GCurrentFrame + 1) % GMaxDrawFrames;
@@ -128,6 +102,7 @@ void vge::Renderer::Initialize()
 	FindGpu();
 	CreateDevice();
 	CreateSwapchain();
+	CreateDepthBufferImage();
 	CreateRenderPass();
 	CreateDescriptorSetLayout();
 	CreatePushConstantRange();
@@ -220,6 +195,9 @@ void vge::Renderer::Cleanup()
 	vkDeviceWaitIdle(m_Device);
 
 	//_aligned_free(m_ModelTransferSpace);
+	vkDestroyImageView(m_Device, m_DepthBufferImageView, nullptr);
+	vkDestroyImage(m_Device, m_DepthBufferImage, nullptr);
+	vkFreeMemory(m_Device, m_DepthBufferImageMemory, nullptr);
 
 	vkDestroyDescriptorPool(m_Device, m_DescriptorPool, nullptr);
 	vkDestroyDescriptorSetLayout(m_Device, m_DescriptorSetLayout, nullptr);
@@ -258,7 +236,7 @@ void vge::Renderer::Cleanup()
 
 	for (auto swapchainImage : m_SwapchainImages)
 	{
-		vkDestroyImageView(m_Device, swapchainImage.ImageView, nullptr);
+		vkDestroyImageView(m_Device, swapchainImage.View, nullptr);
 	}
 
 	vkDestroySwapchainKHR(m_Device, m_Swapchain, nullptr);
@@ -511,8 +489,8 @@ void vge::Renderer::CreateSwapchain()
 	for (const auto& image : images)
 	{
 		SwapchainImage swapchainImage = {};
-		swapchainImage.Image = image;
-		swapchainImage.ImageView = CreateImageView(m_Device, image, m_SwapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+		swapchainImage.Handle = image;
+		swapchainImage.View = CreateImageView(m_Device, image, m_SwapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
 
 		m_SwapchainImages.push_back(swapchainImage);
 	}
@@ -534,10 +512,25 @@ void vge::Renderer::CreateRenderPass()
 	colorAttachmentReference.attachment = 0;
 	colorAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
+	VkAttachmentDescription depthAttachment = {};
+	depthAttachment.format = m_DepthFormat;
+	depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+	VkAttachmentReference depthAttachmentReference = {};
+	depthAttachmentReference.attachment = 1;
+	depthAttachmentReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
 	VkSubpassDescription subpass = {};
 	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	subpass.colorAttachmentCount = 1;
 	subpass.pColorAttachments = &colorAttachmentReference;
+	subpass.pDepthStencilAttachment = &depthAttachmentReference;
 
 	std::array<VkSubpassDependency, 2> subpassDependencies;
 	// Image layout transition must happen after ...
@@ -559,10 +552,12 @@ void vge::Renderer::CreateRenderPass()
 	subpassDependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
 	subpassDependencies[1].dependencyFlags = 0;
 
+	std::array<VkAttachmentDescription, 2> attachments = { colorAttachment, depthAttachment };
+
 	VkRenderPassCreateInfo renderPassCreateInfo = {};
 	renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	renderPassCreateInfo.attachmentCount = 1;
-	renderPassCreateInfo.pAttachments = &colorAttachment;
+	renderPassCreateInfo.attachmentCount = static_cast<uint32>(attachments.size());
+	renderPassCreateInfo.pAttachments = attachments.data();
 	renderPassCreateInfo.subpassCount = 1;
 	renderPassCreateInfo.pSubpasses = &subpass;
 	renderPassCreateInfo.dependencyCount = static_cast<uint32>(subpassDependencies.size());
@@ -735,6 +730,14 @@ void vge::Renderer::CreateGraphicsPipeline()
 		return;
 	}
 
+	VkPipelineDepthStencilStateCreateInfo depthStencilCreateInfo = {};
+	depthStencilCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+	depthStencilCreateInfo.depthTestEnable = VK_TRUE;			// enable depth testing to determine fragment write
+	depthStencilCreateInfo.depthWriteEnable = VK_TRUE;			// enable writing to depth buffer (to replace old values)
+	depthStencilCreateInfo.depthCompareOp = VK_COMPARE_OP_LESS;
+	depthStencilCreateInfo.depthBoundsTestEnable = VK_FALSE;	// enable check between min and max given depth values
+	depthStencilCreateInfo.stencilTestEnable = VK_FALSE;
+
 	VkGraphicsPipelineCreateInfo gfxPipelineCreateInfo = {};
 	gfxPipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 	gfxPipelineCreateInfo.stageCount = static_cast<uint32>(shaderStages.size());
@@ -746,7 +749,7 @@ void vge::Renderer::CreateGraphicsPipeline()
 	gfxPipelineCreateInfo.pRasterizationState = &rasterizerCreateInfo;
 	gfxPipelineCreateInfo.pMultisampleState = &multisamplingCreateInfo;
 	gfxPipelineCreateInfo.pColorBlendState = &colorBlendingCreateInfo;
-	gfxPipelineCreateInfo.pDepthStencilState = nullptr;
+	gfxPipelineCreateInfo.pDepthStencilState = &depthStencilCreateInfo;
 	gfxPipelineCreateInfo.layout = m_GfxPipelineLayout;
 	gfxPipelineCreateInfo.renderPass = m_RenderPass;
 	gfxPipelineCreateInfo.subpass = 0;
@@ -763,13 +766,22 @@ void vge::Renderer::CreateGraphicsPipeline()
 	vkDestroyShaderModule(m_Device, vertexShaderModule, nullptr);
 }
 
+void vge::Renderer::CreateDepthBufferImage()
+{
+	static const std::vector<VkFormat> formats = { VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT };
+	m_DepthFormat = GetBestImageFormat(m_Gpu, formats, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+
+	m_DepthBufferImage = CreateImage2D(m_Gpu, m_Device, m_SwapchainExtent, m_DepthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_DepthBufferImageMemory);
+	m_DepthBufferImageView = CreateImageView(m_Device, m_DepthBufferImage, m_DepthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+}
+
 void vge::Renderer::CreateFramebuffers()
 {
 	m_SwapchainFramebuffers.resize(m_SwapchainImages.size());
 
 	for (size_t i = 0; i < m_SwapchainFramebuffers.size(); ++i)
 	{
-		std::array<VkImageView, 1> attachments = { m_SwapchainImages[i].ImageView };
+		std::array<VkImageView, 2> attachments = { m_SwapchainImages[i].View, m_DepthBufferImageView };
 
 		VkFramebufferCreateInfo framebufferCreateInfo = {};
 		framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -937,10 +949,9 @@ void vge::Renderer::RecordCommandBuffers(uint32 ImageIndex)
 	// No need in this flag now as we control synchronization by ourselves.
 	// cmdBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
-	std::array<VkClearValue, 1> clearValues = 
-	{
-		{ 0.3f, 0.3f, 0.2f, 1.0f },
-	};
+	std::array<VkClearValue, 2> clearValues = {};
+	clearValues[0].color = { 0.3f, 0.3f, 0.2f, 1.0f };
+	clearValues[1].depthStencil.depth = 1.0f;
 
 	VkRenderPassBeginInfo renderPassBeginInfo = {};
 	renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
