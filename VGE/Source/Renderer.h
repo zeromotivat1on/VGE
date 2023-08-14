@@ -73,6 +73,9 @@ namespace vge
 		//std::vector<VkBuffer> m_ModelDynamicUniformBuffers = {};
 		//std::vector<VkDeviceMemory> m_ModelDynamicUniformBuffersMemory = {};
 
+		// TODO: Have 1 VkDeviceMemory and VkImage's just reference it with offsets.
+		std::vector<VkImage> m_TextureImages = {};
+		std::vector<VkDeviceMemory> m_TextureImagesMemory = {};
 
 		//VkDeviceSize m_MinUniformBufferOffset = 0;
 		//size_t m_ModelUniformAlignment = 0;
@@ -109,6 +112,8 @@ namespace vge
 
 		void RecordCommandBuffers(uint32 ImageIndex);
 		void UpdateUniformBuffers(uint32 ImageIndex);
+
+		int32 CreateTexture(const char* filename);
 	};
 
 	Renderer* CreateRenderer(GLFWwindow* window);

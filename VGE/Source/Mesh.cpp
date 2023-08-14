@@ -27,9 +27,9 @@ void vge::Mesh::CreateVertexBuffer(VkQueue transferQueue, VkCommandPool transfer
 	VkDeviceMemory stageBufferMemory = VK_NULL_HANDLE;
 
 	const VkBufferUsageFlags stageBufferUsage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-	const VkMemoryPropertyFlags stageBufferMemoryFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+	const VkMemoryPropertyFlags stageBufferMemProps = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
-	CreateBuffer(m_Gpu, m_Device, bufferSize, stageBufferUsage, stageBufferMemoryFlags, stageBuffer, stageBufferMemory);
+	CreateBuffer(m_Gpu, m_Device, bufferSize, stageBufferUsage, stageBufferMemProps, stageBuffer, stageBufferMemory);
 
 	void* data; // cpu accessible data from buffer memory on gpu
 	vkMapMemory(m_Device, stageBufferMemory, 0, bufferSize, 0, &data);

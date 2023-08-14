@@ -161,6 +161,7 @@
   <ItemGroup>
     <ClInclude Include="Source\Mesh.h" />
     <ClInclude Include="Source\Profiling.h" />
+    <ClInclude Include="Source\ScopeBuffers.h" />
     <ClInclude Include="Source\Shader.h" />
     <ClInclude Include="Source\Application.h" />
     <ClInclude Include="Source\Common.h" />

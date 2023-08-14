@@ -1,5 +1,4 @@
 #include "File.h"
-#include "Logging.h"
 
 std::vector<char> vge::file::ReadShader(const char* filename)
 {
@@ -20,4 +19,22 @@ std::vector<char> vge::file::ReadShader(const char* filename)
 	file.close();
 
 	return fileBuffer;
+}
+
+stbi_uc* vge::file::LoadTexture(const char* filename, int32& outw, int32& outh, VkDeviceSize& outTextureSize)
+{
+	static constexpr int8 desiredChannelCount = 4; // r g b a
+
+	int32 channels = 0;
+	stbi_uc* image = stbi_load(filename, &outw, &outh, &channels, STBI_rgb_alpha);
+
+	if (!image)
+	{
+		LOG(Error, "Failed to load a texture file: %s", filename);
+		return nullptr;
+	}
+
+	outTextureSize = outw * outh * desiredChannelCount;
+
+	return image;
 }

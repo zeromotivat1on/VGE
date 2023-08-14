@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <array>
 #include <vector>
+#include <fstream>
 #include <iostream>
 #include <algorithm>
 #include <unordered_set>
@@ -16,6 +17,8 @@
 #include <glm/glm.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+
+#include "stb_image.h"
 
 #include "Types.h"
 #include "Macros.h"

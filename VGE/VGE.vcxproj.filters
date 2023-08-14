@@ -86,5 +86,8 @@
     <ClInclude Include="Source\Types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Source\ScopeBuffers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -110,6 +110,8 @@ void vge::Renderer::Initialize()
 	CreateFramebuffers();
 	CreateCommandPool();
 
+	const int32 firstTexture = CreateTexture("Textures/katakuri.jpg");
+
 	const std::vector<Vertex> vertices =
 	{
 		{ {-0.4f, 0.4f, 0.0f}, {1.0f, 0.0f, 0.0f} },
@@ -193,6 +195,12 @@ void vge::Renderer::Draw()
 void vge::Renderer::Cleanup()
 {
 	vkDeviceWaitIdle(m_Device);
+
+	for (size_t i = 0; i < m_TextureImages.size(); ++i)
+	{
+		vkDestroyImage(m_Device, m_TextureImages[i], nullptr);
+		vkFreeMemory(m_Device, m_TextureImagesMemory[i], nullptr);
+	}
 
 	//_aligned_free(m_ModelTransferSpace);
 	vkDestroyImageView(m_Device, m_DepthBufferImageView, nullptr);
@@ -771,7 +779,7 @@ void vge::Renderer::CreateDepthBufferImage()
 	static const std::vector<VkFormat> formats = { VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT };
 	m_DepthFormat = GetBestImageFormat(m_Gpu, formats, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
-	m_DepthBufferImage = CreateImage2D(m_Gpu, m_Device, m_SwapchainExtent, m_DepthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_DepthBufferImageMemory);
+	m_DepthBufferImage = CreateImage(m_Gpu, m_Device, m_SwapchainExtent, m_DepthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_DepthBufferImageMemory);
 	m_DepthBufferImageView = CreateImageView(m_Device, m_DepthBufferImage, m_DepthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
 }
 
@@ -1048,4 +1056,18 @@ void vge::Renderer::UpdateUniformBuffers(uint32 ImageIndex)
 	//vkMapMemory(m_Device, m_ModelDynamicUniformBuffersMemory[ImageIndex], 0, m_ModelUniformAlignment * m_Meshes.size(), 0, &data);
 	//memcpy(data, m_ModelTransferSpace, m_ModelUniformAlignment * m_Meshes.size());
 	//vkUnmapMemory(m_Device, m_ModelDynamicUniformBuffersMemory[ImageIndex]);
+}
+
+int32 vge::Renderer::CreateTexture(const char* filename)
+{
+	VkImage textureImage = VK_NULL_HANDLE;
+	VkDeviceMemory textureImageMemory = VK_NULL_HANDLE;
+	vge::CreateTexture(m_Gpu, m_Device, m_GfxQueue, m_GfxCommandPool, filename, textureImage, textureImageMemory);
+
+	m_TextureImages.push_back(textureImage);
+	m_TextureImagesMemory.push_back(textureImageMemory);
+
+	LOG(Log, "Successfully created and saved new texture: %s", filename);
+
+	return static_cast<int32_t>(m_TextureImages.size()) - 1; // return last added texture index
 }
