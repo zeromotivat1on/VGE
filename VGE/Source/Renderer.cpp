@@ -130,6 +130,7 @@ void vge::Renderer::Initialize()
 	CreateSwapchain();
 	CreateRenderPass();
 	CreateDescriptorSetLayout();
+	CreatePushConstantRange();
 	CreateGraphicsPipeline();
 	CreateFramebuffers();
 	CreateCommandPool();
@@ -163,11 +164,10 @@ void vge::Renderer::Initialize()
 	m_UboViewProjection.Projection[1][1] *= -1; // invert y-axis as glm uses positive y-axis for up, but vulkan uses it for down
 
 	CreateCommandBuffers();
-	AllocateDynamicBufferTransferSpace();
+	//AllocateDynamicBufferTransferSpace();
 	CreateUniformBuffers();
 	CreateDescriptorPool();
 	CreateDescriptorSets();
-	RecordCommandBuffers();
 	CreateSyncObjects();
 }
 
@@ -179,6 +179,7 @@ void vge::Renderer::Draw()
 	uint32 AcquiredImageIndex = 0;
 	vkAcquireNextImageKHR(m_Device, m_Swapchain, UINT64_MAX, m_ImageAvailableSemas[GCurrentFrame], VK_NULL_HANDLE, &AcquiredImageIndex);
 
+	RecordCommandBuffers(AcquiredImageIndex);
 	UpdateUniformBuffers(AcquiredImageIndex);
 
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
@@ -218,7 +219,7 @@ void vge::Renderer::Cleanup()
 {
 	vkDeviceWaitIdle(m_Device);
 
-	_aligned_free(m_ModelTransferSpace);
+	//_aligned_free(m_ModelTransferSpace);
 
 	vkDestroyDescriptorPool(m_Device, m_DescriptorPool, nullptr);
 	vkDestroyDescriptorSetLayout(m_Device, m_DescriptorSetLayout, nullptr);
@@ -227,8 +228,8 @@ void vge::Renderer::Cleanup()
 	{
 		vkDestroyBuffer(m_Device, m_VpUniformBuffers[i], nullptr);
 		vkFreeMemory(m_Device, m_VpUniformBuffersMemory[i], nullptr);
-		vkDestroyBuffer(m_Device, m_ModelDynamicUniformBuffers[i], nullptr);
-		vkFreeMemory(m_Device, m_ModelDynamicUniformBuffersMemory[i], nullptr);
+		//vkDestroyBuffer(m_Device, m_ModelDynamicUniformBuffers[i], nullptr);
+		//vkFreeMemory(m_Device, m_ModelDynamicUniformBuffersMemory[i], nullptr);
 	}
 
 	for (const Mesh& mesh : m_Meshes)
@@ -388,7 +389,7 @@ void vge::Renderer::FindGpu()
 			LOG(Log, " Device type: %s", GpuTypeToString(gpuProps.deviceType));
 			LOG(Log, " Driver version: %u", gpuProps.driverVersion);
 
-			m_MinUniformBufferOffset = gpuProps.limits.minUniformBufferOffsetAlignment;
+			//m_MinUniformBufferOffset = gpuProps.limits.minUniformBufferOffsetAlignment;
 
 			return;
 		}
@@ -583,14 +584,14 @@ void vge::Renderer::CreateDescriptorSetLayout()
 	vpLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 	vpLayoutBinding.pImmutableSamplers = nullptr;
 
-	VkDescriptorSetLayoutBinding modelLayoutBinding = {};
-	modelLayoutBinding.binding = 1;
-	modelLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-	modelLayoutBinding.descriptorCount = 1;
-	modelLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-	modelLayoutBinding.pImmutableSamplers = nullptr;
+	//VkDescriptorSetLayoutBinding modelLayoutBinding = {};
+	//modelLayoutBinding.binding = 1;
+	//modelLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+	//modelLayoutBinding.descriptorCount = 1;
+	//modelLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	//modelLayoutBinding.pImmutableSamplers = nullptr;
 
-	const std::array<VkDescriptorSetLayoutBinding, 2> layoutBindings = { vpLayoutBinding, modelLayoutBinding };
+	const std::array<VkDescriptorSetLayoutBinding, 1> layoutBindings = { vpLayoutBinding, /*modelLayoutBinding*/ };
 
 	VkDescriptorSetLayoutCreateInfo layoutCreateInfo = {};
 	layoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -602,6 +603,13 @@ void vge::Renderer::CreateDescriptorSetLayout()
 		LOG(Error, "Failed to create descriptor set layout.");
 		return;
 	}
+}
+
+void vge::Renderer::CreatePushConstantRange()
+{
+	m_PushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	m_PushConstantRange.offset = 0;
+	m_PushConstantRange.size = sizeof(ModelData);
 }
 
 void vge::Renderer::CreateGraphicsPipeline()
@@ -718,8 +726,8 @@ void vge::Renderer::CreateGraphicsPipeline()
 	pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipelineLayoutCreateInfo.setLayoutCount = 1;
 	pipelineLayoutCreateInfo.pSetLayouts = &m_DescriptorSetLayout;
-	pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
-	pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
+	pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
+	pipelineLayoutCreateInfo.pPushConstantRanges = &m_PushConstantRange;
 
 	if (vkCreatePipelineLayout(m_Device, &pipelineLayoutCreateInfo, nullptr, &m_GfxPipelineLayout) != VK_SUCCESS)
 	{
@@ -784,6 +792,7 @@ void vge::Renderer::CreateCommandPool()
 {
 	VkCommandPoolCreateInfo cmdPoolCreateInfo = {};
 	cmdPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	cmdPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT; // enable cmd buffers reset (re-record)
 	cmdPoolCreateInfo.queueFamilyIndex = m_QueueIndices.GraphicsFamily;
 
 	if (vkCreateCommandPool(m_Device, &cmdPoolCreateInfo, nullptr, &m_GfxCommandPool) != VK_SUCCESS)
@@ -810,23 +819,23 @@ void vge::Renderer::CreateCommandBuffers()
 	}
 }
 
-void vge::Renderer::AllocateDynamicBufferTransferSpace()
-{
-	// Calculate proper model alignment to ensure its fit into allocated block of memory.
-	m_ModelUniformAlignment = (sizeof(UboModel) + m_MinUniformBufferOffset - 1) & ~(m_MinUniformBufferOffset - 1);
-	m_ModelTransferSpace = (UboModel*)_aligned_malloc(m_ModelUniformAlignment * GMaxSceneObjects, m_ModelUniformAlignment);
-}
+//void vge::Renderer::AllocateDynamicBufferTransferSpace()
+//{
+//	// Calculate proper model alignment to ensure its fit into allocated block of memory.
+//	m_ModelUniformAlignment = (sizeof(ModelData) + m_MinUniformBufferOffset - 1) & ~(m_MinUniformBufferOffset - 1);
+//	m_ModelTransferSpace = (ModelData*)_aligned_malloc(m_ModelUniformAlignment * GMaxSceneObjects, m_ModelUniformAlignment);
+//}
 
 void vge::Renderer::CreateUniformBuffers()
 {
 	constexpr VkDeviceSize vpBufferSize = sizeof(UboViewProjection);
-	const VkDeviceSize modelBufferSize = m_ModelUniformAlignment * GMaxSceneObjects;
+	//const VkDeviceSize modelBufferSize = m_ModelUniformAlignment * GMaxSceneObjects;
 
 	m_VpUniformBuffers.resize(m_SwapchainImages.size());
 	m_VpUniformBuffersMemory.resize(m_SwapchainImages.size());
 
-	m_ModelDynamicUniformBuffers.resize(m_SwapchainImages.size());
-	m_ModelDynamicUniformBuffersMemory.resize(m_SwapchainImages.size());
+	//m_ModelDynamicUniformBuffers.resize(m_SwapchainImages.size());
+	//m_ModelDynamicUniformBuffersMemory.resize(m_SwapchainImages.size());
 
 	constexpr VkBufferUsageFlags usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 	constexpr VkMemoryPropertyFlags props = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
@@ -834,7 +843,7 @@ void vge::Renderer::CreateUniformBuffers()
 	for (size_t i = 0; i < m_SwapchainImages.size(); ++i)
 	{
 		CreateBuffer(m_Gpu, m_Device, vpBufferSize, usage, props, m_VpUniformBuffers[i], m_VpUniformBuffersMemory[i]);
-		CreateBuffer(m_Gpu, m_Device, modelBufferSize, usage, props, m_ModelDynamicUniformBuffers[i], m_ModelDynamicUniformBuffersMemory[i]);
+		//CreateBuffer(m_Gpu, m_Device, modelBufferSize, usage, props, m_ModelDynamicUniformBuffers[i], m_ModelDynamicUniformBuffersMemory[i]);
 	}
 }
 
@@ -844,11 +853,11 @@ void vge::Renderer::CreateDescriptorPool()
 	vpPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	vpPoolSize.descriptorCount = static_cast<uint32>(m_VpUniformBuffers.size());
 
-	VkDescriptorPoolSize modelPoolSize = {};
-	modelPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-	modelPoolSize.descriptorCount = static_cast<uint32>(m_ModelDynamicUniformBuffers.size());
+	//VkDescriptorPoolSize modelPoolSize = {};
+	//modelPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+	//modelPoolSize.descriptorCount = static_cast<uint32>(m_ModelDynamicUniformBuffers.size());
 
-	const std::array<VkDescriptorPoolSize, 2> poolSizes = { vpPoolSize, modelPoolSize };
+	const std::array<VkDescriptorPoolSize, 1> poolSizes = { vpPoolSize, /*modelPoolSize*/ };
 
 	VkDescriptorPoolCreateInfo poolCreateInfo = {};
 	poolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -897,28 +906,32 @@ void vge::Renderer::CreateDescriptorSets()
 		vpSetWrite.descriptorCount = 1;
 		vpSetWrite.pBufferInfo = &vpDescriptorBufferInfo;
 
-		VkDescriptorBufferInfo modelDescriptorBufferInfo = {};
-		modelDescriptorBufferInfo.buffer = m_ModelDynamicUniformBuffers[i];
-		modelDescriptorBufferInfo.offset = 0;
-		modelDescriptorBufferInfo.range = m_ModelUniformAlignment;
+		//VkDescriptorBufferInfo modelDescriptorBufferInfo = {};
+		//modelDescriptorBufferInfo.buffer = m_ModelDynamicUniformBuffers[i];
+		//modelDescriptorBufferInfo.offset = 0;
+		//modelDescriptorBufferInfo.range = m_ModelUniformAlignment;
 
-		VkWriteDescriptorSet modelSetWrite = {};
-		modelSetWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		modelSetWrite.dstSet = m_DescriptorSets[i];
-		modelSetWrite.dstBinding = 1;
-		modelSetWrite.dstArrayElement = 0;
-		modelSetWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-		modelSetWrite.descriptorCount = 1;
-		modelSetWrite.pBufferInfo = &modelDescriptorBufferInfo;
+		//VkWriteDescriptorSet modelSetWrite = {};
+		//modelSetWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		//modelSetWrite.dstSet = m_DescriptorSets[i];
+		//modelSetWrite.dstBinding = 1;
+		//modelSetWrite.dstArrayElement = 0;
+		//modelSetWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+		//modelSetWrite.descriptorCount = 1;
+		//modelSetWrite.pBufferInfo = &modelDescriptorBufferInfo;
 
-		const std::array<VkWriteDescriptorSet, 2> setWrites = { vpSetWrite , modelSetWrite };
+		const std::array<VkWriteDescriptorSet, 1> setWrites = { vpSetWrite, /*modelSetWrite*/ };
 
 		vkUpdateDescriptorSets(m_Device, static_cast<uint32>(setWrites.size()), setWrites.data(), 0, nullptr);
 	}
 }
 
-void vge::Renderer::RecordCommandBuffers()
+void vge::Renderer::RecordCommandBuffers(uint32 ImageIndex)
 {
+	VkCommandBuffer& currentCmdBuffer = m_CommandBuffers[ImageIndex];
+	VkFramebuffer& currentFramebuffer = m_SwapchainFramebuffers[ImageIndex];
+	VkDescriptorSet& currentDescriptorSet = m_DescriptorSets[ImageIndex];
+
 	VkCommandBufferBeginInfo cmdBufferBeginInfo = {};
 	cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	// No need in this flag now as we control synchronization by ourselves.
@@ -936,46 +949,44 @@ void vge::Renderer::RecordCommandBuffers()
 	renderPassBeginInfo.renderArea.extent = m_SwapchainExtent;
 	renderPassBeginInfo.clearValueCount = static_cast<uint32>(clearValues.size());
 	renderPassBeginInfo.pClearValues = clearValues.data();
+	renderPassBeginInfo.framebuffer = currentFramebuffer;
 
-	for (size_t i = 0; i < m_CommandBuffers.size(); ++i)
+	if (vkBeginCommandBuffer(currentCmdBuffer, &cmdBufferBeginInfo) != VK_SUCCESS)
 	{
-		renderPassBeginInfo.framebuffer = m_SwapchainFramebuffers[i];
+		LOG(Error, "Failed to start command buffer record.");
+		return;
+	}
 
-		if (vkBeginCommandBuffer(m_CommandBuffers[i], &cmdBufferBeginInfo) != VK_SUCCESS)
+	vkCmdBeginRenderPass(currentCmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+	{
+		vkCmdBindPipeline(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GfxPipeline);
+
+		for (size_t MeshIndex = 0; MeshIndex < m_Meshes.size(); ++MeshIndex)
 		{
-			LOG(Error, "Failed to start command buffer record.");
-			return;
+			const Mesh& mesh = m_Meshes[MeshIndex];
+
+			VkBuffer vertexBuffers[] = { mesh.GetVertexBuffer() };
+			VkDeviceSize offsets[] = { 0 };
+			vkCmdBindVertexBuffers(currentCmdBuffer, 0, 1, vertexBuffers, offsets);
+
+			vkCmdBindIndexBuffer(currentCmdBuffer, mesh.GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
+
+			vkCmdPushConstants(currentCmdBuffer, m_GfxPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ModelData), &mesh.GetModelDataRef());
+
+			//const uint32 dynamicOffset = static_cast<uint32>(m_ModelUniformAlignment * MeshIndex);
+			vkCmdBindDescriptorSets(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GfxPipelineLayout, 0, 1, &currentDescriptorSet, 0, nullptr);
+
+			vkCmdDrawIndexed(currentCmdBuffer, static_cast<uint32>(mesh.GetIndexCount()), 1, 0, 0, 0);
 		}
+	}
 
-		vkCmdBeginRenderPass(m_CommandBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	vkCmdEndRenderPass(currentCmdBuffer);
 
-		{
-			vkCmdBindPipeline(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_GfxPipeline);
-
-			for (size_t MeshIndex = 0; MeshIndex < m_Meshes.size(); ++MeshIndex)
-			{
-				const Mesh& mesh = m_Meshes[MeshIndex];
-
-				VkBuffer vertexBuffers[] = { mesh.GetVertexBuffer() };
-				VkDeviceSize offsets[] = { 0 };
-				vkCmdBindVertexBuffers(m_CommandBuffers[i], 0, 1, vertexBuffers, offsets);
-
-				vkCmdBindIndexBuffer(m_CommandBuffers[i], mesh.GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
-
-				const uint32 dynamicOffset = static_cast<uint32>(m_ModelUniformAlignment * MeshIndex);
-				vkCmdBindDescriptorSets(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_GfxPipelineLayout, 0, 1, &m_DescriptorSets[i], 1, &dynamicOffset);
-
-				vkCmdDrawIndexed(m_CommandBuffers[i], static_cast<uint32>(mesh.GetIndexCount()), 1, 0, 0, 0);
-			}
-		}
-
-		vkCmdEndRenderPass(m_CommandBuffers[i]);
-
-		if (vkEndCommandBuffer(m_CommandBuffers[i]) != VK_SUCCESS)
-		{
-			LOG(Error, "Failed to stop command buffer record.");
-			return;
-		}
+	if (vkEndCommandBuffer(currentCmdBuffer) != VK_SUCCESS)
+	{
+		LOG(Error, "Failed to stop command buffer record.");
+		return;
 	}
 }
 
@@ -1016,14 +1027,14 @@ void vge::Renderer::UpdateUniformBuffers(uint32 ImageIndex)
 	memcpy(data, &m_UboViewProjection, sizeof(UboViewProjection));
 	vkUnmapMemory(m_Device, m_VpUniformBuffersMemory[ImageIndex]);
 
-	for (size_t i = 0; i < m_Meshes.size(); ++i)
-	{
-		// TODO: Get proper pointer size for the current system (instead of just uint64_t).
-		UboModel* meshModelStartAddress = (UboModel*)((ptr_size)m_ModelTransferSpace + (i * m_ModelUniformAlignment));
-		*meshModelStartAddress = m_Meshes[i].GetModel();
-	}
+	// Usage of dynamic uniform buffer example. Costly for frequent actions like model matrix update.
+	//for (size_t i = 0; i < m_Meshes.size(); ++i)
+	//{
+	//	ModelData* meshModelStartAddress = (ModelData*)((ptr_size)m_ModelTransferSpace + (i * m_ModelUniformAlignment));
+	//	*meshModelStartAddress = m_Meshes[i].GetModel();
+	//}
 
-	vkMapMemory(m_Device, m_ModelDynamicUniformBuffersMemory[ImageIndex], 0, m_ModelUniformAlignment * m_Meshes.size(), 0, &data);
-	memcpy(data, m_ModelTransferSpace, m_ModelUniformAlignment * m_Meshes.size());
-	vkUnmapMemory(m_Device, m_ModelDynamicUniformBuffersMemory[ImageIndex]);
+	//vkMapMemory(m_Device, m_ModelDynamicUniformBuffersMemory[ImageIndex], 0, m_ModelUniformAlignment * m_Meshes.size(), 0, &data);
+	//memcpy(data, m_ModelTransferSpace, m_ModelUniformAlignment * m_Meshes.size());
+	//vkUnmapMemory(m_Device, m_ModelDynamicUniformBuffersMemory[ImageIndex]);
 }

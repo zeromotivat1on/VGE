@@ -8,13 +8,18 @@ layout (binding = 0) uniform UboViewProjection {
 	mat4 View;
 } uboViewProjection;
 
+// Left for reference, NOT used.
 layout (binding = 1) uniform UboModel {
 	mat4 Model;
 } uboModel;
 
+layout (push_constant) uniform PushModel {
+	mat4 Model;
+} pushModel;
+
 layout (location = 0) out vec3 fragColor;
 
 void main() {
-	gl_Position = uboViewProjection.Projection * uboViewProjection.View * uboModel.Model * vec4(Position, 1.0);
+	gl_Position = uboViewProjection.Projection * uboViewProjection.View * pushModel.Model * vec4(Position, 1.0);
 	fragColor = Color;
 }

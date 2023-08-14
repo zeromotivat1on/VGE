@@ -60,16 +60,18 @@ namespace vge
 		VkDescriptorSetLayout m_DescriptorSetLayout = VK_NULL_HANDLE;
 		VkDescriptorPool m_DescriptorPool = VK_NULL_HANDLE;
 		std::vector<VkDescriptorSet> m_DescriptorSets = {};
+		VkPushConstantRange m_PushConstantRange = {};
 
 		std::vector<VkBuffer> m_VpUniformBuffers = {};
 		std::vector<VkDeviceMemory> m_VpUniformBuffersMemory = {};
 
-		std::vector<VkBuffer> m_ModelDynamicUniformBuffers = {};
-		std::vector<VkDeviceMemory> m_ModelDynamicUniformBuffersMemory = {};
+		//std::vector<VkBuffer> m_ModelDynamicUniformBuffers = {};
+		//std::vector<VkDeviceMemory> m_ModelDynamicUniformBuffersMemory = {};
 
-		VkDeviceSize m_MinUniformBufferOffset = 0;
-		size_t m_ModelUniformAlignment = 0;
-		UboModel* m_ModelTransferSpace = nullptr;
+
+		//VkDeviceSize m_MinUniformBufferOffset = 0;
+		//size_t m_ModelUniformAlignment = 0;
+		//ModelData* m_ModelTransferSpace = nullptr;
 
 		VkPipeline m_GfxPipeline = VK_NULL_HANDLE;
 		VkPipelineLayout m_GfxPipelineLayout = VK_NULL_HANDLE;
@@ -88,17 +90,18 @@ namespace vge
 		void CreateSwapchain();
 		void CreateRenderPass();
 		void CreateDescriptorSetLayout();
+		void CreatePushConstantRange();
 		void CreateGraphicsPipeline();
 		void CreateFramebuffers();
 		void CreateCommandPool();
 		void CreateCommandBuffers();
-		void AllocateDynamicBufferTransferSpace();
+		//void AllocateDynamicBufferTransferSpace();
 		void CreateUniformBuffers();
 		void CreateDescriptorPool();
 		void CreateDescriptorSets();
-		void RecordCommandBuffers();
 		void CreateSyncObjects();
 
+		void RecordCommandBuffers(uint32 ImageIndex);
 		void UpdateUniformBuffers(uint32 ImageIndex);
 	};
 

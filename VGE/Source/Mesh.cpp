@@ -5,8 +5,6 @@ vge::Mesh::Mesh(VkPhysicalDevice gpu, VkDevice device, VkQueue transferQueue, Vk
 {
 	CreateVertexBuffer(transferQueue, transferCmdPool, vertices);
 	CreateIndexBuffer(transferQueue, transferCmdPool, indices);
-
-	m_UboModel.Model = glm::mat4(1.0f);
 }
 
 void vge::Mesh::DestroyVertexBuffer() const

@@ -5,9 +5,9 @@
 
 namespace vge
 {
-	struct UboModel
+	struct ModelData
 	{
-		glm::mat4 Model;
+		glm::mat4 ModelMatrix = glm::mat4(1.0f);
 	};
 
 	class Mesh
@@ -21,8 +21,10 @@ namespace vge
 		VkBuffer GetVertexBuffer() const { return m_VertexBuffer; }
 		VkBuffer GetIndexBuffer() const { return m_IndexBuffer; }
 
-		void SetModelMatrix(glm::mat4 model) { m_UboModel.Model = model; }
-		UboModel GetModel() const { return m_UboModel; }
+		void SetModelMatrix(glm::mat4 model) { m_ModelData.ModelMatrix = model; }
+		
+		const ModelData& GetModelDataRef() const { return m_ModelData; }
+			  ModelData  GetModelData()    const { return m_ModelData; }
 
 		void DestroyVertexBuffer() const;
 		void DestroyIndexBuffer() const;
@@ -31,7 +33,7 @@ namespace vge
 		VkPhysicalDevice m_Gpu = VK_NULL_HANDLE;
 		VkDevice m_Device = VK_NULL_HANDLE;
 
-		UboModel m_UboModel = {};
+		ModelData m_ModelData = {};
 
 		size_t m_VertexCount = 0;
 		VkBuffer m_VertexBuffer = {};
