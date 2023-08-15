@@ -3,26 +3,6 @@
 #include "Renderer.h"
 #include "EngineLoop.h"
 
-int32 vge::Main(int argc, const char** argv)
-{
-	ApplicationSpecs specs = {};
-	specs.Name = "Vulkan Game Engine";
-	specs.InternalName = "Spicy Cake";
-	specs.Window.Name = "VGE";
-	specs.Window.Width = 800;
-	specs.Window.Height = 600;
-
-	CreateApplication(specs);
-	if (!GApplication) return EXIT_FAILURE;
-	GApplication->Initialize();
-
-	MainLoop();
-
-	DestroyApplication();
-
-	return EXIT_SUCCESS;
-}
-
 vge::Application* vge::CreateApplication(const ApplicationSpecs& specs)
 {
 	if (GApplication) return GApplication;
@@ -53,4 +33,24 @@ void vge::Application::Close()
 {
 	DestroyRenderer();
 	DestroyWindow();
+}
+
+int32 vge::Main(int argc, const char** argv)
+{
+	ApplicationSpecs specs = {};
+	specs.Name = "Vulkan Game Engine";
+	specs.InternalName = "Spicy Cake";
+	specs.Window.Name = "VGE";
+	specs.Window.Width = 800;
+	specs.Window.Height = 600;
+
+	CreateApplication(specs);
+	if (!GApplication) return EXIT_FAILURE;
+	GApplication->Initialize();
+
+	MainLoop();
+
+	DestroyApplication();
+
+	return EXIT_SUCCESS;
 }

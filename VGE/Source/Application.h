@@ -30,8 +30,8 @@ namespace vge
 		const ApplicationSpecs Specs = {};
 	};
 
-	int32 Main(int argc, const char** argv);
-
 	Application* CreateApplication(const ApplicationSpecs& specs);
 	bool DestroyApplication();
+
+	int32 Main(int argc, const char** argv);
 }

@@ -71,6 +71,7 @@ namespace vge
 		VkDescriptorSetLayout m_SamplerDescriptorSetLayout = VK_NULL_HANDLE;
 
 		std::vector<VkDescriptorSet> m_UniformDescriptorSets = {};
+		
 		std::vector<Texture> m_Textures = {};
 
 		VkPushConstantRange m_PushConstantRange = {};
@@ -80,10 +81,6 @@ namespace vge
 
 		//std::vector<VkBuffer> m_ModelDynamicUniformBuffers = {};
 		//std::vector<VkDeviceMemory> m_ModelDynamicUniformBuffersMemory = {};
-
-		/*std::vector<VkImage> m_TextureImages = {};
-		std::vector<VkDeviceMemory> m_TextureImagesMemory = {};
-		std::vector<VkImageView> m_TextureImageViews = {};*/
 
 		//VkDeviceSize m_MinUniformBufferOffset = 0;
 		//size_t m_ModelUniformAlignment = 0;
