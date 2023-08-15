@@ -71,7 +71,7 @@ namespace vge
 		VkDescriptorSetLayout m_SamplerDescriptorSetLayout = VK_NULL_HANDLE;
 
 		std::vector<VkDescriptorSet> m_UniformDescriptorSets = {};
-		std::vector<VkDescriptorSet> m_SamplerDescriptorSets = {};
+		std::vector<Texture> m_Textures = {};
 
 		VkPushConstantRange m_PushConstantRange = {};
 
@@ -81,10 +81,9 @@ namespace vge
 		//std::vector<VkBuffer> m_ModelDynamicUniformBuffers = {};
 		//std::vector<VkDeviceMemory> m_ModelDynamicUniformBuffersMemory = {};
 
-		// TODO: Have 1 VkDeviceMemory and VkImage's just reference it with offsets.
-		std::vector<VkImage> m_TextureImages = {};
+		/*std::vector<VkImage> m_TextureImages = {};
 		std::vector<VkDeviceMemory> m_TextureImagesMemory = {};
-		std::vector<VkImageView> m_TextureImageViews = {};
+		std::vector<VkImageView> m_TextureImageViews = {};*/
 
 		//VkDeviceSize m_MinUniformBufferOffset = 0;
 		//size_t m_ModelUniformAlignment = 0;
@@ -123,6 +122,7 @@ namespace vge
 		void RecordCommandBuffers(uint32 ImageIndex);
 		void UpdateUniformBuffers(uint32 ImageIndex);
 
+		// TODO: for now 1 game object can have only 1 texture which is cringe.
 		int32 CreateTexture(const char* filename);
 	};
 

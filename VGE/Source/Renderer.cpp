@@ -1,6 +1,7 @@
 #include "Renderer.h"
 #include "Application.h"
 #include "Window.h"
+#include "Buffer.h"
 #include "Shader.h"
 #include "File.h"
 
@@ -199,11 +200,11 @@ void vge::Renderer::Cleanup()
 
 	vkDestroySampler(m_Device, m_TextureSampler, nullptr);
 
-	for (size_t i = 0; i < m_TextureImages.size(); ++i)
+	for (size_t i = 0; i < m_Textures.size(); ++i)
 	{
-		vkDestroyImageView(m_Device, m_TextureImageViews[i], nullptr);
-		vkDestroyImage(m_Device, m_TextureImages[i], nullptr);
-		vkFreeMemory(m_Device, m_TextureImagesMemory[i], nullptr);
+		vkDestroyImageView(m_Device, m_Textures[i].ImageView, nullptr);
+		vkDestroyImage(m_Device, m_Textures[i].Image, nullptr);
+		vkFreeMemory(m_Device, m_Textures[i].ImageMemory, nullptr);
 	}
 
 	//_aligned_free(m_ModelTransferSpace);
@@ -506,7 +507,7 @@ void vge::Renderer::CreateSwapchain()
 	{
 		SwapchainImage swapchainImage = {};
 		swapchainImage.Handle = image;
-		swapchainImage.View = CreateImageView(m_Device, image, m_SwapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+		CreateImageView(m_Device, image, m_SwapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, swapchainImage.View);
 
 		m_SwapchainImages.push_back(swapchainImage);
 	}
@@ -813,11 +814,13 @@ void vge::Renderer::CreateGraphicsPipeline()
 
 void vge::Renderer::CreateDepthBufferImage()
 {
-	static const std::vector<VkFormat> formats = { VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT };
+	const std::vector<VkFormat> formats = { VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT };
 	m_DepthFormat = GetBestImageFormat(m_Gpu, formats, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
-	m_DepthBufferImage = CreateImage(m_Gpu, m_Device, m_SwapchainExtent, m_DepthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_DepthBufferImageMemory);
-	m_DepthBufferImageView = CreateImageView(m_Device, m_DepthBufferImage, m_DepthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+	constexpr VkImageUsageFlags usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+	constexpr VkMemoryPropertyFlags memProps = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+	CreateImage(m_Gpu, m_Device, m_SwapchainExtent, m_DepthFormat, VK_IMAGE_TILING_OPTIMAL, usage, memProps, m_DepthBufferImage, m_DepthBufferImageMemory);
+	CreateImageView(m_Device, m_DepthBufferImage, m_DepthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, m_DepthBufferImageView);
 }
 
 void vge::Renderer::CreateFramebuffers()
@@ -955,7 +958,6 @@ void vge::Renderer::CreateDescriptorPools()
 		return;
 	}
 
-	// TODO: for now Amount of textures == Amount of objects, this should be redesigned.
 	VkDescriptorPoolSize samplerPoolSize = {};
 	samplerPoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; // in advanced projects descriptor for image and sampler should be separate
 	samplerPoolSize.descriptorCount = static_cast<uint32>(GMaxSceneObjects);
@@ -1067,7 +1069,7 @@ void vge::Renderer::RecordCommandBuffers(uint32 ImageIndex)
 		{
 			const Mesh& mesh = m_Meshes[MeshIndex];
 
-			const std::array<VkDescriptorSet, 2> currentDescriptorSets = { m_UniformDescriptorSets[ImageIndex], m_SamplerDescriptorSets[mesh.GetTextureId()]};
+			const std::array<VkDescriptorSet, 2> currentDescriptorSets = { m_UniformDescriptorSets[ImageIndex], m_Textures[mesh.GetTextureId()].DescriptorSet};
 
 			VkBuffer vertexBuffers[] = { mesh.GetVertexBuffer() };
 			VkDeviceSize offsets[] = { 0 };
@@ -1145,19 +1147,13 @@ void vge::Renderer::UpdateUniformBuffers(uint32 ImageIndex)
 
 int32 vge::Renderer::CreateTexture(const char* filename)
 {
-	VkImage textureImage = VK_NULL_HANDLE;
-	VkDeviceMemory textureImageMemory = VK_NULL_HANDLE;
-	vge::CreateTextureImage(m_Gpu, m_Device, m_GfxQueue, m_GfxCommandPool, filename, textureImage, textureImageMemory);
-	m_TextureImages.push_back(textureImage);
-	m_TextureImagesMemory.push_back(textureImageMemory);
+	Texture texture = {};
+	CreateTextureImage(m_Gpu, m_Device, m_GfxQueue, m_GfxCommandPool, filename, texture.Image, texture.ImageMemory);
+	CreateImageView(m_Device, texture.Image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, texture.ImageView);
+	CreateTextureDescriptorSet(m_Device, m_TextureSampler, m_SamplerDescriptorPool, m_SamplerDescriptorSetLayout, texture.ImageView, texture.DescriptorSet);
+	m_Textures.push_back(texture);
 
-	VkImageView textureImageView = CreateImageView(m_Device, textureImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT);
-	m_TextureImageViews.push_back(textureImageView);
-
-	VkDescriptorSet textureDescriptorSet = vge::CreateTextureDescriptorSet(m_Device, m_TextureSampler, m_SamplerDescriptorPool, m_SamplerDescriptorSetLayout, textureImageView);
-	m_SamplerDescriptorSets.push_back(textureDescriptorSet);
-
-	const int32 textureId = static_cast<int32>(m_SamplerDescriptorSets.size() - 1);
+	const int32 textureId = static_cast<int32>(m_Textures.size() - 1);
 	LOG(Log, "Successfully created and saved new texture: %s with id: %d", filename, textureId);
 
 	return textureId;
