@@ -1,7 +1,8 @@
 #include "Mesh.h"
 
-vge::Mesh::Mesh(VkPhysicalDevice gpu, VkDevice device, VkQueue transferQueue, VkCommandPool transferCmdPool, const std::vector<Vertex>& vertices, const std::vector<uint32>& indices)
-	: m_Gpu(gpu), m_Device(device), m_VertexCount(vertices.size()), m_IndexCount(indices.size())
+vge::Mesh::Mesh(VkPhysicalDevice gpu, VkDevice device, VkQueue transferQueue, VkCommandPool transferCmdPool, 
+	const std::vector<Vertex>& vertices, const std::vector<uint32>& indices, int32 TextureId)
+	: m_Gpu(gpu), m_Device(device), m_VertexCount(vertices.size()), m_IndexCount(indices.size()), m_TextureId(TextureId)
 {
 	CreateVertexBuffer(transferQueue, transferCmdPool, vertices);
 	CreateIndexBuffer(transferQueue, transferCmdPool, indices);

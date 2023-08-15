@@ -105,8 +105,8 @@ bool vge::SuitableGpu(VkPhysicalDevice gpu, VkSurfaceKHR surface)
 	//VkPhysicalDeviceProperties gpuProps;
 	//vkGetPhysicalDeviceProperties(gpu, &gpuProps);
 
-	//VkPhysicalDeviceFeatures gpuFeatures;
-	//vkGetPhysicalDeviceFeatures(gpu, &gpuFeatures);
+	VkPhysicalDeviceFeatures gpuFeatures;
+	vkGetPhysicalDeviceFeatures(gpu, &gpuFeatures);
 
 	QueueFamilyIndices indices = GetQueueFamilies(gpu, surface);
 
@@ -115,7 +115,7 @@ bool vge::SuitableGpu(VkPhysicalDevice gpu, VkSurfaceKHR surface)
 
 	SwapchainDetails swapchainDetails = GetSwapchainDetails(gpu, surface);
 
-	return indices.IsValid() && SupportDeviceExtensions(gpu, deviceExtensions) && swapchainDetails.IsValid();
+	return indices.IsValid() && SupportDeviceExtensions(gpu, deviceExtensions) && swapchainDetails.IsValid() && gpuFeatures.samplerAnisotropy;
 }
 
 const char* vge::GpuTypeToString(VkPhysicalDeviceType gpuType)
@@ -382,8 +382,8 @@ void vge::TransitionImageLayout(VkDevice device, VkQueue queue, VkCommandPool cm
 	imageMemoryBarrier.subresourceRange.baseArrayLayer = 0;
 	imageMemoryBarrier.subresourceRange.layerCount = 1;
 
-	VkPipelineStageFlags srcStageFlags;
-	VkPipelineStageFlags dstStageFlags;
+	VkPipelineStageFlags srcStageFlags = VK_PIPELINE_STAGE_NONE;
+	VkPipelineStageFlags dstStageFlags = VK_PIPELINE_STAGE_NONE;
 
 	// If transtion from new image to image ready to receive data ...
 	if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
@@ -414,6 +414,41 @@ void vge::TransitionImageLayout(VkDevice device, VkQueue queue, VkCommandPool cm
 		0, nullptr,						// buffer memory barrier
 		1, &imageMemoryBarrier			// image memory barrier
 	);
+}
+
+VkDescriptorSet vge::CreateTextureDescriptorSet(VkDevice device, VkSampler sampler, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descrptorSetLayout, VkImageView textureImageView)
+{
+	VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
+
+	VkDescriptorSetAllocateInfo descriptorSetAllocInfo = {};
+	descriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	descriptorSetAllocInfo.descriptorPool = descriptorPool;
+	descriptorSetAllocInfo.descriptorSetCount = 1;
+	descriptorSetAllocInfo.pSetLayouts = &descrptorSetLayout;
+
+	if (vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &descriptorSet) != VK_SUCCESS)
+	{
+		LOG(Error, "Failed to allocate texture descriptor set.");
+		return VK_NULL_HANDLE;
+	}
+
+	VkDescriptorImageInfo descriptorImageInfo = {};
+	descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	descriptorImageInfo.imageView = textureImageView;
+	descriptorImageInfo.sampler = sampler;
+
+	VkWriteDescriptorSet descriptorSetWrite = {};
+	descriptorSetWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	descriptorSetWrite.dstSet = descriptorSet;
+	descriptorSetWrite.dstBinding = 0;
+	descriptorSetWrite.dstArrayElement = 0;
+	descriptorSetWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	descriptorSetWrite.descriptorCount = 1;
+	descriptorSetWrite.pImageInfo = &descriptorImageInfo;
+
+	vkUpdateDescriptorSets(device, 1, &descriptorSetWrite, 0, nullptr);
+
+	return descriptorSet;
 }
 
 VkCommandBuffer vge::BeginOneTimeCmdBuffer(VkDevice device, VkCommandPool cmdPool)
@@ -518,7 +553,7 @@ void vge::CopyImageBuffer(VkDevice device, VkQueue transferQueue, VkCommandPool 
 	vkCmdCopyBufferToImage(transferCmdBuffer.GetHandle(), srcBuffer, dstImage, imageLayout, 1, &bufferImageCopyRegion);
 }
 
-void vge::CreateTexture(VkPhysicalDevice gpu, VkDevice device, VkQueue transferQueue, VkCommandPool transferCmdPool, const char* filename, VkImage& outTextureImage, VkDeviceMemory& outImageTextureMemory)
+void vge::CreateTextureImage(VkPhysicalDevice gpu, VkDevice device, VkQueue transferQueue, VkCommandPool transferCmdPool, const char* filename, VkImage& outTextureImage, VkDeviceMemory& outImageTextureMemory)
 {
 	int32 width = 0, height = 0;
 	VkDeviceSize textureSize = 0;

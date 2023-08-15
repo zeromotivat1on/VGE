@@ -49,6 +49,8 @@ namespace vge
 		VkFormat m_SwapchainImageFormat = {};
 		VkExtent2D m_SwapchainExtent = {};
 
+		VkSampler m_TextureSampler = VK_NULL_HANDLE;
+
 		std::vector<VkSemaphore> m_ImageAvailableSemas = {};
 		std::vector<VkSemaphore> m_RenderFinishedSemas = {};
 		std::vector<VkFence> m_DrawFences = {};
@@ -62,9 +64,15 @@ namespace vge
 		VkDeviceMemory m_DepthBufferImageMemory = VK_NULL_HANDLE;
 		VkFormat m_DepthFormat = VK_FORMAT_UNDEFINED;
 
-		VkDescriptorSetLayout m_DescriptorSetLayout = VK_NULL_HANDLE;
-		VkDescriptorPool m_DescriptorPool = VK_NULL_HANDLE;
-		std::vector<VkDescriptorSet> m_DescriptorSets = {};
+		VkDescriptorPool m_UniformDescriptorPool = VK_NULL_HANDLE;	// uniform data
+		VkDescriptorPool m_SamplerDescriptorPool = VK_NULL_HANDLE;	// texture data (not neccessary to create separate pool)
+		
+		VkDescriptorSetLayout m_UniformDescriptorSetLayout = VK_NULL_HANDLE;
+		VkDescriptorSetLayout m_SamplerDescriptorSetLayout = VK_NULL_HANDLE;
+
+		std::vector<VkDescriptorSet> m_UniformDescriptorSets = {};
+		std::vector<VkDescriptorSet> m_SamplerDescriptorSets = {};
+
 		VkPushConstantRange m_PushConstantRange = {};
 
 		std::vector<VkBuffer> m_VpUniformBuffers = {};
@@ -76,6 +84,7 @@ namespace vge
 		// TODO: Have 1 VkDeviceMemory and VkImage's just reference it with offsets.
 		std::vector<VkImage> m_TextureImages = {};
 		std::vector<VkDeviceMemory> m_TextureImagesMemory = {};
+		std::vector<VkImageView> m_TextureImageViews = {};
 
 		//VkDeviceSize m_MinUniformBufferOffset = 0;
 		//size_t m_ModelUniformAlignment = 0;
@@ -98,16 +107,17 @@ namespace vge
 		void CreateSwapchain();
 		void CreateDepthBufferImage();
 		void CreateRenderPass();
-		void CreateDescriptorSetLayout();
+		void CreateDescriptorSetLayouts();
 		void CreatePushConstantRange();
 		void CreateGraphicsPipeline();
 		void CreateFramebuffers();
 		void CreateCommandPool();
 		void CreateCommandBuffers();
+		void CreateTextureSampler();
 		//void AllocateDynamicBufferTransferSpace();
 		void CreateUniformBuffers();
-		void CreateDescriptorPool();
-		void CreateDescriptorSets();
+		void CreateDescriptorPools();
+		void CreateUniformDescriptorSets();
 		void CreateSyncObjects();
 
 		void RecordCommandBuffers(uint32 ImageIndex);

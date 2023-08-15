@@ -10,6 +10,7 @@ namespace vge
 	{
 		glm::vec3 Position;
 		glm::vec3 Color;
+		glm::vec2 TexCoords;
 	};
 
 	struct QueueFamilyIndices
@@ -41,6 +42,14 @@ namespace vge
 		VkImageView View = VK_NULL_HANDLE;
 	};
 
+	struct Texture
+	{
+		VkDescriptorSet DescriptorSet = VK_NULL_HANDLE;
+		VkImage Image = VK_NULL_HANDLE;
+		VkImageView ImageView = VK_NULL_HANDLE;
+		VkDeviceMemory ImageMemory = VK_NULL_HANDLE;
+	};
+
 	bool SupportValidationLayers();
 	void GetRequriedInstanceExtensions(std::vector<const char*>& outExtensions);
 	bool SupportInstanceExtensions(const std::vector<const char*>& checkExtensions);
@@ -61,6 +70,7 @@ namespace vge
 	VkImage CreateImage(VkPhysicalDevice gpu, VkDevice device, VkExtent2D extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags memProps, VkDeviceMemory& outImageMemory);
 	VkImageView CreateImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlagBits aspectFlags);
 	void TransitionImageLayout(VkDevice device, VkQueue queue, VkCommandPool cmdPool, VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout);
+	VkDescriptorSet CreateTextureDescriptorSet(VkDevice device, VkSampler sampler, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descrptorSetLayout, VkImageView textureImageView);
 
 	VkCommandBuffer BeginOneTimeCmdBuffer(VkDevice device, VkCommandPool cmdPool);
 	void EndOneTimeCmdBuffer(VkDevice device, VkCommandPool cmdPool, VkQueue queue, VkCommandBuffer cmdBuffer);
@@ -69,5 +79,5 @@ namespace vge
 	void CopyBuffer(VkDevice device, VkQueue transferQueue, VkCommandPool transferCmdPool, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 	void CopyImageBuffer(VkDevice device, VkQueue transferQueue, VkCommandPool transferCmdPool, VkBuffer srcBuffer, VkImage dstImage, VkExtent2D extent);
 
-	void CreateTexture(VkPhysicalDevice gpu, VkDevice device, VkQueue transferQueue, VkCommandPool transferCmdPool, const char* filename, VkImage& outTextureImage, VkDeviceMemory& outImageTextureMemory);
+	void CreateTextureImage(VkPhysicalDevice gpu, VkDevice device, VkQueue transferQueue, VkCommandPool transferCmdPool, const char* filename, VkImage& outTextureImage, VkDeviceMemory& outImageTextureMemory);
 }

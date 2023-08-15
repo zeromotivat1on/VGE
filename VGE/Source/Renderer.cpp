@@ -104,48 +104,49 @@ void vge::Renderer::Initialize()
 	CreateSwapchain();
 	CreateDepthBufferImage();
 	CreateRenderPass();
-	CreateDescriptorSetLayout();
+	CreateDescriptorSetLayouts();
 	CreatePushConstantRange();
 	CreateGraphicsPipeline();
 	CreateFramebuffers();
 	CreateCommandPool();
+	CreateCommandBuffers();
+	CreateTextureSampler();
+	//AllocateDynamicBufferTransferSpace();
+	CreateUniformBuffers();
+	CreateDescriptorPools();
+	CreateUniformDescriptorSets();
+	CreateSyncObjects();
 
-	const int32 firstTexture = CreateTexture("Textures/katakuri.jpg");
 
 	const std::vector<Vertex> vertices =
 	{
-		{ {-0.4f, 0.4f, 0.0f}, {1.0f, 0.0f, 0.0f} },
-		{ {-0.4f, -0.4f, 0.0f}, {0.0f, 1.0f, 0.0f} },
-		{ {0.4f, -0.4f, 0.0f }, {0.0f, 0.0f, 1.0f} },
-		{ {0.4f, 0.4f, 0.0f }, {1.0f, 1.0f, 0.0f} },
+		{ {-0.4f, 0.4f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f} },
+		{ {-0.4f, -0.4f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f} },
+		{ {0.4f, -0.4f, 0.0f }, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f} },
+		{ {0.4f, 0.4f, 0.0f }, {1.0f, 1.0f, 0.0f}, {0.0f, 1.0f} },
 	};
 
 	const std::vector<Vertex> vertices2 =
 	{
-		{ {-0.25f, 0.6f, 0.0f}, {1.0f, 0.0f, 0.0f} },
-		{ {-0.25f, -0.6f, 0.0f}, {0.0f, 1.0f, 0.0f} },
-		{ {0.25f, -0.6f, 0.0f }, {0.0f, 0.0f, 1.0f} },
-		{ {0.25f, 0.6f, 0.0f }, {1.0f, 1.0f, 0.0f} },
+		{ {-0.25f, 0.6f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f} },
+		{ {-0.25f, -0.6f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+		{ {0.25f, -0.6f, 0.0f }, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
+		{ {0.25f, 0.6f, 0.0f }, {1.0f, 1.0f, 0.0f}, {0.0f, 1.0f} },
 	};
 
 	const std::vector<uint32> indices = { 0, 1, 2, 2, 3, 0 };
 
+	const int32 firstTexture = CreateTexture("Textures/katakuri.jpg");
+
 	// Transfer queue = Graphics queue.
-	m_Meshes.push_back(Mesh(m_Gpu, m_Device, m_GfxQueue, m_GfxCommandPool, vertices, indices));
-	m_Meshes.push_back(Mesh(m_Gpu, m_Device, m_GfxQueue, m_GfxCommandPool, vertices2, indices));
+	m_Meshes.push_back(Mesh(m_Gpu, m_Device, m_GfxQueue, m_GfxCommandPool, vertices, indices, firstTexture));
+	m_Meshes.push_back(Mesh(m_Gpu, m_Device, m_GfxQueue, m_GfxCommandPool, vertices2, indices, firstTexture));
 
 	const float aspectRatio = static_cast<float>(m_SwapchainExtent.width) / static_cast<float>(m_SwapchainExtent.width);
 	m_UboViewProjection.Projection = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
-	m_UboViewProjection.View = glm::lookAt(glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	m_UboViewProjection.View = glm::lookAt(glm::vec3(2.0f, 0.0f, 2.0f), glm::vec3(0.0f, 0.0f, -2.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
 	m_UboViewProjection.Projection[1][1] *= -1; // invert y-axis as glm uses positive y-axis for up, but vulkan uses it for down
-
-	CreateCommandBuffers();
-	//AllocateDynamicBufferTransferSpace();
-	CreateUniformBuffers();
-	CreateDescriptorPool();
-	CreateDescriptorSets();
-	CreateSyncObjects();
 }
 
 void vge::Renderer::Draw()
@@ -196,8 +197,11 @@ void vge::Renderer::Cleanup()
 {
 	vkDeviceWaitIdle(m_Device);
 
+	vkDestroySampler(m_Device, m_TextureSampler, nullptr);
+
 	for (size_t i = 0; i < m_TextureImages.size(); ++i)
 	{
+		vkDestroyImageView(m_Device, m_TextureImageViews[i], nullptr);
 		vkDestroyImage(m_Device, m_TextureImages[i], nullptr);
 		vkFreeMemory(m_Device, m_TextureImagesMemory[i], nullptr);
 	}
@@ -207,8 +211,11 @@ void vge::Renderer::Cleanup()
 	vkDestroyImage(m_Device, m_DepthBufferImage, nullptr);
 	vkFreeMemory(m_Device, m_DepthBufferImageMemory, nullptr);
 
-	vkDestroyDescriptorPool(m_Device, m_DescriptorPool, nullptr);
-	vkDestroyDescriptorSetLayout(m_Device, m_DescriptorSetLayout, nullptr);
+	vkDestroyDescriptorPool(m_Device, m_SamplerDescriptorPool, nullptr);
+	vkDestroyDescriptorSetLayout(m_Device, m_SamplerDescriptorSetLayout, nullptr);
+
+	vkDestroyDescriptorPool(m_Device, m_UniformDescriptorPool, nullptr);
+	vkDestroyDescriptorSetLayout(m_Device, m_UniformDescriptorSetLayout, nullptr);
 
 	for (size_t i = 0; i < m_SwapchainImages.size(); ++i)
 	{
@@ -401,6 +408,7 @@ void vge::Renderer::CreateDevice()
 	}
 
 	VkPhysicalDeviceFeatures gpuFeatures = {};
+	gpuFeatures.samplerAnisotropy = VK_TRUE;
 
 	VkDeviceCreateInfo deviceCreateInfo = {};
 	deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -578,7 +586,7 @@ void vge::Renderer::CreateRenderPass()
 	}
 }
 
-void vge::Renderer::CreateDescriptorSetLayout()
+void vge::Renderer::CreateDescriptorSetLayouts()
 {
 	VkDescriptorSetLayoutBinding vpLayoutBinding = {};
 	vpLayoutBinding.binding = 0;
@@ -594,16 +602,36 @@ void vge::Renderer::CreateDescriptorSetLayout()
 	//modelLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 	//modelLayoutBinding.pImmutableSamplers = nullptr;
 
-	const std::array<VkDescriptorSetLayoutBinding, 1> layoutBindings = { vpLayoutBinding, /*modelLayoutBinding*/ };
+	const std::array<VkDescriptorSetLayoutBinding, 1> uniformLayoutBindings = { vpLayoutBinding, /*modelLayoutBinding*/ };
 
-	VkDescriptorSetLayoutCreateInfo layoutCreateInfo = {};
-	layoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	layoutCreateInfo.bindingCount = static_cast<uint32>(layoutBindings.size());
-	layoutCreateInfo.pBindings = layoutBindings.data();
+	VkDescriptorSetLayoutCreateInfo uniformLayoutCreateInfo = {};
+	uniformLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	uniformLayoutCreateInfo.bindingCount = static_cast<uint32>(uniformLayoutBindings.size());
+	uniformLayoutCreateInfo.pBindings = uniformLayoutBindings.data();
 
-	if (vkCreateDescriptorSetLayout(m_Device, &layoutCreateInfo, nullptr, &m_DescriptorSetLayout) != VK_SUCCESS)
+	if (vkCreateDescriptorSetLayout(m_Device, &uniformLayoutCreateInfo, nullptr, &m_UniformDescriptorSetLayout) != VK_SUCCESS)
 	{
-		LOG(Error, "Failed to create descriptor set layout.");
+		LOG(Error, "Failed to create uniform descriptor set layout.");
+		return;
+	}
+
+	VkDescriptorSetLayoutBinding samplerLayoutBinding = {};
+	samplerLayoutBinding.binding = 0;
+	samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	samplerLayoutBinding.descriptorCount = 1;
+	samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	samplerLayoutBinding.pImmutableSamplers = nullptr;
+
+	const std::array<VkDescriptorSetLayoutBinding, 1> samplerLayoutBindings = { samplerLayoutBinding };
+
+	VkDescriptorSetLayoutCreateInfo samplerLayoutCreateInfo = {};
+	samplerLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	samplerLayoutCreateInfo.bindingCount = static_cast<uint32>(samplerLayoutBindings.size());
+	samplerLayoutCreateInfo.pBindings = samplerLayoutBindings.data();
+
+	if (vkCreateDescriptorSetLayout(m_Device, &samplerLayoutCreateInfo, nullptr, &m_SamplerDescriptorSetLayout) != VK_SUCCESS)
+	{
+		LOG(Error, "Failed to create sampler descriptor set layout.");
 		return;
 	}
 }
@@ -642,15 +670,22 @@ void vge::Renderer::CreateGraphicsPipeline()
 	vertexBindingDescription.stride = sizeof(Vertex);
 	vertexBindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-	std::array<VkVertexInputAttributeDescription, 2> vertexAttributeDescriptions;
+	std::array<VkVertexInputAttributeDescription, 3> vertexAttributeDescriptions;
+	// Position attribute
 	vertexAttributeDescriptions[0].binding = 0;
 	vertexAttributeDescriptions[0].location = 0;
 	vertexAttributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
 	vertexAttributeDescriptions[0].offset = offsetof(Vertex, Position);
+	// Color attribute
 	vertexAttributeDescriptions[1].binding = 0;
 	vertexAttributeDescriptions[1].location = 1;
 	vertexAttributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
 	vertexAttributeDescriptions[1].offset = offsetof(Vertex, Color);
+	// Texture coords attribute
+	vertexAttributeDescriptions[2].binding = 0;
+	vertexAttributeDescriptions[2].location = 2;
+	vertexAttributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
+	vertexAttributeDescriptions[2].offset = offsetof(Vertex, TexCoords);
 
 	VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo = {};
 	vertexInputCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -725,10 +760,12 @@ void vge::Renderer::CreateGraphicsPipeline()
 	colorBlendingCreateInfo.attachmentCount = 1;
 	colorBlendingCreateInfo.pAttachments = &colorBlendAttachment;
 
+	std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = { m_UniformDescriptorSetLayout, m_SamplerDescriptorSetLayout};
+
 	VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
 	pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutCreateInfo.setLayoutCount = 1;
-	pipelineLayoutCreateInfo.pSetLayouts = &m_DescriptorSetLayout;
+	pipelineLayoutCreateInfo.setLayoutCount = static_cast<uint32>(descriptorSetLayouts.size());
+	pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts.data();
 	pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
 	pipelineLayoutCreateInfo.pPushConstantRanges = &m_PushConstantRange;
 
@@ -839,6 +876,33 @@ void vge::Renderer::CreateCommandBuffers()
 	}
 }
 
+void vge::Renderer::CreateTextureSampler()
+{
+	VkSamplerCreateInfo samplerCreateInfo = {};
+	samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	samplerCreateInfo.magFilter = VK_FILTER_LINEAR;						// how to render when image is magnified on screen
+	samplerCreateInfo.minFilter = VK_FILTER_LINEAR;						// how to render when image is minified on screen
+	// VK_SAMPLER_ADDRESS_MODE_REPEAT - clamp value from 0 to 1 (1.1 -> 0.1 | 2.5 -> 0.5).
+	samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;	// how to handle texture wrap in U (x) direction
+	samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;	// how to handle texture wrap in V (y) direction
+	samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;	// how to handle texture wrap in W (z) direction
+	// Useful only when VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER is set.
+	samplerCreateInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;	// border beyond texture
+	samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;				// clamp from 0 to 1
+	samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	samplerCreateInfo.mipLodBias = 0.0f;
+	samplerCreateInfo.minLod = 0.0f;
+	samplerCreateInfo.maxLod = 0.0f;
+	samplerCreateInfo.anisotropyEnable = VK_TRUE;						// generally, if enabled, handle texture stretching at strange angles
+	samplerCreateInfo.maxAnisotropy = 16;
+
+	if (vkCreateSampler(m_Device, &samplerCreateInfo, nullptr, &m_TextureSampler) != VK_SUCCESS)
+	{
+		LOG(Error, "Failed to create texture sampler.");
+		return;
+	}
+}
+
 //void vge::Renderer::AllocateDynamicBufferTransferSpace()
 //{
 //	// Calculate proper model alignment to ensure its fit into allocated block of memory.
@@ -867,7 +931,7 @@ void vge::Renderer::CreateUniformBuffers()
 	}
 }
 
-void vge::Renderer::CreateDescriptorPool()
+void vge::Renderer::CreateDescriptorPools()
 {
 	VkDescriptorPoolSize vpPoolSize = {};
 	vpPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -877,34 +941,53 @@ void vge::Renderer::CreateDescriptorPool()
 	//modelPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 	//modelPoolSize.descriptorCount = static_cast<uint32>(m_ModelDynamicUniformBuffers.size());
 
-	const std::array<VkDescriptorPoolSize, 1> poolSizes = { vpPoolSize, /*modelPoolSize*/ };
+	const std::array<VkDescriptorPoolSize, 1> uniformPoolSizes = { vpPoolSize, /*modelPoolSize*/ };
 
-	VkDescriptorPoolCreateInfo poolCreateInfo = {};
-	poolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-	poolCreateInfo.maxSets = static_cast<uint32>(m_SwapchainImages.size());
-	poolCreateInfo.poolSizeCount = static_cast<uint32>(poolSizes.size());
-	poolCreateInfo.pPoolSizes = poolSizes.data();
+	VkDescriptorPoolCreateInfo uniformPoolCreateInfo = {};
+	uniformPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	uniformPoolCreateInfo.maxSets = static_cast<uint32>(m_SwapchainImages.size());
+	uniformPoolCreateInfo.poolSizeCount = static_cast<uint32>(uniformPoolSizes.size());
+	uniformPoolCreateInfo.pPoolSizes = uniformPoolSizes.data();
 
-	if (vkCreateDescriptorPool(m_Device, &poolCreateInfo, nullptr, &m_DescriptorPool) != VK_SUCCESS)
+	if (vkCreateDescriptorPool(m_Device, &uniformPoolCreateInfo, nullptr, &m_UniformDescriptorPool) != VK_SUCCESS)
 	{
-		LOG(Error, "Failed to create descriptor pool.");
+		LOG(Error, "Failed to create uniform descriptor pool.");
+		return;
+	}
+
+	// TODO: for now Amount of textures == Amount of objects, this should be redesigned.
+	VkDescriptorPoolSize samplerPoolSize = {};
+	samplerPoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; // in advanced projects descriptor for image and sampler should be separate
+	samplerPoolSize.descriptorCount = static_cast<uint32>(GMaxSceneObjects);
+
+	const std::array<VkDescriptorPoolSize, 1> samplerPoolSizes = { samplerPoolSize };
+
+	VkDescriptorPoolCreateInfo samplerPoolCreateInfo = {};
+	samplerPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	samplerPoolCreateInfo.maxSets = static_cast<uint32>(GMaxSceneObjects);
+	samplerPoolCreateInfo.poolSizeCount = static_cast<uint32>(samplerPoolSizes.size());
+	samplerPoolCreateInfo.pPoolSizes = samplerPoolSizes.data();
+
+	if (vkCreateDescriptorPool(m_Device, &samplerPoolCreateInfo, nullptr, &m_SamplerDescriptorPool) != VK_SUCCESS)
+	{
+		LOG(Error, "Failed to create sampler descriptor pool.");
 		return;
 	}
 }
 
-void vge::Renderer::CreateDescriptorSets()
+void vge::Renderer::CreateUniformDescriptorSets()
 {
-	m_DescriptorSets.resize(m_SwapchainImages.size());
+	m_UniformDescriptorSets.resize(m_SwapchainImages.size());
 
-	std::vector<VkDescriptorSetLayout> setLayouts(m_SwapchainImages.size(), m_DescriptorSetLayout);
+	std::vector<VkDescriptorSetLayout> setLayouts(m_SwapchainImages.size(), m_UniformDescriptorSetLayout);
 
 	VkDescriptorSetAllocateInfo setAllocInfo = {};
 	setAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	setAllocInfo.descriptorPool = m_DescriptorPool;
+	setAllocInfo.descriptorPool = m_UniformDescriptorPool;
 	setAllocInfo.descriptorSetCount = static_cast<uint32>(m_SwapchainImages.size());
 	setAllocInfo.pSetLayouts = setLayouts.data(); // 1 to 1 relationship with layout and set
 
-	if (vkAllocateDescriptorSets(m_Device, &setAllocInfo, m_DescriptorSets.data()) != VK_SUCCESS)
+	if (vkAllocateDescriptorSets(m_Device, &setAllocInfo, m_UniformDescriptorSets.data()) != VK_SUCCESS)
 	{
 		LOG(Error, "Failed to allocate descriptor sets.");
 		return;
@@ -919,7 +1002,7 @@ void vge::Renderer::CreateDescriptorSets()
 
 		VkWriteDescriptorSet vpSetWrite = {};
 		vpSetWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		vpSetWrite.dstSet = m_DescriptorSets[i];
+		vpSetWrite.dstSet = m_UniformDescriptorSets[i];
 		vpSetWrite.dstBinding = 0;
 		vpSetWrite.dstArrayElement = 0;
 		vpSetWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -950,7 +1033,6 @@ void vge::Renderer::RecordCommandBuffers(uint32 ImageIndex)
 {
 	VkCommandBuffer& currentCmdBuffer = m_CommandBuffers[ImageIndex];
 	VkFramebuffer& currentFramebuffer = m_SwapchainFramebuffers[ImageIndex];
-	VkDescriptorSet& currentDescriptorSet = m_DescriptorSets[ImageIndex];
 
 	VkCommandBufferBeginInfo cmdBufferBeginInfo = {};
 	cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -985,6 +1067,8 @@ void vge::Renderer::RecordCommandBuffers(uint32 ImageIndex)
 		{
 			const Mesh& mesh = m_Meshes[MeshIndex];
 
+			const std::array<VkDescriptorSet, 2> currentDescriptorSets = { m_UniformDescriptorSets[ImageIndex], m_SamplerDescriptorSets[mesh.GetTextureId()]};
+
 			VkBuffer vertexBuffers[] = { mesh.GetVertexBuffer() };
 			VkDeviceSize offsets[] = { 0 };
 			vkCmdBindVertexBuffers(currentCmdBuffer, 0, 1, vertexBuffers, offsets);
@@ -994,7 +1078,8 @@ void vge::Renderer::RecordCommandBuffers(uint32 ImageIndex)
 			vkCmdPushConstants(currentCmdBuffer, m_GfxPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ModelData), &mesh.GetModelDataRef());
 
 			//const uint32 dynamicOffset = static_cast<uint32>(m_ModelUniformAlignment * MeshIndex);
-			vkCmdBindDescriptorSets(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GfxPipelineLayout, 0, 1, &currentDescriptorSet, 0, nullptr);
+			vkCmdBindDescriptorSets(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GfxPipelineLayout, 
+				0, static_cast<uint32>(currentDescriptorSets.size()), currentDescriptorSets.data(), 0, nullptr);
 
 			vkCmdDrawIndexed(currentCmdBuffer, static_cast<uint32>(mesh.GetIndexCount()), 1, 0, 0, 0);
 		}
@@ -1062,12 +1147,18 @@ int32 vge::Renderer::CreateTexture(const char* filename)
 {
 	VkImage textureImage = VK_NULL_HANDLE;
 	VkDeviceMemory textureImageMemory = VK_NULL_HANDLE;
-	vge::CreateTexture(m_Gpu, m_Device, m_GfxQueue, m_GfxCommandPool, filename, textureImage, textureImageMemory);
-
+	vge::CreateTextureImage(m_Gpu, m_Device, m_GfxQueue, m_GfxCommandPool, filename, textureImage, textureImageMemory);
 	m_TextureImages.push_back(textureImage);
 	m_TextureImagesMemory.push_back(textureImageMemory);
 
-	LOG(Log, "Successfully created and saved new texture: %s", filename);
+	VkImageView textureImageView = CreateImageView(m_Device, textureImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT);
+	m_TextureImageViews.push_back(textureImageView);
 
-	return static_cast<int32_t>(m_TextureImages.size()) - 1; // return last added texture index
+	VkDescriptorSet textureDescriptorSet = vge::CreateTextureDescriptorSet(m_Device, m_TextureSampler, m_SamplerDescriptorPool, m_SamplerDescriptorSetLayout, textureImageView);
+	m_SamplerDescriptorSets.push_back(textureDescriptorSet);
+
+	const int32 textureId = static_cast<int32>(m_SamplerDescriptorSets.size() - 1);
+	LOG(Log, "Successfully created and saved new texture: %s with id: %d", filename, textureId);
+
+	return textureId;
 }

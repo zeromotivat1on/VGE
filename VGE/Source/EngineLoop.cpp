@@ -14,7 +14,7 @@ void vge::MainLoop()
 		SCOPE_TIMER("Tick");
 		glfwPollEvents();
 
-		float now = static_cast<float>(glfwGetTime());
+		const float now = static_cast<float>(glfwGetTime());
 		deltaTime = now - lastTime;
 		lastTime = now;
 
@@ -28,10 +28,10 @@ void vge::MainLoop()
 		glm::mat4 firstModel(1.0f);
 		glm::mat4 secondModel(1.0f);
 
-		firstModel = glm::translate(firstModel, glm::vec3(0.0f, 0.0f, -8.0f));
+		firstModel = glm::translate(firstModel, glm::vec3(-1.0f, 0.0f, -1.0f));
 		firstModel = glm::rotate(firstModel, glm::radians(angle), glm::vec3(0.0f, 0.0f, 1.0f));
 
-		secondModel = glm::translate(secondModel, glm::vec3(0.0f, 0.0f, -9.0f));
+		secondModel = glm::translate(secondModel, glm::vec3(1.0f, 0.0f, -3.0f));
 		secondModel = glm::rotate(secondModel, glm::radians(-angle * 2.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 
 		GRenderer->UpdateModel(0, firstModel);
