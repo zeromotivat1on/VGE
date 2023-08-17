@@ -9,11 +9,11 @@ namespace vge
 	public:
 		MeshModel() = default;
 		//MeshModel(const char* modelFilename);
-		MeshModel(const std::vector<Mesh>& Meshes) : m_Meshes(Meshes) {}
+		MeshModel(VkPhysicalDevice gpu, VkDevice device);
 
 		// Recursively load all meshes from this node and its children.
-		void LoadNode(VkPhysicalDevice gpu, VkDevice device, VkQueue transferQueue, VkCommandPool transferCmdPool, const aiScene* scene, const aiNode* node, const std::vector<int32>& textureToDescriptorSet);
-		void LoadMesh(VkPhysicalDevice gpu, VkDevice device, VkQueue transferQueue, VkCommandPool transferCmdPool, const aiScene* scene, const aiMesh* mesh, const std::vector<int32>& textureToDescriptorSet);
+		void LoadNode(VkQueue transferQueue, VkCommandPool transferCmdPool, const aiScene* scene, const aiNode* node, const std::vector<int32>& textureToDescriptorSet);
+		void LoadMesh(VkQueue transferQueue, VkCommandPool transferCmdPool, const aiScene* scene, const aiMesh* mesh, const std::vector<int32>& textureToDescriptorSet);
 
 	public:
 		size_t GetMeshCount() const { return m_Meshes.size(); }
@@ -27,6 +27,9 @@ namespace vge
 		void Destroy();
 
 	private:
+		VkPhysicalDevice m_Gpu = VK_NULL_HANDLE;
+		VkDevice m_Device = VK_NULL_HANDLE;
+
 		std::vector<Mesh> m_Meshes = {};
 		ModelData m_ModelData = {};
 	};

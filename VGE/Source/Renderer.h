@@ -28,10 +28,21 @@ namespace vge
 		void Draw();
 		void Cleanup();
 
-		void UpdateModelMatrix(int32 modelIndex, glm::mat4 model) { m_MeshModels[modelIndex].SetModelMatrix(model); }
+		// TODO: for now 1 game object can have only 1 texture which is cringe.
+		int32 CreateTexture(const char* filename);
+		int32 CreateMeshModel(const char* filename);
+
+		void UpdateModelMatrix(int32 modelIndex, glm::mat4 model) 
+		{
+			if (modelIndex < m_MeshModels.size()) 
+			{ 
+				m_MeshModels[modelIndex].SetModelMatrix(model); 
+			}
+		}
 
 	private:
 		std::vector<MeshModel> m_MeshModels = {};
+		std::vector<Texture> m_Textures = {};
 
 		UboViewProjection m_UboViewProjection = {};
 
@@ -72,8 +83,6 @@ namespace vge
 
 		std::vector<VkDescriptorSet> m_UniformDescriptorSets = {};
 		
-		std::vector<Texture> m_Textures = {};
-
 		VkPushConstantRange m_PushConstantRange = {};
 
 		std::vector<VkBuffer> m_VpUniformBuffers = {};
@@ -118,14 +127,10 @@ namespace vge
 
 		void RecordCommandBuffers(uint32 ImageIndex);
 		void UpdateUniformBuffers(uint32 ImageIndex);
-
-		// TODO: for now 1 game object can have only 1 texture which is cringe.
-		int32 CreateTexture(const char* filename);
-		void CreateMeshModel(const char* filename);
 	};
 
 	Renderer* CreateRenderer(GLFWwindow* window);
 	bool DestroyRenderer();
 
-	inline void IncrementCurrentFrame();
+	inline void IncrementCurrentFrame() { GCurrentFrame = (GCurrentFrame + 1) % GMaxDrawFrames; }
 }

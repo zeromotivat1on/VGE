@@ -85,11 +85,6 @@ bool vge::DestroyRenderer()
 	GRenderer = nullptr;
 	return true;
 }
-
-void vge::IncrementCurrentFrame()
-{
-	GCurrentFrame = (GCurrentFrame + 1) % GMaxDrawFrames;
-}
 #pragma endregion NamespaceFunctions
 
 vge::Renderer::Renderer(GLFWwindow* window) : m_Window(window)
@@ -118,15 +113,14 @@ void vge::Renderer::Initialize()
 	CreateUniformDescriptorSets();
 	CreateSyncObjects();
 
-	const int32 firstTexture = CreateTexture("Textures/katakuri.jpg");
+	// Default texture (plain white square 64x64).
+	CreateTexture("Textures/plain.png");
 
 	const float aspectRatio = static_cast<float>(m_SwapchainExtent.width) / static_cast<float>(m_SwapchainExtent.width);
 	m_UboViewProjection.Projection = glm::perspective(glm::radians(45.0f), aspectRatio, 0.0001f, 10000.0f);
 	m_UboViewProjection.View = glm::lookAt(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
 	m_UboViewProjection.Projection[1][1] *= -1; // invert y-axis as glm uses positive y-axis for up, but vulkan uses it for down
-
-	CreateMeshModel("Models/male.obj");
 }
 
 void vge::Renderer::Draw()
@@ -209,11 +203,6 @@ void vge::Renderer::Cleanup()
 		//vkDestroyBuffer(m_Device, m_ModelDynamicUniformBuffers[i], nullptr);
 		//vkFreeMemory(m_Device, m_ModelDynamicUniformBuffersMemory[i], nullptr);
 	}
-
-	//for (Mesh& mesh : m_Meshes)
-	//{
-	//	mesh.Destroy();
-	//}
 
 	for (int32 i = 0; i < GMaxDrawFrames; ++i)
 	{
@@ -1149,18 +1138,19 @@ int32 vge::Renderer::CreateTexture(const char* filename)
 	m_Textures.push_back(texture);
 
 	const int32 textureId = static_cast<int32>(m_Textures.size() - 1);
-	LOG(Log, "Successfully created and saved new texture: %s with id: %d", filename, textureId);
+	LOG(Log, "New texture: %s with id: %d", filename, textureId);
 
 	return textureId;
 }
 
-void vge::Renderer::CreateMeshModel(const char* filename)
+int32 vge::Renderer::CreateMeshModel(const char* filename)
 {
-	MeshModel meshModel = MeshModel();
+	MeshModel meshModel = MeshModel(m_Gpu, m_Device);
 
 	Assimp::Importer importer;
 	const aiScene* scene = file::LoadModel(filename, importer);
 
+	// TODO: find a better way to load textures, this one is ugly.
 	std::vector<const char*> textureNames;
 	file::LoadTextures(scene, textureNames);
 
@@ -1177,8 +1167,12 @@ void vge::Renderer::CreateMeshModel(const char* filename)
 		}
 	}
 
-	meshModel.LoadMesh(m_Gpu, m_Device, m_GfxQueue, m_GfxCommandPool, scene, scene->mMeshes[0], textureToDescriptorSet);
-	//meshModel.LoadNode(m_Gpu, m_Device, m_GfxQueue, m_GfxCommandPool, scene, scene->mRootNode, textureToDescriptorSet);
+	meshModel.LoadNode(m_GfxQueue, m_GfxCommandPool, scene, scene->mRootNode, textureToDescriptorSet);
 
 	m_MeshModels.push_back(meshModel);
+
+	const int32 modelId = static_cast<int32>(m_MeshModels.size() - 1);
+	LOG(Log, "New mesh model: %s with id: %d", filename, modelId);
+
+	return modelId;
 }

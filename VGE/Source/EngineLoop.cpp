@@ -9,6 +9,8 @@ void vge::MainLoop()
 	float deltaTime = 0.0f;
 	float lastTime = 0.0f;
 
+	const int32 maleModelIndex = GRenderer->CreateMeshModel("Models/male.obj");
+
 	while (!glfwWindowShouldClose(GWindow))
 	{
 		SCOPE_TIMER("Tick");
@@ -29,7 +31,7 @@ void vge::MainLoop()
 		firstModel = glm::translate(firstModel, glm::vec3(0.0f, 0.0f, -100.0f));
 		firstModel = glm::rotate(firstModel, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
 
-		GRenderer->UpdateModelMatrix(0, firstModel);
+		GRenderer->UpdateModelMatrix(maleModelIndex, firstModel);
 
 		GRenderer->Draw();
 	}
