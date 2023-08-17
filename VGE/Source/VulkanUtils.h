@@ -43,10 +43,10 @@ namespace vge
 	struct Texture
 	{
 		VkImage Image = VK_NULL_HANDLE;
-		VkImageView ImageView = VK_NULL_HANDLE;
+		VkImageView View = VK_NULL_HANDLE;
 		// TODO: Have 1 VkDeviceMemory and VkImage's just reference it with offsets.
-		VkDeviceMemory ImageMemory = VK_NULL_HANDLE;
-		VkDescriptorSet DescriptorSet = VK_NULL_HANDLE;
+		VkDeviceMemory Memory = VK_NULL_HANDLE;
+		VkDescriptorSet Descriptor = VK_NULL_HANDLE;
 	};
 
 	bool SupportValidationLayers();

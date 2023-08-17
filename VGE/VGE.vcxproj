@@ -116,14 +116,14 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)Vendor;$(ProjectDir)Vendor\glm;$(ProjectDir)Vendor\GLFW\include;C:\VulkanSDK\1.3.250.1\Include;%(AdditionalIncludeDirectories);C:\VulkanSDK\1.3.243.0\Include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Vendor;$(ProjectDir)Vendor\glm;$(ProjectDir)Vendor\GLFW\include;$(ProjectDir)Vendor\assimp\include;C:\VulkanSDK\1.3.250.1\Include;C:\VulkanSDK\1.3.243.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(ProjectDir)Vendor\GLFW\lib-vc2022;C:\VulkanSDK\1.3.250.1\Lib;%(AdditionalLibraryDirectories);C:\VulkanSDK\1.3.243.0\Lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)Vendor\GLFW\lib-vc2022;$(ProjectDir)Vendor\assimp\lib\Release;C:\VulkanSDK\1.3.250.1\Lib;C:\VulkanSDK\1.3.243.0\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -134,7 +134,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)Vendor;$(ProjectDir)Vendor\glm;$(ProjectDir)Vendor\GLFW\include;C:\VulkanSDK\1.3.250.1\Include;%(AdditionalIncludeDirectories);C:\VulkanSDK\1.3.243.0\Include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Vendor;$(ProjectDir)Vendor\glm;$(ProjectDir)Vendor\GLFW\include;$(ProjectDir)Vendor\assimp\include;C:\VulkanSDK\1.3.250.1\Include;C:\VulkanSDK\1.3.243.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -142,11 +142,12 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(ProjectDir)Vendor\GLFW\lib-vc2022;C:\VulkanSDK\1.3.250.1\Lib;%(AdditionalLibraryDirectories);C:\VulkanSDK\1.3.243.0\Lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)Vendor\GLFW\lib-vc2022;$(ProjectDir)Vendor\assimp\lib\Release;C:\VulkanSDK\1.3.250.1\Lib;C:\VulkanSDK\1.3.243.0\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\MeshModel.cpp" />
     <ClCompile Include="Source\Buffer.cpp" />
     <ClCompile Include="Source\Mesh.cpp" />
     <ClCompile Include="Source\Shader.cpp" />
@@ -160,6 +161,7 @@
     <ClCompile Include="Source\Window.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\MeshModel.h" />
     <ClInclude Include="Source\Mesh.h" />
     <ClInclude Include="Source\Profiling.h" />
     <ClInclude Include="Source\Buffer.h" />

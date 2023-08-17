@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Common.h"
-#include "Mesh.h"
+#include "MeshModel.h"
 
 namespace vge
 {
@@ -10,7 +10,7 @@ namespace vge
 	inline constexpr int32 GMaxDrawFrames = 2;
 	inline			 int32 GCurrentFrame  = 0;
 
-	inline constexpr int32 GMaxSceneObjects = 2;
+	inline constexpr int32 GMaxSceneObjects = 32;
 
 	struct UboViewProjection
 	{
@@ -28,10 +28,10 @@ namespace vge
 		void Draw();
 		void Cleanup();
 
-		void UpdateModel(int32 modelIndex, glm::mat4 model) { m_Meshes[modelIndex].SetModelMatrix(model); }
+		void UpdateModelMatrix(int32 modelIndex, glm::mat4 model) { m_MeshModels[modelIndex].SetModelMatrix(model); }
 
 	private:
-		std::vector<Mesh> m_Meshes = {};
+		std::vector<MeshModel> m_MeshModels = {};
 
 		UboViewProjection m_UboViewProjection = {};
 
@@ -121,6 +121,7 @@ namespace vge
 
 		// TODO: for now 1 game object can have only 1 texture which is cringe.
 		int32 CreateTexture(const char* filename);
+		void CreateMeshModel(const char* filename);
 	};
 
 	Renderer* CreateRenderer(GLFWwindow* window);

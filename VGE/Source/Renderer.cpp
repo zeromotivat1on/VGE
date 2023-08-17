@@ -118,36 +118,15 @@ void vge::Renderer::Initialize()
 	CreateUniformDescriptorSets();
 	CreateSyncObjects();
 
-
-	const std::vector<Vertex> vertices =
-	{
-		{ {-0.4f, 0.4f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f} },
-		{ {-0.4f, -0.4f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f} },
-		{ {0.4f, -0.4f, 0.0f }, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f} },
-		{ {0.4f, 0.4f, 0.0f }, {1.0f, 1.0f, 0.0f}, {0.0f, 1.0f} },
-	};
-
-	const std::vector<Vertex> vertices2 =
-	{
-		{ {-0.25f, 0.6f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f} },
-		{ {-0.25f, -0.6f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-		{ {0.25f, -0.6f, 0.0f }, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
-		{ {0.25f, 0.6f, 0.0f }, {1.0f, 1.0f, 0.0f}, {0.0f, 1.0f} },
-	};
-
-	const std::vector<uint32> indices = { 0, 1, 2, 2, 3, 0 };
-
 	const int32 firstTexture = CreateTexture("Textures/katakuri.jpg");
 
-	// Transfer queue = Graphics queue.
-	m_Meshes.push_back(Mesh(m_Gpu, m_Device, m_GfxQueue, m_GfxCommandPool, vertices, indices, firstTexture));
-	m_Meshes.push_back(Mesh(m_Gpu, m_Device, m_GfxQueue, m_GfxCommandPool, vertices2, indices, firstTexture));
-
 	const float aspectRatio = static_cast<float>(m_SwapchainExtent.width) / static_cast<float>(m_SwapchainExtent.width);
-	m_UboViewProjection.Projection = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
-	m_UboViewProjection.View = glm::lookAt(glm::vec3(2.0f, 0.0f, 2.0f), glm::vec3(0.0f, 0.0f, -2.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	m_UboViewProjection.Projection = glm::perspective(glm::radians(45.0f), aspectRatio, 0.0001f, 10000.0f);
+	m_UboViewProjection.View = glm::lookAt(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
 	m_UboViewProjection.Projection[1][1] *= -1; // invert y-axis as glm uses positive y-axis for up, but vulkan uses it for down
+
+	CreateMeshModel("Models/male.obj");
 }
 
 void vge::Renderer::Draw()
@@ -198,13 +177,18 @@ void vge::Renderer::Cleanup()
 {
 	vkDeviceWaitIdle(m_Device);
 
+	for (size_t i = 0; i < m_MeshModels.size(); ++i)
+	{
+		m_MeshModels[i].Destroy();
+	}
+
 	vkDestroySampler(m_Device, m_TextureSampler, nullptr);
 
 	for (size_t i = 0; i < m_Textures.size(); ++i)
 	{
-		vkDestroyImageView(m_Device, m_Textures[i].ImageView, nullptr);
+		vkDestroyImageView(m_Device, m_Textures[i].View, nullptr);
 		vkDestroyImage(m_Device, m_Textures[i].Image, nullptr);
-		vkFreeMemory(m_Device, m_Textures[i].ImageMemory, nullptr);
+		vkFreeMemory(m_Device, m_Textures[i].Memory, nullptr);
 	}
 
 	//_aligned_free(m_ModelTransferSpace);
@@ -226,11 +210,10 @@ void vge::Renderer::Cleanup()
 		//vkFreeMemory(m_Device, m_ModelDynamicUniformBuffersMemory[i], nullptr);
 	}
 
-	for (const Mesh& mesh : m_Meshes)
-	{
-		mesh.DestroyVertexBuffer();
-		mesh.DestroyIndexBuffer();
-	}
+	//for (Mesh& mesh : m_Meshes)
+	//{
+	//	mesh.Destroy();
+	//}
 
 	for (int32 i = 0; i < GMaxDrawFrames; ++i)
 	{
@@ -367,7 +350,7 @@ void vge::Renderer::FindGpu()
 	std::vector<VkPhysicalDevice> availableGpus(gpuCount);
 	vkEnumeratePhysicalDevices(m_Instance, &gpuCount, availableGpus.data());
 
-	for (const auto& gpu : availableGpus)
+	for (const VkPhysicalDevice& gpu : availableGpus)
 	{
 		if (SuitableGpu(gpu, m_Surface))
 		{
@@ -396,6 +379,7 @@ void vge::Renderer::CreateDevice()
 {
 	std::unordered_set<int32> queueFamilyIndices = { m_QueueIndices.GraphicsFamily, m_QueueIndices.PresentFamily };
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+
 	for (int32 queueFamilyIndex : queueFamilyIndices)
 	{
 		const float priority = 1.0f;
@@ -1065,25 +1049,36 @@ void vge::Renderer::RecordCommandBuffers(uint32 ImageIndex)
 	{
 		vkCmdBindPipeline(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GfxPipeline);
 
-		for (size_t MeshIndex = 0; MeshIndex < m_Meshes.size(); ++MeshIndex)
+		for (size_t MeshModelIndex = 0; MeshModelIndex < m_MeshModels.size(); ++MeshModelIndex)
 		{
-			const Mesh& mesh = m_Meshes[MeshIndex];
+			MeshModel& meshModel = m_MeshModels[MeshModelIndex];
 
-			const std::array<VkDescriptorSet, 2> currentDescriptorSets = { m_UniformDescriptorSets[ImageIndex], m_Textures[mesh.GetTextureId()].DescriptorSet};
+			vkCmdPushConstants(currentCmdBuffer, m_GfxPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ModelData), &meshModel.GetModelDataRef());
 
-			VkBuffer vertexBuffers[] = { mesh.GetVertexBuffer() };
-			VkDeviceSize offsets[] = { 0 };
-			vkCmdBindVertexBuffers(currentCmdBuffer, 0, 1, vertexBuffers, offsets);
+			for (size_t MeshIndex = 0; MeshIndex < meshModel.GetMeshCount(); ++MeshIndex)
+			{
+				const Mesh* mesh = meshModel.GetMesh(MeshIndex);
 
-			vkCmdBindIndexBuffer(currentCmdBuffer, mesh.GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
+				if (!mesh)
+				{
+					continue;
+				}
 
-			vkCmdPushConstants(currentCmdBuffer, m_GfxPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ModelData), &mesh.GetModelDataRef());
+				const std::array<VkDescriptorSet, 2> currentDescriptorSets = { m_UniformDescriptorSets[ImageIndex], m_Textures[mesh->GetTextureId()].Descriptor};
 
-			//const uint32 dynamicOffset = static_cast<uint32>(m_ModelUniformAlignment * MeshIndex);
-			vkCmdBindDescriptorSets(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GfxPipelineLayout, 
-				0, static_cast<uint32>(currentDescriptorSets.size()), currentDescriptorSets.data(), 0, nullptr);
+				VkBuffer vertexBuffers[] = { mesh->GetVertexBuffer() };
+				VkDeviceSize offsets[] = { 0 };
+				vkCmdBindVertexBuffers(currentCmdBuffer, 0, 1, vertexBuffers, offsets);
 
-			vkCmdDrawIndexed(currentCmdBuffer, static_cast<uint32>(mesh.GetIndexCount()), 1, 0, 0, 0);
+				vkCmdBindIndexBuffer(currentCmdBuffer, mesh->GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
+
+
+				//const uint32 dynamicOffset = static_cast<uint32>(m_ModelUniformAlignment * MeshIndex);
+				vkCmdBindDescriptorSets(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GfxPipelineLayout, 
+					0, static_cast<uint32>(currentDescriptorSets.size()), currentDescriptorSets.data(), 0, nullptr);
+
+				vkCmdDrawIndexed(currentCmdBuffer, static_cast<uint32>(mesh->GetIndexCount()), 1, 0, 0, 0);
+			}
 		}
 	}
 
@@ -1148,13 +1143,42 @@ void vge::Renderer::UpdateUniformBuffers(uint32 ImageIndex)
 int32 vge::Renderer::CreateTexture(const char* filename)
 {
 	Texture texture = {};
-	CreateTextureImage(m_Gpu, m_Device, m_GfxQueue, m_GfxCommandPool, filename, texture.Image, texture.ImageMemory);
-	CreateImageView(m_Device, texture.Image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, texture.ImageView);
-	CreateTextureDescriptorSet(m_Device, m_TextureSampler, m_SamplerDescriptorPool, m_SamplerDescriptorSetLayout, texture.ImageView, texture.DescriptorSet);
+	CreateTextureImage(m_Gpu, m_Device, m_GfxQueue, m_GfxCommandPool, filename, texture.Image, texture.Memory);
+	CreateImageView(m_Device, texture.Image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, texture.View);
+	CreateTextureDescriptorSet(m_Device, m_TextureSampler, m_SamplerDescriptorPool, m_SamplerDescriptorSetLayout, texture.View, texture.Descriptor);
 	m_Textures.push_back(texture);
 
 	const int32 textureId = static_cast<int32>(m_Textures.size() - 1);
 	LOG(Log, "Successfully created and saved new texture: %s with id: %d", filename, textureId);
 
 	return textureId;
+}
+
+void vge::Renderer::CreateMeshModel(const char* filename)
+{
+	MeshModel meshModel = MeshModel();
+
+	Assimp::Importer importer;
+	const aiScene* scene = file::LoadModel(filename, importer);
+
+	std::vector<const char*> textureNames;
+	file::LoadTextures(scene, textureNames);
+
+	std::vector<int32> textureToDescriptorSet(textureNames.size());
+	for (size_t i = 0; i < textureNames.size(); ++i)
+	{
+		if (textureNames[i] == "")
+		{
+			textureToDescriptorSet[i] = 0;
+		}
+		else
+		{
+			textureToDescriptorSet[i] = CreateTexture(textureNames[i]);
+		}
+	}
+
+	meshModel.LoadMesh(m_Gpu, m_Device, m_GfxQueue, m_GfxCommandPool, scene, scene->mMeshes[0], textureToDescriptorSet);
+	//meshModel.LoadNode(m_Gpu, m_Device, m_GfxQueue, m_GfxCommandPool, scene, scene->mRootNode, textureToDescriptorSet);
+
+	m_MeshModels.push_back(meshModel);
 }

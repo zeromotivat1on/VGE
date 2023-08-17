@@ -19,23 +19,17 @@ void vge::MainLoop()
 		lastTime = now;
 
 		angle += 60.0f * deltaTime;
-		
-		if (angle > 360.0f) 
+
+		if (angle > 360.0f)
 		{
 			angle -= 360.0f;
 		}
 
 		glm::mat4 firstModel(1.0f);
-		glm::mat4 secondModel(1.0f);
+		firstModel = glm::translate(firstModel, glm::vec3(0.0f, 0.0f, -100.0f));
+		firstModel = glm::rotate(firstModel, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
 
-		firstModel = glm::translate(firstModel, glm::vec3(-1.0f, 0.0f, -1.0f));
-		firstModel = glm::rotate(firstModel, glm::radians(angle), glm::vec3(0.0f, 0.0f, 1.0f));
-
-		secondModel = glm::translate(secondModel, glm::vec3(1.0f, 0.0f, -3.0f));
-		secondModel = glm::rotate(secondModel, glm::radians(-angle * 2.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-
-		GRenderer->UpdateModel(0, firstModel);
-		GRenderer->UpdateModel(1, secondModel);
+		GRenderer->UpdateModelMatrix(0, firstModel);
 
 		GRenderer->Draw();
 	}

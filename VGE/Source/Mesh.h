@@ -29,8 +29,7 @@ namespace vge
 
 		void SetModelMatrix(glm::mat4 model) { m_ModelData.ModelMatrix = model; }
 
-		void DestroyVertexBuffer() const;
-		void DestroyIndexBuffer() const;
+		void Destroy();
 
 	private:
 		VkPhysicalDevice m_Gpu = VK_NULL_HANDLE;

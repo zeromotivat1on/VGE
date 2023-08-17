@@ -18,7 +18,11 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "stb_image.h"
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
+#include <stb_image.h>
 
 #include "Types.h"
 #include "Macros.h"

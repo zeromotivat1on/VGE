@@ -1,4 +1,5 @@
 #include "Mesh.h"
+#include "Buffer.h"
 
 vge::Mesh::Mesh(VkPhysicalDevice gpu, VkDevice device, VkQueue transferQueue, VkCommandPool transferCmdPool, 
 	const std::vector<Vertex>& vertices, const std::vector<uint32>& indices, int32 TextureId)
@@ -8,14 +9,11 @@ vge::Mesh::Mesh(VkPhysicalDevice gpu, VkDevice device, VkQueue transferQueue, Vk
 	CreateIndexBuffer(transferQueue, transferCmdPool, indices);
 }
 
-void vge::Mesh::DestroyVertexBuffer() const
+void vge::Mesh::Destroy()
 {
 	vkDestroyBuffer(m_Device, m_VertexBuffer, nullptr);
 	vkFreeMemory(m_Device, m_VertexBufferMemory, nullptr);
-}
 
-void vge::Mesh::DestroyIndexBuffer() const
-{
 	vkDestroyBuffer(m_Device, m_IndexBuffer, nullptr);
 	vkFreeMemory(m_Device, m_IndexBufferMemory, nullptr);
 }
