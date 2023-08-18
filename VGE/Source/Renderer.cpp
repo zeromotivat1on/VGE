@@ -289,7 +289,10 @@ void vge::Renderer::Cleanup()
 
 void vge::Renderer::CreateInstance()
 {
-	ENSURE(GEnableValidationLayers && SupportValidationLayers(), "Validation layers requested, but not supported.");
+	if (GEnableValidationLayers)
+	{
+		ENSURE(SupportValidationLayers(), "Validation layers requested, but not supported.");
+	}
 
 	VkApplicationInfo appInfo = {};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
