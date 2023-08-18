@@ -8,7 +8,6 @@ namespace vge
 	{
 	public:
 		MeshModel() = default;
-		//MeshModel(const char* modelFilename);
 		MeshModel(VkPhysicalDevice gpu, VkDevice device);
 
 		// Recursively load all meshes from this node and its children.

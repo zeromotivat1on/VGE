@@ -45,38 +45,9 @@ const aiScene* vge::file::LoadModel(const char* filename, Assimp::Importer& outI
 
 	if (!scene || !scene->mRootNode || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE)
 	{
-		LOG(Error, "Failed to load a model: %s", filename);
-		LOG(Error, " Assimp: %s", outImporter.GetErrorString());
+		LOG(Error, "Assimp: %s", outImporter.GetErrorString());
 		return nullptr;
 	}
 
 	return scene;
-}
-
-void vge::file::LoadTextures(const aiScene* scene, std::vector<const char*>& outTextures)
-{
-	outTextures.resize(scene->mNumMaterials, "");
-
-	for (uint32 i = 0; i < scene->mNumMaterials; ++i)
-	{
-		aiMaterial* material = scene->mMaterials[i];
-
-		if (!material)
-		{
-			continue;
-		}
-
-		// TODO: add possibility to load different textures.
-		if (material->GetTextureCount(aiTextureType_DIFFUSE))
-		{
-			aiString path;
-			// TODO: retreive all textures from material.
-			if (material->GetTexture(aiTextureType_DIFFUSE, 0, &path) == AI_SUCCESS)
-			{
-				int32 index = static_cast<int32>(std::string(path.data).rfind("\\"));
-				std::string filename = std::string(path.data).substr(index + 1);
-				outTextures[i] = filename.c_str();
-			}
-		}
-	}
 }

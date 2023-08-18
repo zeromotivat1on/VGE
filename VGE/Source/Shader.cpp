@@ -7,12 +7,8 @@ VkShaderModule vge::CreateShaderModule(VkDevice device, const std::vector<char>&
 	createInfo.codeSize = code.size();
 	createInfo.pCode = reinterpret_cast<const uint32*>(code.data());
 
-	VkShaderModule shaderModule;
-	if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
-	{
-		LOG(Error, "Failed to create shader module.");
-		return VK_NULL_HANDLE;
-	}
+	VkShaderModule shaderModule = VK_NULL_HANDLE;
+	ENSURE(vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) == VK_SUCCESS, "Failed to create shader module.");
 
 	return shaderModule;
 }

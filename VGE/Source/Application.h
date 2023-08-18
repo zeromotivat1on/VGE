@@ -6,6 +6,8 @@ namespace vge
 {
 	inline class Application* GApplication = nullptr;
 
+	inline int32 GAppFrame = 0;
+
 	struct ApplicationSpecs
 	{
 		struct {
@@ -34,4 +36,6 @@ namespace vge
 	bool DestroyApplication();
 
 	int32 Main(int argc, const char** argv);
+
+	inline void IncrementAppFrame() { ++GAppFrame; }
 }

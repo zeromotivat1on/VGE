@@ -8,7 +8,7 @@ namespace vge
 	inline class Renderer* GRenderer = nullptr;
 	
 	inline constexpr int32 GMaxDrawFrames = 2;
-	inline			 int32 GCurrentFrame  = 0;
+	inline			 int32 GRenderFrame  = 0;
 
 	inline constexpr int32 GMaxSceneObjects = 32;
 
@@ -132,5 +132,12 @@ namespace vge
 	Renderer* CreateRenderer(GLFWwindow* window);
 	bool DestroyRenderer();
 
-	inline void IncrementCurrentFrame() { GCurrentFrame = (GCurrentFrame + 1) % GMaxDrawFrames; }
+	// Get texture names from a given scene, preserves 1 to 1 relationship.
+	// If failed to get a texture from material, its name will be empty in out array.
+	void GetTexturesFromMaterials(const aiScene* scene, std::vector<const char*>& outTextures);
+
+	// Resolve given textures to be mapped with descriptor sets.
+	void ResolveTexturesForDescriptors(Renderer& renderer, const std::vector<const char*>& texturePaths, std::vector<int32>& outTextureToDescriptorSet);
+
+	inline void IncrementRenderFrame() { GRenderFrame = (GRenderFrame + 1) % GMaxDrawFrames; }
 }

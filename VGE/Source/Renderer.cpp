@@ -85,6 +85,51 @@ bool vge::DestroyRenderer()
 	GRenderer = nullptr;
 	return true;
 }
+
+void vge::GetTexturesFromMaterials(const aiScene* scene, std::vector<const char*>& outTextures)
+{
+	outTextures.resize(scene->mNumMaterials, "");
+
+	for (uint32 i = 0; i < scene->mNumMaterials; ++i)
+	{
+		const aiMaterial* material = scene->mMaterials[i];
+
+		if (!material)
+		{
+			continue;
+		}
+
+		// TODO: add possibility to load different textures.
+		if (material->GetTextureCount(aiTextureType_DIFFUSE))
+		{
+			aiString path;
+			// TODO: retreive all textures from material.
+			if (material->GetTexture(aiTextureType_DIFFUSE, 0, &path) == AI_SUCCESS)
+			{
+				const int32 LastSlashIndex = static_cast<int32>(std::string(path.data).rfind("\\"));
+				const std::string filename = std::string(path.data).substr(LastSlashIndex + 1);
+				outTextures[i] = filename.c_str();
+			}
+		}
+	}
+}
+
+void vge::ResolveTexturesForDescriptors(Renderer& renderer, const std::vector<const char*>& texturePaths, std::vector<int32>& outTextureToDescriptorSet)
+{
+	outTextureToDescriptorSet.resize(texturePaths.size());
+
+	for (size_t i = 0; i < texturePaths.size(); ++i)
+	{
+		if (texturePaths[i] == "")
+		{
+			outTextureToDescriptorSet[i] = 0;
+		}
+		else
+		{
+			outTextureToDescriptorSet[i] = renderer.CreateTexture(texturePaths[i]);
+		}
+	}
+}
 #pragma endregion NamespaceFunctions
 
 vge::Renderer::Renderer(GLFWwindow* window) : m_Window(window)
@@ -125,46 +170,49 @@ void vge::Renderer::Initialize()
 
 void vge::Renderer::Draw()
 {
-	vkWaitForFences(m_Device, 1, &m_DrawFences[GCurrentFrame], VK_TRUE, UINT64_MAX);	// wait till open
-	vkResetFences(m_Device, 1, &m_DrawFences[GCurrentFrame]);							// close after enter
+	VkFence& currentDrawFence = m_DrawFences[GRenderFrame];
+	VkSemaphore& currentImageAvailableSemaphore = m_ImageAvailableSemas[GRenderFrame];
+	VkSemaphore& currentRenderFinishedSemaphore = m_RenderFinishedSemas[GRenderFrame];
+
+	vkWaitForFences(m_Device, 1, &currentDrawFence, VK_TRUE, UINT64_MAX);	// wait till open
+	vkResetFences(m_Device, 1, &currentDrawFence);							// close after enter
 
 	uint32 AcquiredImageIndex = 0;
-	vkAcquireNextImageKHR(m_Device, m_Swapchain, UINT64_MAX, m_ImageAvailableSemas[GCurrentFrame], VK_NULL_HANDLE, &AcquiredImageIndex);
+	vkAcquireNextImageKHR(m_Device, m_Swapchain, UINT64_MAX, currentImageAvailableSemaphore, VK_NULL_HANDLE, &AcquiredImageIndex);
+
+	LOG(Log, "Current render frame: %d, Acquired image index: %d", GRenderFrame, AcquiredImageIndex);
 
 	RecordCommandBuffers(AcquiredImageIndex);
 	UpdateUniformBuffers(AcquiredImageIndex);
+
+	VkCommandBuffer& currentCmdBuffer = m_CommandBuffers[AcquiredImageIndex];
 
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 
 	VkSubmitInfo submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.waitSemaphoreCount = 1;
-	submitInfo.pWaitSemaphores = &m_ImageAvailableSemas[GCurrentFrame];
+	submitInfo.pWaitSemaphores = &currentImageAvailableSemaphore;
 	submitInfo.pWaitDstStageMask = waitStages;
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &m_CommandBuffers[AcquiredImageIndex];
+	submitInfo.pCommandBuffers = &currentCmdBuffer;
 	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = &m_RenderFinishedSemas[GCurrentFrame];
+	submitInfo.pSignalSemaphores = &currentRenderFinishedSemaphore;
 
-	if (vkQueueSubmit(m_GfxQueue, 1, &submitInfo, m_DrawFences[GCurrentFrame]) != VK_SUCCESS) // open fence after successful render
-	{
-		LOG(Error, "Failed to submit info to graphics queue.");
-		return;
-	}
+	// Open fence after successful render.
+	ENSURE(vkQueueSubmit(m_GfxQueue, 1, &submitInfo, currentDrawFence) == VK_SUCCESS, "Failed to submit info to graphics queue.");
 
 	VkPresentInfoKHR presentInfo = {};
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 	presentInfo.waitSemaphoreCount = 1;
-	presentInfo.pWaitSemaphores = &m_RenderFinishedSemas[GCurrentFrame];
+	presentInfo.pWaitSemaphores = &currentRenderFinishedSemaphore;
 	presentInfo.swapchainCount = 1;
 	presentInfo.pSwapchains = &m_Swapchain;
 	presentInfo.pImageIndices = &AcquiredImageIndex;
 
-	if (vkQueuePresentKHR(m_PresentQueue, &presentInfo) != VK_SUCCESS)
-	{
-		LOG(Error, "Failed to present info to present queue.");
-		return;
-	}
+	ENSURE(vkQueuePresentKHR(m_PresentQueue, &presentInfo) == VK_SUCCESS, "Failed to present info to present queue.");
+
+	IncrementRenderFrame();
 }
 
 void vge::Renderer::Cleanup()
@@ -241,11 +289,7 @@ void vge::Renderer::Cleanup()
 
 void vge::Renderer::CreateInstance()
 {
-	if (GEnableValidationLayers && !SupportValidationLayers())
-	{
-		LOG(Error, "Validation layers requested, but not supported.");
-		return;
-	}
+	ENSURE(GEnableValidationLayers && SupportValidationLayers(), "Validation layers requested, but not supported.");
 
 	VkApplicationInfo appInfo = {};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -258,11 +302,7 @@ void vge::Renderer::CreateInstance()
 	std::vector<const char*> instanceExtensions = {};
 	GetRequriedInstanceExtensions(instanceExtensions);
 
-	if (!SupportInstanceExtensions(instanceExtensions))
-	{
-		LOG(Error, "Instance does not support requried extensions.");
-		return;
-	}
+	ENSURE(SupportInstanceExtensions(instanceExtensions), "Instance does not support requried extensions.");
 
 	VkInstanceCreateInfo createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -295,11 +335,7 @@ void vge::Renderer::CreateInstance()
 		createInfo.ppEnabledLayerNames = nullptr;
 	}
 
-	if (vkCreateInstance(&createInfo, nullptr, &m_Instance) != VK_SUCCESS)
-	{
-		LOG(Error, "Failed to create Vulkan instance.");
-		return;
-	}
+	ENSURE(vkCreateInstance(&createInfo, nullptr, &m_Instance) == VK_SUCCESS, "Failed to create Vulkan instance.");
 }
 
 void vge::Renderer::SetupDebugMessenger()
@@ -309,20 +345,12 @@ void vge::Renderer::SetupDebugMessenger()
 	VkDebugUtilsMessengerCreateInfoEXT createInfo;
 	PopulateDebugMessengerCreateInfo(createInfo);
 
-	if (CreateDebugUtilsMessengerEXT(m_Instance, &createInfo, nullptr, &m_DebugMessenger) != VK_SUCCESS)
-	{
-		LOG(Error, "Failed to set up debug messenger.");
-		return;
-	}
+	ENSURE(CreateDebugUtilsMessengerEXT(m_Instance, &createInfo, nullptr, &m_DebugMessenger) == VK_SUCCESS, "Failed to set up debug messenger.");
 }
 
 void vge::Renderer::CreateSurface()
 {
-	if (glfwCreateWindowSurface(m_Instance, m_Window, nullptr, &m_Surface) != VK_SUCCESS)
-	{
-		LOG(Error, "Failed to create window surface.");
-		return;
-	}
+	ENSURE(glfwCreateWindowSurface(m_Instance, m_Window, nullptr, &m_Surface) == VK_SUCCESS, "Failed to create window surface.");
 }
 
 void vge::Renderer::FindGpu()
@@ -330,11 +358,7 @@ void vge::Renderer::FindGpu()
 	uint32 gpuCount = 0;
 	vkEnumeratePhysicalDevices(m_Instance, &gpuCount, nullptr);
 
-	if (gpuCount == 0)
-	{
-		LOG(Error, "Can't find GPUs that support Vulkan.");
-		return;
-	}
+	ENSURE(gpuCount > 0, "Can't find GPUs that support Vulkan.");
 
 	std::vector<VkPhysicalDevice> availableGpus(gpuCount);
 	vkEnumeratePhysicalDevices(m_Instance, &gpuCount, availableGpus.data());
@@ -361,7 +385,7 @@ void vge::Renderer::FindGpu()
 		}
 	}
 
-	LOG(Error, "Can't find suitable GPUs.");
+	ENSURE(false, "Can't find suitable GPUs.");
 }
 
 void vge::Renderer::CreateDevice()
@@ -402,11 +426,7 @@ void vge::Renderer::CreateDevice()
 		LOG(Log, "Device extensions enabled: %s", extensionsString.c_str());
 	}
 
-	if (vkCreateDevice(m_Gpu, &deviceCreateInfo, nullptr, &m_Device) != VK_SUCCESS)
-	{
-		LOG(Error, "Failed to create Vulkan device.");
-		return;
-	}
+	ENSURE(vkCreateDevice(m_Gpu, &deviceCreateInfo, nullptr, &m_Device) == VK_SUCCESS, "Failed to create Vulkan device.");
 
 	vkGetDeviceQueue(m_Device, m_QueueIndices.GraphicsFamily, 0, &m_GfxQueue);
 	vkGetDeviceQueue(m_Device, m_QueueIndices.PresentFamily, 0, &m_PresentQueue);
@@ -461,11 +481,7 @@ void vge::Renderer::CreateSwapchain()
 
 	swapchainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
 
-	if (vkCreateSwapchainKHR(m_Device, &swapchainCreateInfo, nullptr, &m_Swapchain) != VK_SUCCESS)
-	{
-		LOG(Error, "Failed to create swapchain.");
-		return;
-	}
+	ENSURE(vkCreateSwapchainKHR(m_Device, &swapchainCreateInfo, nullptr, &m_Swapchain) == VK_SUCCESS, "Failed to create swapchain.");
 
 	m_SwapchainImageFormat = surfaceFormat.format;
 	m_SwapchainExtent = extent;
@@ -553,11 +569,7 @@ void vge::Renderer::CreateRenderPass()
 	renderPassCreateInfo.dependencyCount = static_cast<uint32>(subpassDependencies.size());
 	renderPassCreateInfo.pDependencies = subpassDependencies.data();
 
-	if (vkCreateRenderPass(m_Device, &renderPassCreateInfo, nullptr, &m_RenderPass) != VK_SUCCESS)
-	{
-		LOG(Error, "Failed to create render pass.");
-		return;
-	}
+	ENSURE(vkCreateRenderPass(m_Device, &renderPassCreateInfo, nullptr, &m_RenderPass) == VK_SUCCESS, "Failed to create render pass.");
 }
 
 void vge::Renderer::CreateDescriptorSetLayouts()
@@ -583,11 +595,7 @@ void vge::Renderer::CreateDescriptorSetLayouts()
 	uniformLayoutCreateInfo.bindingCount = static_cast<uint32>(uniformLayoutBindings.size());
 	uniformLayoutCreateInfo.pBindings = uniformLayoutBindings.data();
 
-	if (vkCreateDescriptorSetLayout(m_Device, &uniformLayoutCreateInfo, nullptr, &m_UniformDescriptorSetLayout) != VK_SUCCESS)
-	{
-		LOG(Error, "Failed to create uniform descriptor set layout.");
-		return;
-	}
+	ENSURE(vkCreateDescriptorSetLayout(m_Device, &uniformLayoutCreateInfo, nullptr, &m_UniformDescriptorSetLayout) == VK_SUCCESS, "Failed to create uniform descriptor set layout.");
 
 	VkDescriptorSetLayoutBinding samplerLayoutBinding = {};
 	samplerLayoutBinding.binding = 0;
@@ -603,11 +611,7 @@ void vge::Renderer::CreateDescriptorSetLayouts()
 	samplerLayoutCreateInfo.bindingCount = static_cast<uint32>(samplerLayoutBindings.size());
 	samplerLayoutCreateInfo.pBindings = samplerLayoutBindings.data();
 
-	if (vkCreateDescriptorSetLayout(m_Device, &samplerLayoutCreateInfo, nullptr, &m_SamplerDescriptorSetLayout) != VK_SUCCESS)
-	{
-		LOG(Error, "Failed to create sampler descriptor set layout.");
-		return;
-	}
+	ENSURE(vkCreateDescriptorSetLayout(m_Device, &samplerLayoutCreateInfo, nullptr, &m_SamplerDescriptorSetLayout) == VK_SUCCESS, "Failed to create sampler descriptor set layout.");
 }
 
 void vge::Renderer::CreatePushConstantRange()
@@ -743,11 +747,7 @@ void vge::Renderer::CreateGraphicsPipeline()
 	pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
 	pipelineLayoutCreateInfo.pPushConstantRanges = &m_PushConstantRange;
 
-	if (vkCreatePipelineLayout(m_Device, &pipelineLayoutCreateInfo, nullptr, &m_GfxPipelineLayout) != VK_SUCCESS)
-	{
-		LOG(Error, "Failed to create graphics pipeline layout.");
-		return;
-	}
+	ENSURE(vkCreatePipelineLayout(m_Device, &pipelineLayoutCreateInfo, nullptr, &m_GfxPipelineLayout) == VK_SUCCESS, "Failed to create graphics pipeline layout.");
 
 	VkPipelineDepthStencilStateCreateInfo depthStencilCreateInfo = {};
 	depthStencilCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
@@ -775,11 +775,7 @@ void vge::Renderer::CreateGraphicsPipeline()
 	gfxPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
 	gfxPipelineCreateInfo.basePipelineIndex = INDEX_NONE;
 
-	if (vkCreateGraphicsPipelines(m_Device, nullptr, 1, &gfxPipelineCreateInfo, nullptr, &m_GfxPipeline) != VK_SUCCESS)
-	{
-		LOG(Error, "Failed to create graphics pipeline.");
-		return;
-	}
+	ENSURE(vkCreateGraphicsPipelines(m_Device, nullptr, 1, &gfxPipelineCreateInfo, nullptr, &m_GfxPipeline) == VK_SUCCESS, "Failed to create graphics pipeline.");
 
 	vkDestroyShaderModule(m_Device, fragmentShaderModule, nullptr);
 	vkDestroyShaderModule(m_Device, vertexShaderModule, nullptr);
@@ -813,11 +809,7 @@ void vge::Renderer::CreateFramebuffers()
 		framebufferCreateInfo.height = m_SwapchainExtent.height;
 		framebufferCreateInfo.layers = 1;
 
-		if (vkCreateFramebuffer(m_Device, &framebufferCreateInfo, nullptr, &m_SwapchainFramebuffers[i]) != VK_SUCCESS)
-		{
-			LOG(Error, "Failed to create framebuffer.");
-			return;
-		}
+		ENSURE(vkCreateFramebuffer(m_Device, &framebufferCreateInfo, nullptr, &m_SwapchainFramebuffers[i]) == VK_SUCCESS, "Failed to create framebuffer.");
 	}
 }
 
@@ -828,11 +820,7 @@ void vge::Renderer::CreateCommandPool()
 	cmdPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT; // enable cmd buffers reset (re-record)
 	cmdPoolCreateInfo.queueFamilyIndex = m_QueueIndices.GraphicsFamily;
 
-	if (vkCreateCommandPool(m_Device, &cmdPoolCreateInfo, nullptr, &m_GfxCommandPool) != VK_SUCCESS)
-	{
-		LOG(Error, "Failed to create graphics command pool.");
-		return;
-	}
+	ENSURE(vkCreateCommandPool(m_Device, &cmdPoolCreateInfo, nullptr, &m_GfxCommandPool) == VK_SUCCESS, "Failed to create graphics command pool.");
 }
 
 void vge::Renderer::CreateCommandBuffers()
@@ -845,11 +833,7 @@ void vge::Renderer::CreateCommandBuffers()
 	cmdBufferAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	cmdBufferAllocInfo.commandBufferCount = static_cast<uint32>(m_CommandBuffers.size());
 
-	if (vkAllocateCommandBuffers(m_Device, &cmdBufferAllocInfo, m_CommandBuffers.data()) != VK_SUCCESS)
-	{
-		LOG(Error, "Failed to allocate command buffers.");
-		return;
-	}
+	ENSURE(vkAllocateCommandBuffers(m_Device, &cmdBufferAllocInfo, m_CommandBuffers.data()) == VK_SUCCESS, "Failed to allocate command buffers.");
 }
 
 void vge::Renderer::CreateTextureSampler()
@@ -858,7 +842,7 @@ void vge::Renderer::CreateTextureSampler()
 	samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 	samplerCreateInfo.magFilter = VK_FILTER_LINEAR;						// how to render when image is magnified on screen
 	samplerCreateInfo.minFilter = VK_FILTER_LINEAR;						// how to render when image is minified on screen
-	// VK_SAMPLER_ADDRESS_MODE_REPEAT - clamp value from 0 to 1 (1.1 -> 0.1 | 2.5 -> 0.5).
+	// VK_SAMPLER_ADDRESS_MODE_REPEAT - clamp texture coords from 0 to 1 (1.1 -> 0.1 | 2.5 -> 0.5).
 	samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;	// how to handle texture wrap in U (x) direction
 	samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;	// how to handle texture wrap in V (y) direction
 	samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;	// how to handle texture wrap in W (z) direction
@@ -872,11 +856,7 @@ void vge::Renderer::CreateTextureSampler()
 	samplerCreateInfo.anisotropyEnable = VK_TRUE;						// generally, if enabled, handle texture stretching at strange angles
 	samplerCreateInfo.maxAnisotropy = 16;
 
-	if (vkCreateSampler(m_Device, &samplerCreateInfo, nullptr, &m_TextureSampler) != VK_SUCCESS)
-	{
-		LOG(Error, "Failed to create texture sampler.");
-		return;
-	}
+	ENSURE(vkCreateSampler(m_Device, &samplerCreateInfo, nullptr, &m_TextureSampler) == VK_SUCCESS, "Failed to create texture sampler.");
 }
 
 //void vge::Renderer::AllocateDynamicBufferTransferSpace()
@@ -925,11 +905,7 @@ void vge::Renderer::CreateDescriptorPools()
 	uniformPoolCreateInfo.poolSizeCount = static_cast<uint32>(uniformPoolSizes.size());
 	uniformPoolCreateInfo.pPoolSizes = uniformPoolSizes.data();
 
-	if (vkCreateDescriptorPool(m_Device, &uniformPoolCreateInfo, nullptr, &m_UniformDescriptorPool) != VK_SUCCESS)
-	{
-		LOG(Error, "Failed to create uniform descriptor pool.");
-		return;
-	}
+	ENSURE(vkCreateDescriptorPool(m_Device, &uniformPoolCreateInfo, nullptr, &m_UniformDescriptorPool) == VK_SUCCESS, "Failed to create uniform descriptor pool.");
 
 	VkDescriptorPoolSize samplerPoolSize = {};
 	samplerPoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; // in advanced projects descriptor for image and sampler should be separate
@@ -943,11 +919,7 @@ void vge::Renderer::CreateDescriptorPools()
 	samplerPoolCreateInfo.poolSizeCount = static_cast<uint32>(samplerPoolSizes.size());
 	samplerPoolCreateInfo.pPoolSizes = samplerPoolSizes.data();
 
-	if (vkCreateDescriptorPool(m_Device, &samplerPoolCreateInfo, nullptr, &m_SamplerDescriptorPool) != VK_SUCCESS)
-	{
-		LOG(Error, "Failed to create sampler descriptor pool.");
-		return;
-	}
+	ENSURE(vkCreateDescriptorPool(m_Device, &samplerPoolCreateInfo, nullptr, &m_SamplerDescriptorPool) == VK_SUCCESS, "Failed to create sampler descriptor pool.");
 }
 
 void vge::Renderer::CreateUniformDescriptorSets()
@@ -962,11 +934,7 @@ void vge::Renderer::CreateUniformDescriptorSets()
 	setAllocInfo.descriptorSetCount = static_cast<uint32>(m_SwapchainImages.size());
 	setAllocInfo.pSetLayouts = setLayouts.data(); // 1 to 1 relationship with layout and set
 
-	if (vkAllocateDescriptorSets(m_Device, &setAllocInfo, m_UniformDescriptorSets.data()) != VK_SUCCESS)
-	{
-		LOG(Error, "Failed to allocate descriptor sets.");
-		return;
-	}
+	ENSURE(vkAllocateDescriptorSets(m_Device, &setAllocInfo, m_UniformDescriptorSets.data()) == VK_SUCCESS, "Failed to allocate descriptor sets.");
 
 	for (size_t i = 0; i < m_SwapchainImages.size(); ++i)
 	{
@@ -1027,11 +995,7 @@ void vge::Renderer::RecordCommandBuffers(uint32 ImageIndex)
 	renderPassBeginInfo.pClearValues = clearValues.data();
 	renderPassBeginInfo.framebuffer = currentFramebuffer;
 
-	if (vkBeginCommandBuffer(currentCmdBuffer, &cmdBufferBeginInfo) != VK_SUCCESS)
-	{
-		LOG(Error, "Failed to start command buffer record.");
-		return;
-	}
+	ENSURE(vkBeginCommandBuffer(currentCmdBuffer, &cmdBufferBeginInfo) == VK_SUCCESS, "Failed to begin command buffer record.");
 
 	vkCmdBeginRenderPass(currentCmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -1073,11 +1037,7 @@ void vge::Renderer::RecordCommandBuffers(uint32 ImageIndex)
 
 	vkCmdEndRenderPass(currentCmdBuffer);
 
-	if (vkEndCommandBuffer(currentCmdBuffer) != VK_SUCCESS)
-	{
-		LOG(Error, "Failed to stop command buffer record.");
-		return;
-	}
+	ENSURE(vkEndCommandBuffer(currentCmdBuffer) == VK_SUCCESS, "Failed to end command buffer record.");
 }
 
 void vge::Renderer::CreateSyncObjects()
@@ -1095,18 +1055,9 @@ void vge::Renderer::CreateSyncObjects()
 
 	for (int32 i = 0; i < GMaxDrawFrames; ++i)
 	{
-		if (vkCreateSemaphore(m_Device, &semaphoreCreateInfo, nullptr, &m_ImageAvailableSemas[i]) != VK_SUCCESS ||
-			vkCreateSemaphore(m_Device, &semaphoreCreateInfo, nullptr, &m_RenderFinishedSemas[i]) != VK_SUCCESS)
-		{
-			LOG(Error, "Failed to create semaphore.");
-			return;
-		}
-
-		if (vkCreateFence(m_Device, &fenceCreateInfo, nullptr, &m_DrawFences[i]) != VK_SUCCESS)
-		{
-			LOG(Error, "Failed to create fence.");
-			return;
-		}
+		ENSURE(vkCreateSemaphore(m_Device, &semaphoreCreateInfo, nullptr, &m_ImageAvailableSemas[i]) == VK_SUCCESS, "Failed to create image available semaphore.");
+		ENSURE(vkCreateSemaphore(m_Device, &semaphoreCreateInfo, nullptr, &m_RenderFinishedSemas[i]) == VK_SUCCESS, "Failed to create render finished semaphore.");
+		ENSURE(vkCreateFence(m_Device, &fenceCreateInfo, nullptr, &m_DrawFences[i]) == VK_SUCCESS, "Failed to create fence.");
 	}
 }
 
@@ -1138,7 +1089,7 @@ int32 vge::Renderer::CreateTexture(const char* filename)
 	m_Textures.push_back(texture);
 
 	const int32 textureId = static_cast<int32>(m_Textures.size() - 1);
-	LOG(Log, "New texture: %s with id: %d", filename, textureId);
+	LOG(Log, "ID: %d, path: %s", textureId, filename);
 
 	return textureId;
 }
@@ -1150,29 +1101,19 @@ int32 vge::Renderer::CreateMeshModel(const char* filename)
 	Assimp::Importer importer;
 	const aiScene* scene = file::LoadModel(filename, importer);
 
-	// TODO: find a better way to load textures, this one is ugly.
-	std::vector<const char*> textureNames;
-	file::LoadTextures(scene, textureNames);
+	// TODO: find a better way to determine which texture id to pass to mesh, current one is ugly.
+	std::vector<const char*> texturePaths;
+	GetTexturesFromMaterials(scene, texturePaths);
 
-	std::vector<int32> textureToDescriptorSet(textureNames.size());
-	for (size_t i = 0; i < textureNames.size(); ++i)
-	{
-		if (textureNames[i] == "")
-		{
-			textureToDescriptorSet[i] = 0;
-		}
-		else
-		{
-			textureToDescriptorSet[i] = CreateTexture(textureNames[i]);
-		}
-	}
+	std::vector<int32> textureToDescriptorSet;
+	ResolveTexturesForDescriptors(*this, texturePaths, textureToDescriptorSet);
 
 	meshModel.LoadNode(m_GfxQueue, m_GfxCommandPool, scene, scene->mRootNode, textureToDescriptorSet);
 
 	m_MeshModels.push_back(meshModel);
 
 	const int32 modelId = static_cast<int32>(m_MeshModels.size() - 1);
-	LOG(Log, "New mesh model: %s with id: %d", filename, modelId);
+	LOG(Log, "ID: %d, path: %s", modelId, filename);
 
 	return modelId;
 }

@@ -215,7 +215,7 @@ uint32 vge::FindMemoryTypeIndex(VkPhysicalDevice gpu, uint32 allowedTypes, VkMem
 		}
 	}
 
-	LOG(Error, "Failed to find memory type index. Returning 0.");
+	LOG(Warning, "Failed to find memory type index. Returning 0.");
 	return 0;
 }
 
@@ -291,7 +291,7 @@ VkFormat vge::GetBestImageFormat(VkPhysicalDevice gpu, const std::vector<VkForma
 		}
 	}
 
-	LOG(Error, "Failed to find matching format, returning VK_FORMAT_UNDEFINED.");
+	LOG(Warning, "Failed to find matching format, returning VK_FORMAT_UNDEFINED.");
 	return VK_FORMAT_UNDEFINED;
 
 }
@@ -313,11 +313,7 @@ void vge::CreateImage(VkPhysicalDevice gpu, VkDevice device, VkExtent2D extent, 
 	imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 	imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE; // whether can be shared between queues
 
-	if (vkCreateImage(device, &imageCreateInfo, nullptr, &outImage) != VK_SUCCESS)
-	{
-		LOG(Error, "Failed to create image.");
-		return;
-	}
+	ENSURE(vkCreateImage(device, &imageCreateInfo, nullptr, &outImage) == VK_SUCCESS, "Failed to create image.");
 
 	VkMemoryRequirements memRequriements = {};
 	vkGetImageMemoryRequirements(device, outImage, &memRequriements);
@@ -327,11 +323,7 @@ void vge::CreateImage(VkPhysicalDevice gpu, VkDevice device, VkExtent2D extent, 
 	imageMemoryAllocInfo.allocationSize = memRequriements.size;
 	imageMemoryAllocInfo.memoryTypeIndex = FindMemoryTypeIndex(gpu, memRequriements.memoryTypeBits, memProps);
 
-	if (vkAllocateMemory(device, &imageMemoryAllocInfo, nullptr, &outImageMemory) != VK_SUCCESS)
-	{
-		LOG(Error, "Failed to allocate image memory.");
-		return;
-	}
+	ENSURE(vkAllocateMemory(device, &imageMemoryAllocInfo, nullptr, &outImageMemory) == VK_SUCCESS, "Failed to allocate image memory.");
 
 	vkBindImageMemory(device, outImage, outImageMemory, 0);
 }
@@ -353,11 +345,7 @@ void vge::CreateImageView(VkDevice device, VkImage image, VkFormat format, VkIma
 	createInfo.subresourceRange.baseArrayLayer = 0;
 	createInfo.subresourceRange.layerCount = 1;
 
-	VkImageView imageView = VK_NULL_HANDLE;
-	if (vkCreateImageView(device, &createInfo, nullptr, &outImageView) != VK_SUCCESS)
-	{
-		LOG(Error, "Failed to create image view");
-	}
+	ENSURE(vkCreateImageView(device, &createInfo, nullptr, &outImageView) == VK_SUCCESS, "Failed to create image view.");
 }
 
 void vge::CreateTextureImage(VkPhysicalDevice gpu, VkDevice device, VkQueue transferQueue, VkCommandPool transferCmdPool, const char* filename, VkImage& outImage, VkDeviceMemory& outImageMemory)
@@ -407,11 +395,7 @@ void vge::CreateTextureDescriptorSet(VkDevice device, VkSampler sampler, VkDescr
 	descriptorSetAllocInfo.descriptorSetCount = 1;
 	descriptorSetAllocInfo.pSetLayouts = &descrptorSetLayout;
 
-	if (vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &outTextureDescriptorSet) != VK_SUCCESS)
-	{
-		LOG(Error, "Failed to allocate texture descriptor set.");
-		return;
-	}
+	ENSURE(vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &outTextureDescriptorSet) == VK_SUCCESS, "Failed to allocate texture descriptor set.");
 
 	VkDescriptorImageInfo descriptorImageInfo = {};
 	descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;

@@ -1,4 +1,5 @@
 #include "EngineLoop.h"
+#include "Application.h"
 #include "Window.h"
 #include "Renderer.h"
 #include "Profiling.h"
@@ -14,6 +15,8 @@ void vge::MainLoop()
 	while (!glfwWindowShouldClose(GWindow))
 	{
 		SCOPE_TIMER("Tick");
+		LOG(Log, "Current app frame: %d", GAppFrame);
+
 		glfwPollEvents();
 
 		const float now = static_cast<float>(glfwGetTime());
@@ -34,5 +37,7 @@ void vge::MainLoop()
 		GRenderer->UpdateModelMatrix(maleModelIndex, firstModel);
 
 		GRenderer->Draw();
+
+		IncrementAppFrame();
 	}
 }
