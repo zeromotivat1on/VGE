@@ -293,7 +293,6 @@ VkFormat vge::GetBestImageFormat(VkPhysicalDevice gpu, const std::vector<VkForma
 
 	LOG(Warning, "Failed to find matching format, returning VK_FORMAT_UNDEFINED.");
 	return VK_FORMAT_UNDEFINED;
-
 }
 
 void vge::CreateImage(VkPhysicalDevice gpu, VkDevice device, VkExtent2D extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags memProps, VkImage& outImage, VkDeviceMemory& outImageMemory)

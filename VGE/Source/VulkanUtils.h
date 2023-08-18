@@ -36,7 +36,7 @@ namespace vge
 
 	struct SwapchainImage
 	{
-		VkImage Handle = VK_NULL_HANDLE;
+		VkImage Image = VK_NULL_HANDLE;
 		VkImageView View = VK_NULL_HANDLE;
 	};
 
@@ -47,6 +47,13 @@ namespace vge
 		// TODO: Have 1 VkDeviceMemory and VkImage's just reference it with offsets.
 		VkDeviceMemory Memory = VK_NULL_HANDLE;
 		VkDescriptorSet Descriptor = VK_NULL_HANDLE;
+
+		void Destroy(VkDevice device)
+		{
+			vkDestroyImageView(device, View, nullptr);
+			vkDestroyImage(device, Image, nullptr);
+			vkFreeMemory(device, Memory, nullptr);
+		}
 	};
 
 	bool SupportValidationLayers();

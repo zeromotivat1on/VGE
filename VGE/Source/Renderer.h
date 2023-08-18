@@ -70,19 +70,29 @@ namespace vge
 		std::vector<VkFramebuffer> m_SwapchainFramebuffers = {};
 		std::vector<VkCommandBuffer> m_CommandBuffers = {};
 
-		VkImage m_DepthBufferImage = VK_NULL_HANDLE;
-		VkImageView m_DepthBufferImageView = VK_NULL_HANDLE;
-		VkDeviceMemory m_DepthBufferImageMemory = VK_NULL_HANDLE;
+		// TODO: create separate structure for subpass data (images, view, memory, format).
+
+		std::vector <VkImage> m_ColorBufferImages = {};
+		std::vector <VkImageView> m_ColorBufferImageViews = {};
+		std::vector <VkDeviceMemory> m_ColorBufferImagesMemory = {};
+		VkFormat m_ColorFormat = VK_FORMAT_UNDEFINED;
+
+		std::vector <VkImage> m_DepthBufferImages = {};
+		std::vector <VkImageView> m_DepthBufferImageViews = {};
+		std::vector <VkDeviceMemory> m_DepthBufferImagesMemory = {};
 		VkFormat m_DepthFormat = VK_FORMAT_UNDEFINED;
 
 		VkDescriptorPool m_UniformDescriptorPool = VK_NULL_HANDLE;	// uniform data
 		VkDescriptorPool m_SamplerDescriptorPool = VK_NULL_HANDLE;	// texture data (not neccessary to create separate pool)
-		
+		VkDescriptorPool m_InputDescriptorPool = VK_NULL_HANDLE;	// input data for separate pipeline and 2 subpass
+
 		VkDescriptorSetLayout m_UniformDescriptorSetLayout = VK_NULL_HANDLE;
 		VkDescriptorSetLayout m_SamplerDescriptorSetLayout = VK_NULL_HANDLE;
+		VkDescriptorSetLayout m_InputDescriptorSetLayout = VK_NULL_HANDLE;
 
 		std::vector<VkDescriptorSet> m_UniformDescriptorSets = {};
-		
+		std::vector<VkDescriptorSet> m_InputDescriptorSets = {};
+
 		VkPushConstantRange m_PushConstantRange = {};
 
 		std::vector<VkBuffer> m_VpUniformBuffers = {};
@@ -95,9 +105,13 @@ namespace vge
 		//size_t m_ModelUniformAlignment = 0;
 		//ModelData* m_ModelTransferSpace = nullptr;
 
+		VkRenderPass m_RenderPass = VK_NULL_HANDLE;
+
 		VkPipeline m_GfxPipeline = VK_NULL_HANDLE;
 		VkPipelineLayout m_GfxPipelineLayout = VK_NULL_HANDLE;
-		VkRenderPass m_RenderPass = VK_NULL_HANDLE;
+
+		VkPipeline m_SecondPipeline = VK_NULL_HANDLE;
+		VkPipelineLayout m_SecondPipelineLayout = VK_NULL_HANDLE;
 
 		VkCommandPool m_GfxCommandPool = VK_NULL_HANDLE;
 
@@ -110,11 +124,12 @@ namespace vge
 		void FindGpu();
 		void CreateDevice();
 		void CreateSwapchain();
-		void CreateDepthBufferImage();
+		void CreateColorBufferImages();
+		void CreateDepthBufferImages();
 		void CreateRenderPass();
 		void CreateDescriptorSetLayouts();
 		void CreatePushConstantRange();
-		void CreateGraphicsPipeline();
+		void CreatePipelines();
 		void CreateFramebuffers();
 		void CreateCommandPool();
 		void CreateCommandBuffers();
@@ -122,7 +137,7 @@ namespace vge
 		//void AllocateDynamicBufferTransferSpace();
 		void CreateUniformBuffers();
 		void CreateDescriptorPools();
-		void CreateUniformDescriptorSets();
+		void CreateDescriptorSets();
 		void CreateSyncObjects();
 
 		void RecordCommandBuffers(uint32 ImageIndex);
