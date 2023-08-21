@@ -657,7 +657,7 @@ void vge::Renderer::CreateRenderPass()
 	subpassDependencies[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 	subpassDependencies[1].dependencyFlags = 0;
 
-	// End to subpass 2.
+	// Subpass 2 to end.
 	// Image layout transition must happen after ...
 	subpassDependencies[2].srcSubpass = 0; // TODO: should be 0 or 1?
 	subpassDependencies[2].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -687,7 +687,7 @@ void vge::Renderer::CreateDescriptorSetLayouts()
 {
 	{
 		VkDescriptorSetLayoutBinding vpLayoutBinding = {};
-		vpLayoutBinding.binding = 0; // binding for a particular layout
+		vpLayoutBinding.binding = 0; // binding for a particular subpass
 		vpLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		vpLayoutBinding.descriptorCount = 1;
 		vpLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
@@ -712,7 +712,7 @@ void vge::Renderer::CreateDescriptorSetLayouts()
 
 	{
 		VkDescriptorSetLayoutBinding samplerLayoutBinding = {};
-		samplerLayoutBinding.binding = 0;
+		samplerLayoutBinding.binding = 0; // should be increased by 1 if this was used in vertex shader as previous one
 		samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		samplerLayoutBinding.descriptorCount = 1;
 		samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
