@@ -32,8 +32,9 @@ void vge::MainLoop()
 		}
 
 		glm::mat4 firstModel(1.0f);
-		firstModel = glm::translate(firstModel, glm::vec3(0.0f, -10.0f, -60.0f));
+		firstModel = glm::translate(firstModel, glm::vec3(0.0f, 0.0f, -5.0f));
 		firstModel = glm::rotate(firstModel, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
+		firstModel = glm::scale(firstModel, glm::vec3(0.1f, 0.1f, 0.1f));
 
 		GRenderer->UpdateModelMatrix(maleID, firstModel);
 
