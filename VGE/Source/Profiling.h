@@ -2,11 +2,12 @@
 
 #include <chrono>
 #include "Logging.h"
+#include "Macros.h"
 
 #ifdef NDEBUG
 #define SCOPE_TIMER(LogPrefix)
 #else
-#define SCOPE_TIMER(LogPrefix) ScopeTimer __scope_timer__LINE__(LogPrefix);
+#define SCOPE_TIMER(LogPrefix) ScopeTimer CONCAT(__scope_timer_, __LINE__)(LogPrefix);
 #endif
 
 struct ScopeTimer

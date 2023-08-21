@@ -24,7 +24,10 @@ vge::Application::Application(const ApplicationSpecs& specs) : Specs(specs)
 void vge::Application::Initialize()
 {
 	CreateWindow(Specs.Window.Name, Specs.Window.Width, Specs.Window.Height);
+	ENSURE_MSG(GWindow, "Failed to create GLFW window.");
+
 	CreateRenderer(vge::GWindow);
+	ENSURE_MSG(GRenderer, "Failed to create renderer.")
 
 	GRenderer->Initialize();
 }
@@ -45,7 +48,8 @@ int32 vge::Main(int argc, const char** argv)
 	specs.Window.Height = 600;
 
 	CreateApplication(specs);
-	if (!GApplication) return EXIT_FAILURE;
+	ENSURE_MSG(GApplication, "Failed to create application.");
+
 	GApplication->Initialize();
 
 	MainLoop();

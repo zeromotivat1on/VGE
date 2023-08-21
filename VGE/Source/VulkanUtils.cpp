@@ -312,7 +312,7 @@ void vge::CreateImage(VkPhysicalDevice gpu, VkDevice device, VkExtent2D extent, 
 	imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 	imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE; // whether can be shared between queues
 
-	ENSURE(vkCreateImage(device, &imageCreateInfo, nullptr, &outImage) == VK_SUCCESS, "Failed to create image.");
+	VK_ENSURE_MSG(vkCreateImage(device, &imageCreateInfo, nullptr, &outImage), "Failed to create image.");
 
 	VkMemoryRequirements memRequriements = {};
 	vkGetImageMemoryRequirements(device, outImage, &memRequriements);
@@ -322,7 +322,7 @@ void vge::CreateImage(VkPhysicalDevice gpu, VkDevice device, VkExtent2D extent, 
 	imageMemoryAllocInfo.allocationSize = memRequriements.size;
 	imageMemoryAllocInfo.memoryTypeIndex = FindMemoryTypeIndex(gpu, memRequriements.memoryTypeBits, memProps);
 
-	ENSURE(vkAllocateMemory(device, &imageMemoryAllocInfo, nullptr, &outImageMemory) == VK_SUCCESS, "Failed to allocate image memory.");
+	VK_ENSURE_MSG(vkAllocateMemory(device, &imageMemoryAllocInfo, nullptr, &outImageMemory), "Failed to allocate image memory.");
 
 	vkBindImageMemory(device, outImage, outImageMemory, 0);
 }
@@ -344,7 +344,7 @@ void vge::CreateImageView(VkDevice device, VkImage image, VkFormat format, VkIma
 	createInfo.subresourceRange.baseArrayLayer = 0;
 	createInfo.subresourceRange.layerCount = 1;
 
-	ENSURE(vkCreateImageView(device, &createInfo, nullptr, &outImageView) == VK_SUCCESS, "Failed to create image view.");
+	VK_ENSURE_MSG(vkCreateImageView(device, &createInfo, nullptr, &outImageView), "Failed to create image view.");
 }
 
 void vge::CreateTextureImage(VkPhysicalDevice gpu, VkDevice device, VkQueue transferQueue, VkCommandPool transferCmdPool, const char* filename, VkImage& outImage, VkDeviceMemory& outImageMemory)
@@ -394,7 +394,7 @@ void vge::CreateTextureDescriptorSet(VkDevice device, VkSampler sampler, VkDescr
 	descriptorSetAllocInfo.descriptorSetCount = 1;
 	descriptorSetAllocInfo.pSetLayouts = &descrptorSetLayout;
 
-	ENSURE(vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &outTextureDescriptorSet) == VK_SUCCESS, "Failed to allocate texture descriptor set.");
+	VK_ENSURE_MSG(vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &outTextureDescriptorSet), "Failed to allocate texture descriptor set.");
 
 	VkDescriptorImageInfo descriptorImageInfo = {};
 	descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;

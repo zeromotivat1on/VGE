@@ -6,9 +6,39 @@
 
 #define C_ARRAY_NUM(arr) (sizeof(arr) / sizeof(arr[0]))
 
-#define ENSURE(expr, errMessage)																\
-if (!(expr))																					\
-{																								\
-	LOG(Error, ##errMessage);																	\
-	exit(EXIT_FAILURE);																			\
-}																								\
+#define CONCAT_INNER(a, b) a ## b
+#define CONCAT(a, b) CONCAT_INNER(a, b)
+
+#define STRING_INNER(x) #x
+#define STRING(x) STRING_INNER(x)
+
+#define ENSURE(expr)																							\
+if (!(expr))																									\
+{																												\
+	exit(EXIT_FAILURE);																							\
+}																												\
+
+#define ENSURE_MSG(expr, errMessage)																			\
+if (!(expr))																									\
+{																												\
+	LOG(Error, errMessage);																						\
+	exit(EXIT_FAILURE);																							\
+}																												\
+
+#define VK_ENSURE(vkFunction)																					\
+{																												\
+	const VkResult ScopedResult = vkFunction;																	\
+	if (ScopedResult != VK_SUCCESS)																				\
+	{																											\
+		vge::NotifyVulkanEnsureFailure(ScopedResult, #vkFunction, __FILE__, __LINE__);							\
+	}																											\
+}																												\
+
+#define VK_ENSURE_MSG(vkFunction, errMessage)																	\
+{																												\
+	const VkResult ScopedResult = vkFunction;																	\
+	if (ScopedResult != VK_SUCCESS)																				\
+	{																											\
+		vge::NotifyVulkanEnsureFailure(ScopedResult, #vkFunction, __FILE__, __LINE__, errMessage);				\
+	}																											\
+}																												\

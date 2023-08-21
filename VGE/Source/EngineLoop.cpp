@@ -6,16 +6,17 @@
 
 void vge::MainLoop()
 {
+	const float loopStartTime = static_cast<float>(glfwGetTime());
+
 	float angle = 0.0f;
 	float deltaTime = 0.0f;
 	float lastTime = 0.0f;
 
-	const int32 maleModelIndex = GRenderer->CreateMeshModel("Models/male.obj");
+	const int32 maleID = GRenderer->CreateMeshModel("Models/male.obj");
 
 	while (!glfwWindowShouldClose(GWindow))
 	{
 		SCOPE_TIMER("Tick");
-		LOG(Log, "Current app frame: %d", GAppFrame);
 
 		glfwPollEvents();
 
@@ -31,13 +32,17 @@ void vge::MainLoop()
 		}
 
 		glm::mat4 firstModel(1.0f);
-		firstModel = glm::translate(firstModel, glm::vec3(0.0f, 0.0f, -100.0f));
+		firstModel = glm::translate(firstModel, glm::vec3(0.0f, -10.0f, -60.0f));
 		firstModel = glm::rotate(firstModel, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
 
-		GRenderer->UpdateModelMatrix(maleModelIndex, firstModel);
+		GRenderer->UpdateModelMatrix(maleID, firstModel);
 
 		GRenderer->Draw();
 
 		IncrementAppFrame();
 	}
+
+	const float loopDurationTime = lastTime - loopStartTime;
+	LOG(Log, "Total engine loop duration: %fs", loopDurationTime);
+	LOG(Log, "Total rendered frames: %d", GAppFrame);
 }
