@@ -48,7 +48,7 @@
     <ClCompile Include="Source\Buffer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\MeshModel.cpp">
+    <ClCompile Include="Source\Model.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Source\Logging.cpp">
@@ -98,7 +98,10 @@
     <ClInclude Include="Source\Buffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\MeshModel.h">
+    <ClInclude Include="Source\Model.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\VulkanContext.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
