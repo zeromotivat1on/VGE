@@ -218,9 +218,9 @@ void vge::Renderer::Cleanup()
 {
 	vkDeviceWaitIdle(m_Device);
 
-	for (size_t i = 0; i < m_MeshModels.size(); ++i)
+	for (size_t i = 0; i < m_Models.size(); ++i)
 	{
-		m_MeshModels[i].Destroy();
+		m_Models[i].Destroy();
 	}
 
 	vkDestroySampler(m_Device, m_TextureSampler, nullptr);
@@ -351,6 +351,7 @@ void vge::Renderer::CreateInstance()
 	}
 
 	VK_ENSURE_MSG(vkCreateInstance(&createInfo, nullptr, &m_Instance), "Failed to create Vulkan instance.");
+	VulkanContext::Instance = m_Instance;
 }
 
 void vge::Renderer::SetupDebugMessenger()
@@ -383,6 +384,8 @@ void vge::Renderer::FindGpu()
 		if (SuitableGpu(gpu, m_Surface))
 		{
 			m_Gpu = gpu;
+			VulkanContext::Gpu = m_Gpu;
+
 			m_QueueIndices = GetQueueFamilies(m_Gpu, m_Surface);
 
 			VkPhysicalDeviceProperties gpuProps;
@@ -442,9 +445,14 @@ void vge::Renderer::CreateDevice()
 	}
 
 	VK_ENSURE_MSG(vkCreateDevice(m_Gpu, &deviceCreateInfo, nullptr, &m_Device), "Failed to create Vulkan device.");
+	VulkanContext::Device = m_Device;
 
 	vkGetDeviceQueue(m_Device, m_QueueIndices.GraphicsFamily, 0, &m_GfxQueue);
+	VulkanContext::GfxQueue = m_GfxQueue;
+
 	vkGetDeviceQueue(m_Device, m_QueueIndices.PresentFamily, 0, &m_PresentQueue);
+	VulkanContext::PresentQueue = m_PresentQueue;
+
 }
 
 void vge::Renderer::CreateSwapchain()
@@ -511,7 +519,7 @@ void vge::Renderer::CreateSwapchain()
 	{
 		SwapchainImage swapchainImage = {};
 		swapchainImage.Image = image;
-		CreateImageView(m_Device, image, m_SwapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, swapchainImage.View);
+		CreateImageView(image, m_SwapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, swapchainImage.View);
 
 		m_SwapchainImages.push_back(swapchainImage);
 	}
@@ -523,7 +531,7 @@ void vge::Renderer::CreateColorBufferImages()
 	static constexpr VkMemoryPropertyFlags memProps = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
 	const std::vector<VkFormat> formats = { VK_FORMAT_R8G8B8A8_UNORM };
-	m_ColorFormat = GetBestImageFormat(m_Gpu, formats, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	m_ColorFormat = GetBestImageFormat(formats, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
 	m_ColorBufferImages.resize(m_SwapchainImages.size());
 	m_ColorBufferImageViews.resize(m_SwapchainImages.size());
@@ -531,8 +539,8 @@ void vge::Renderer::CreateColorBufferImages()
 
 	for (size_t i = 0; i < m_SwapchainImages.size(); ++i)
 	{
-		CreateImage(m_Gpu, m_Device, m_SwapchainExtent, m_ColorFormat, VK_IMAGE_TILING_OPTIMAL, usage, memProps, m_ColorBufferImages[i], m_ColorBufferImagesMemory[i]);
-		CreateImageView(m_Device, m_ColorBufferImages[i], m_ColorFormat, VK_IMAGE_ASPECT_COLOR_BIT, m_ColorBufferImageViews[i]);
+		CreateImage(m_SwapchainExtent, m_ColorFormat, VK_IMAGE_TILING_OPTIMAL, usage, memProps, m_ColorBufferImages[i], m_ColorBufferImagesMemory[i]);
+		CreateImageView(m_ColorBufferImages[i], m_ColorFormat, VK_IMAGE_ASPECT_COLOR_BIT, m_ColorBufferImageViews[i]);
 	}
 }
 
@@ -542,7 +550,7 @@ void vge::Renderer::CreateDepthBufferImages()
 	static constexpr VkMemoryPropertyFlags memProps = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
 	const std::vector<VkFormat> formats = { VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT };
-	m_DepthFormat = GetBestImageFormat(m_Gpu, formats, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+	m_DepthFormat = GetBestImageFormat(formats, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
 	m_DepthBufferImages.resize(m_SwapchainImages.size());
 	m_DepthBufferImageViews.resize(m_SwapchainImages.size());
@@ -550,8 +558,8 @@ void vge::Renderer::CreateDepthBufferImages()
 
 	for (size_t i = 0; i < m_SwapchainImages.size(); ++i)
 	{
-		CreateImage(m_Gpu, m_Device, m_SwapchainExtent, m_DepthFormat, VK_IMAGE_TILING_OPTIMAL, usage, memProps, m_DepthBufferImages[i], m_DepthBufferImagesMemory[i]);
-		CreateImageView(m_Device, m_DepthBufferImages[i], m_DepthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, m_DepthBufferImageViews[i]);
+		CreateImage(m_SwapchainExtent, m_DepthFormat, VK_IMAGE_TILING_OPTIMAL, usage, memProps, m_DepthBufferImages[i], m_DepthBufferImagesMemory[i]);
+		CreateImageView(m_DepthBufferImages[i], m_DepthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, m_DepthBufferImageViews[i]);
 	}
 }
 
@@ -1050,7 +1058,7 @@ void vge::Renderer::CreateUniformBuffers()
 
 	for (size_t i = 0; i < m_SwapchainImages.size(); ++i)
 	{
-		CreateBuffer(m_Gpu, m_Device, vpBufferSize, usage, props, m_VpUniformBuffers[i], m_VpUniformBuffersMemory[i]);
+		CreateBuffer(vpBufferSize, usage, props, m_VpUniformBuffers[i], m_VpUniformBuffersMemory[i]);
 		//CreateBuffer(m_Gpu, m_Device, modelBufferSize, usage, props, m_ModelDynamicUniformBuffers[i], m_ModelDynamicUniformBuffersMemory[i]);
 	}
 }
@@ -1246,15 +1254,15 @@ void vge::Renderer::RecordCommandBuffers(uint32 ImageIndex)
 	{
 		vkCmdBindPipeline(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GfxPipeline);
 
-		for (size_t MeshModelIndex = 0; MeshModelIndex < m_MeshModels.size(); ++MeshModelIndex)
+		for (size_t ModelIndex = 0; ModelIndex < m_Models.size(); ++ModelIndex)
 		{
-			MeshModel& meshModel = m_MeshModels[MeshModelIndex];
+			Model& model = m_Models[ModelIndex];
 
-			vkCmdPushConstants(currentCmdBuffer, m_GfxPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ModelData), &meshModel.GetModelDataRef());
+			vkCmdPushConstants(currentCmdBuffer, m_GfxPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ModelData), &model.GetModelData());
 
-			for (size_t MeshIndex = 0; MeshIndex < meshModel.GetMeshCount(); ++MeshIndex)
+			for (size_t MeshIndex = 0; MeshIndex < model.GetMeshCount(); ++MeshIndex)
 			{
-				const Mesh* mesh = meshModel.GetMesh(MeshIndex);
+				const Mesh* mesh = model.GetMesh(MeshIndex);
 
 				if (!mesh)
 				{
@@ -1263,11 +1271,11 @@ void vge::Renderer::RecordCommandBuffers(uint32 ImageIndex)
 
 				const std::array<VkDescriptorSet, 2> currentDescriptorSets = { m_UniformDescriptorSets[ImageIndex], m_Textures[mesh->GetTextureId()].Descriptor};
 
-				VkBuffer vertexBuffers[] = { mesh->GetVertexBuffer() };
+				VkBuffer vertexBuffers[] = { mesh->GetVertexBuffer().GetHandle() };
 				VkDeviceSize offsets[] = { 0 };
 				vkCmdBindVertexBuffers(currentCmdBuffer, 0, 1, vertexBuffers, offsets);
 
-				vkCmdBindIndexBuffer(currentCmdBuffer, mesh->GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
+				vkCmdBindIndexBuffer(currentCmdBuffer, mesh->GetIndexBuffer().GetHandle(), 0, VK_INDEX_TYPE_UINT32);
 
 				//const uint32 dynamicOffset = static_cast<uint32>(m_ModelUniformAlignment * MeshIndex);
 				vkCmdBindDescriptorSets(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GfxPipelineLayout, 
@@ -1337,9 +1345,9 @@ void vge::Renderer::UpdateUniformBuffers(uint32 ImageIndex)
 int32 vge::Renderer::CreateTexture(const char* filename)
 {
 	Texture texture = {};
-	CreateTextureImage(m_Gpu, m_Device, m_GfxQueue, m_GfxCommandPool, filename, texture.Image, texture.Memory);
-	CreateImageView(m_Device, texture.Image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, texture.View);
-	CreateTextureDescriptorSet(m_Device, m_TextureSampler, m_SamplerDescriptorPool, m_SamplerDescriptorSetLayout, texture.View, texture.Descriptor);
+	CreateTextureImage(m_GfxQueue, m_GfxCommandPool, filename, texture.Image, texture.Memory);
+	CreateImageView(texture.Image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, texture.View);
+	CreateTextureDescriptorSet(m_TextureSampler, m_SamplerDescriptorPool, m_SamplerDescriptorSetLayout, texture.View, texture.Descriptor);
 	m_Textures.push_back(texture);
 
 	const int32 textureId = static_cast<int32>(m_Textures.size() - 1);
@@ -1348,25 +1356,24 @@ int32 vge::Renderer::CreateTexture(const char* filename)
 	return textureId;
 }
 
-int32 vge::Renderer::CreateMeshModel(const char* filename)
+int32 vge::Renderer::CreateModel(const char* filename)
 {
-	MeshModel meshModel = MeshModel(m_Gpu, m_Device);
-
 	Assimp::Importer importer;
 	const aiScene* scene = file::LoadModel(filename, importer);
 
-	// TODO: find a better way to determine which texture id to pass to mesh, current one is ugly.
+	// TODO: find a better way to determine which texture id to pass to mesh, current one is kinda unintuitive.
 	std::vector<const char*> texturePaths;
 	GetTexturesFromMaterials(scene, texturePaths);
 
 	std::vector<int32> textureToDescriptorSet;
 	ResolveTexturesForDescriptors(*this, texturePaths, textureToDescriptorSet);
 
-	meshModel.LoadNode(m_GfxQueue, m_GfxCommandPool, scene, scene->mRootNode, textureToDescriptorSet);
+	Model model;
+	model.LoadNode(m_GfxQueue, m_GfxCommandPool, scene, scene->mRootNode, textureToDescriptorSet);
 
-	m_MeshModels.push_back(meshModel);
+	m_Models.push_back(model);
 
-	const int32 modelId = static_cast<int32>(m_MeshModels.size() - 1);
+	const int32 modelId = static_cast<int32>(m_Models.size() - 1);
 	LOG(Log, "ID: %d, path: %s", modelId, filename);
 
 	return modelId;

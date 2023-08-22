@@ -12,7 +12,7 @@ void vge::MainLoop()
 	float deltaTime = 0.0f;
 	float lastTime = 0.0f;
 
-	const int32 maleID = GRenderer->CreateMeshModel("Models/male.obj");
+	const int32 maleID = GRenderer->CreateModel("Models/male.obj");
 
 	while (!glfwWindowShouldClose(GWindow))
 	{

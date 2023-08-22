@@ -1,10 +1,6 @@
-#include "MeshModel.h"
+#include "Model.h"
 
-vge::MeshModel::MeshModel(VkPhysicalDevice gpu, VkDevice device)
-	: m_Gpu(gpu), m_Device(device)
-{}
-
-void vge::MeshModel::LoadNode(VkQueue transferQueue, VkCommandPool transferCmdPool, const aiScene* scene, const aiNode* node, const std::vector<int32>& textureToDescriptorSet)
+void vge::Model::LoadNode(VkQueue transferQueue, VkCommandPool transferCmdPool, const aiScene* scene, const aiNode* node, const std::vector<int32>& textureToDescriptorSet)
 {
 	if (!node)
 	{
@@ -23,7 +19,7 @@ void vge::MeshModel::LoadNode(VkQueue transferQueue, VkCommandPool transferCmdPo
 	}
 }
 
-void vge::MeshModel::LoadMesh(VkQueue transferQueue, VkCommandPool transferCmdPool, const aiScene* scene, const aiMesh* mesh, const std::vector<int32>& textureToDescriptorSet)
+void vge::Model::LoadMesh(VkQueue transferQueue, VkCommandPool transferCmdPool, const aiScene* scene, const aiMesh* mesh, const std::vector<int32>& textureToDescriptorSet)
 {
 	static constexpr glm::vec3 DontCareColor = glm::vec3(0.0f);
 
@@ -59,10 +55,10 @@ void vge::MeshModel::LoadMesh(VkQueue transferQueue, VkCommandPool transferCmdPo
 		}
 	}
 
-	m_Meshes.emplace_back(m_Gpu, m_Device, transferQueue, transferCmdPool, vertices, indices, textureToDescriptorSet[mesh->mMaterialIndex]);
+	m_Meshes.emplace_back(transferCmdPool, vertices, indices, textureToDescriptorSet[mesh->mMaterialIndex]);
 }
 
-void vge::MeshModel::Destroy()
+void vge::Model::Destroy()
 {
 	for (Mesh& mesh : m_Meshes)
 	{

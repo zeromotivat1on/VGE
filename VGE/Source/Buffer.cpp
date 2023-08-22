@@ -1,6 +1,7 @@
 #include "Buffer.h"
+#include "Logging.h"
 
-VkCommandBuffer vge::BeginOneTimeCmdBuffer(VkDevice device, VkCommandPool cmdPool)
+VkCommandBuffer vge::BeginOneTimeCmdBuffer(VkCommandPool cmdPool)
 {
 	VkCommandBuffer cmdBuffer = VK_NULL_HANDLE;
 
@@ -10,7 +11,7 @@ VkCommandBuffer vge::BeginOneTimeCmdBuffer(VkDevice device, VkCommandPool cmdPoo
 	cmdBufferAllocInfo.commandPool = cmdPool;
 	cmdBufferAllocInfo.commandBufferCount = 1;
 
-	if (vkAllocateCommandBuffers(device, &cmdBufferAllocInfo, &cmdBuffer) != VK_SUCCESS)
+	if (vkAllocateCommandBuffers(VulkanContext::Device, &cmdBufferAllocInfo, &cmdBuffer) != VK_SUCCESS)
 	{
 		LOG(Error, "Failed to allcoate transfer command buffer.");
 		return VK_NULL_HANDLE;
@@ -25,7 +26,7 @@ VkCommandBuffer vge::BeginOneTimeCmdBuffer(VkDevice device, VkCommandPool cmdPoo
 	return cmdBuffer;
 }
 
-void vge::EndOneTimeCmdBuffer(VkDevice device, VkCommandPool cmdPool, VkQueue queue, VkCommandBuffer cmdBuffer)
+void vge::EndOneTimeCmdBuffer(VkCommandPool cmdPool, VkQueue queue, VkCommandBuffer cmdBuffer)
 {
 	vkEndCommandBuffer(cmdBuffer);
 
@@ -37,10 +38,10 @@ void vge::EndOneTimeCmdBuffer(VkDevice device, VkCommandPool cmdPool, VkQueue qu
 	vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
 	vkQueueWaitIdle(queue); // not good if we have a lot of calls to this
 
-	vkFreeCommandBuffers(device, cmdPool, 1, &cmdBuffer);
+	vkFreeCommandBuffers(VulkanContext::Device, cmdPool, 1, &cmdBuffer);
 }
 
-void vge::CreateBuffer(VkPhysicalDevice gpu, VkDevice device, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags memProps, VkBuffer& outBuffer, VkDeviceMemory& outMemory)
+void vge::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags memProps, VkBuffer& outBuffer, VkDeviceMemory& outMemory)
 {
 	VkBufferCreateInfo bufferCreateInfo = {};
 	bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -48,32 +49,32 @@ void vge::CreateBuffer(VkPhysicalDevice gpu, VkDevice device, VkDeviceSize size,
 	bufferCreateInfo.usage = usage;
 	bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-	if (vkCreateBuffer(device, &bufferCreateInfo, nullptr, &outBuffer) != VK_SUCCESS)
+	if (vkCreateBuffer(VulkanContext::Device, &bufferCreateInfo, nullptr, &outBuffer) != VK_SUCCESS)
 	{
 		LOG(Error, "Failed to create buffer.");
 		return;
 	}
 
 	VkMemoryRequirements memoryRequirements = {};
-	vkGetBufferMemoryRequirements(device, outBuffer, &memoryRequirements);
+	vkGetBufferMemoryRequirements(VulkanContext::Device, outBuffer, &memoryRequirements);
 
 	VkMemoryAllocateInfo memoryAllocateInfo = {};
 	memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	memoryAllocateInfo.allocationSize = memoryRequirements.size;
-	memoryAllocateInfo.memoryTypeIndex = FindMemoryTypeIndex(gpu, memoryRequirements.memoryTypeBits, memProps);
+	memoryAllocateInfo.memoryTypeIndex = FindMemoryTypeIndex(VulkanContext::Gpu, memoryRequirements.memoryTypeBits, memProps);
 
-	if (vkAllocateMemory(device, &memoryAllocateInfo, nullptr, &outMemory) != VK_SUCCESS)
+	if (vkAllocateMemory(VulkanContext::Device, &memoryAllocateInfo, nullptr, &outMemory) != VK_SUCCESS)
 	{
 		LOG(Error, "Failed to allocate memory for buffer.");
 		return;
 	}
 
-	vkBindBufferMemory(device, outBuffer, outMemory, 0);
+	vkBindBufferMemory(VulkanContext::Device, outBuffer, outMemory, 0);
 }
 
-void vge::CopyBuffer(VkDevice device, VkQueue transferQueue, VkCommandPool transferCmdPool, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
+void vge::CopyBuffer(VkQueue transferQueue, VkCommandPool transferCmdPool, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
 {
-	ScopeCmdBuffer transferCmdBuffer(device, transferCmdPool, transferQueue);
+	ScopeCmdBuffer transferCmdBuffer(transferCmdPool, transferQueue);
 
 	VkBufferCopy bufferCopyRegion = {};
 	bufferCopyRegion.srcOffset = 0;
@@ -83,9 +84,9 @@ void vge::CopyBuffer(VkDevice device, VkQueue transferQueue, VkCommandPool trans
 	vkCmdCopyBuffer(transferCmdBuffer.GetHandle(), srcBuffer, dstBuffer, 1, &bufferCopyRegion);
 }
 
-void vge::CopyImageBuffer(VkDevice device, VkQueue transferQueue, VkCommandPool transferCmdPool, VkBuffer srcBuffer, VkImage dstImage, VkExtent2D extent)
+void vge::CopyImageBuffer(VkQueue transferQueue, VkCommandPool transferCmdPool, VkBuffer srcBuffer, VkImage dstImage, VkExtent2D extent)
 {
-	ScopeCmdBuffer transferCmdBuffer(device, transferCmdPool, transferQueue);
+	ScopeCmdBuffer transferCmdBuffer(transferCmdPool, transferQueue);
 
 	VkBufferImageCopy bufferImageCopyRegion = {};
 	bufferImageCopyRegion.bufferOffset = 0;
@@ -100,4 +101,35 @@ void vge::CopyImageBuffer(VkDevice device, VkQueue transferQueue, VkCommandPool 
 
 	const VkImageLayout imageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	vkCmdCopyBufferToImage(transferCmdBuffer.GetHandle(), srcBuffer, dstImage, imageLayout, 1, &bufferImageCopyRegion);
+}
+
+vge::IndexBuffer::IndexBuffer(VkCommandPool transferCmdPool, const std::vector<uint32>& indices)
+{
+	const VkDeviceSize bufferSize = STD_VECTOR_ALLOC_SIZE(indices);
+
+	ScopeStageBuffer stageBuffer(bufferSize);
+
+	void* data; // cpu accessible data from buffer memory on gpu
+	vkMapMemory(VulkanContext::Device, stageBuffer.GetMemory(), 0, bufferSize, 0, &data);
+	memcpy(data, indices.data(), static_cast<size_t>(bufferSize));
+	vkUnmapMemory(VulkanContext::Device, stageBuffer.GetMemory());
+
+	CreateBuffer(bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_Handle, m_Memory);
+	CopyBuffer(VulkanContext::GfxQueue, transferCmdPool, stageBuffer.GetHandle(), m_Handle, bufferSize);
+}
+
+vge::VertexBuffer::VertexBuffer(VkCommandPool transferCmdPool, const std::vector<Vertex>& vertices)
+{
+	const VkDeviceSize bufferSize = STD_VECTOR_ALLOC_SIZE(vertices);
+
+	ScopeStageBuffer stageBuffer(bufferSize);
+
+	void* data; // cpu accessible data from buffer memory on gpu
+	vkMapMemory(VulkanContext::Device, stageBuffer.GetMemory(), 0, bufferSize, 0, &data);
+	memcpy(data, vertices.data(), static_cast<size_t>(bufferSize));
+	vkUnmapMemory(VulkanContext::Device, stageBuffer.GetMemory());
+
+	CreateBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_Handle, m_Memory);
+
+	CopyBuffer(VulkanContext::GfxQueue, transferCmdPool, stageBuffer.GetHandle(), m_Handle, bufferSize);
 }

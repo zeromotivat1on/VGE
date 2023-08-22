@@ -1,33 +1,35 @@
+#pragma once
+
 #include "VulkanUtils.h"
+#include "VulkanContext.h"
 
 namespace vge
 {
-	VkCommandBuffer BeginOneTimeCmdBuffer(VkDevice device, VkCommandPool cmdPool);
-	void			EndOneTimeCmdBuffer(VkDevice device, VkCommandPool cmdPool, VkQueue queue, VkCommandBuffer cmdBuffer);
+	VkCommandBuffer BeginOneTimeCmdBuffer(VkCommandPool cmdPool);
+	void			EndOneTimeCmdBuffer(VkCommandPool cmdPool, VkQueue queue, VkCommandBuffer cmdBuffer);
 
-	void CreateBuffer(VkPhysicalDevice gpu, VkDevice device, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags memProps, VkBuffer& outBuffer, VkDeviceMemory& outMemory);
-	void CopyBuffer(VkDevice device, VkQueue transferQueue, VkCommandPool transferCmdPool, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
-	void CopyImageBuffer(VkDevice device, VkQueue transferQueue, VkCommandPool transferCmdPool, VkBuffer srcBuffer, VkImage dstImage, VkExtent2D extent);
+	void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags memProps, VkBuffer& outBuffer, VkDeviceMemory& outMemory);
+	void CopyBuffer(VkQueue transferQueue, VkCommandPool transferCmdPool, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+	void CopyImageBuffer(VkQueue transferQueue, VkCommandPool transferCmdPool, VkBuffer srcBuffer, VkImage dstImage, VkExtent2D extent);
 
 	// Simple wrapper for BeginOneTimeCmdBuffer (ctor) and EndOneTimeCmdBuffer (dtor) functions.
 	struct ScopeCmdBuffer
 	{
 	public:
-		ScopeCmdBuffer(VkDevice device, VkCommandPool cmdPool, VkQueue queue)
-			: m_Device(device), m_CmdPool(cmdPool), m_Queue(queue)
+		ScopeCmdBuffer(VkCommandPool cmdPool, VkQueue queue)
+			: m_CmdPool(cmdPool), m_Queue(queue)
 		{
-			m_CmdBuffer = BeginOneTimeCmdBuffer(m_Device, m_CmdPool);
+			m_CmdBuffer = BeginOneTimeCmdBuffer(m_CmdPool);
 		}
 
 		~ScopeCmdBuffer()
 		{
-			EndOneTimeCmdBuffer(m_Device, m_CmdPool, m_Queue, m_CmdBuffer);
+			EndOneTimeCmdBuffer(m_CmdPool, m_Queue, m_CmdBuffer);
 		}
 
 		VkCommandBuffer GetHandle() const { return m_CmdBuffer; }
 
 	private:
-		VkDevice m_Device = VK_NULL_HANDLE;
 		VkCommandPool m_CmdPool = VK_NULL_HANDLE;
 		VkQueue m_Queue = VK_NULL_HANDLE;
 		VkCommandBuffer m_CmdBuffer = VK_NULL_HANDLE;
@@ -37,27 +39,68 @@ namespace vge
 	struct ScopeStageBuffer
 	{
 	public:
-		ScopeStageBuffer(VkPhysicalDevice gpu, VkDevice device, VkDeviceSize size)
-			: m_Device(device)
+		ScopeStageBuffer(VkDeviceSize size)
 		{
-			static constexpr VkMemoryPropertyFlags memProps = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-			static constexpr VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-
-			CreateBuffer(gpu, device, size, usage, memProps, m_Buffer, m_Memory);
+			CreateBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_Handle, m_Memory);
 		}
 
 		~ScopeStageBuffer()
 		{
-			vkDestroyBuffer(m_Device, m_Buffer, nullptr);
-			vkFreeMemory(m_Device, m_Memory, nullptr);
+			vkDestroyBuffer(VulkanContext::Device, m_Handle, nullptr);
+			vkFreeMemory(VulkanContext::Device, m_Memory, nullptr);
 		}
 
-		VkBuffer GetHandle() const { return m_Buffer; }
+		VkBuffer GetHandle() const { return m_Handle; }
 		VkDeviceMemory GetMemory() const { return m_Memory; }
 
 	private:
-		VkDevice m_Device = VK_NULL_HANDLE;
-		VkBuffer m_Buffer = VK_NULL_HANDLE;
+		VkBuffer m_Handle = VK_NULL_HANDLE;
+		VkDeviceMemory m_Memory = VK_NULL_HANDLE;
+	};
+
+	class IndexBuffer
+	{
+	public:
+		IndexBuffer() = default;
+		IndexBuffer(VkCommandPool transferCmdPool, const std::vector<uint32>& indices);
+
+		VkBuffer GetHandle() const { return m_Handle; }
+		VkDeviceMemory GetMemory() const { return m_Memory; }
+
+		void Destroy() 
+		{
+			vkDestroyBuffer(VulkanContext::Device, m_Handle, nullptr);
+			m_Handle = VK_NULL_HANDLE;
+
+			vkFreeMemory(VulkanContext::Device, m_Memory, nullptr);
+			m_Memory = VK_NULL_HANDLE;
+		}
+
+	private:
+		VkBuffer m_Handle = VK_NULL_HANDLE;
+		VkDeviceMemory m_Memory = VK_NULL_HANDLE;
+	};
+
+	class VertexBuffer
+	{
+	public:
+		VertexBuffer() = default;
+		VertexBuffer(VkCommandPool transferCmdPool, const std::vector<Vertex>& vertices);
+
+		VkBuffer GetHandle() const { return m_Handle; }
+		VkDeviceMemory GetMemory() const { return m_Memory; }
+
+		void Destroy()
+		{
+			vkDestroyBuffer(VulkanContext::Device, m_Handle, nullptr);
+			m_Handle = VK_NULL_HANDLE;
+
+			vkFreeMemory(VulkanContext::Device, m_Memory, nullptr);
+			m_Memory = VK_NULL_HANDLE;
+		}
+
+	private:
+		VkBuffer m_Handle = VK_NULL_HANDLE;
 		VkDeviceMemory m_Memory = VK_NULL_HANDLE;
 	};
 }

@@ -1,13 +1,13 @@
 #pragma once
 
 #include "Common.h"
-#include "MeshModel.h"
+#include "Model.h"
 
 namespace vge
 {
 	inline class Renderer* GRenderer = nullptr;
 	
-	inline constexpr int32 GMaxDrawFrames = 2;
+	inline constexpr int32 GMaxDrawFrames = 3;
 	inline			 int32 GRenderFrame  = 0;
 
 	inline constexpr int32 GMaxSceneObjects = 32;
@@ -30,18 +30,18 @@ namespace vge
 
 		// TODO: for now 1 game object can have only 1 texture which is cringe.
 		int32 CreateTexture(const char* filename);
-		int32 CreateMeshModel(const char* filename);
+		int32 CreateModel(const char* filename);
 
 		void UpdateModelMatrix(int32 modelIndex, glm::mat4 model) 
 		{
-			if (modelIndex < m_MeshModels.size()) 
+			if (modelIndex < m_Models.size()) 
 			{ 
-				m_MeshModels[modelIndex].SetModelMatrix(model); 
+				m_Models[modelIndex].SetModelMatrix(model); 
 			}
 		}
 
 	private:
-		std::vector<MeshModel> m_MeshModels = {};
+		std::vector<Model> m_Models = {};
 		std::vector<Texture> m_Textures = {};
 
 		UboViewProjection m_UboViewProjection = {};

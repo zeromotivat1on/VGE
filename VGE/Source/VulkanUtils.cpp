@@ -1,4 +1,5 @@
 ﻿#include "VulkanUtils.h"
+#include "VulkanContext.h"
 #include "Window.h"
 #include "Buffer.h"
 #include "File.h"
@@ -274,12 +275,12 @@ VkExtent2D vge::GetBestSwapchainExtent(VkSurfaceCapabilitiesKHR surfaceCapabilit
 	return newExtent;
 }
 
-VkFormat vge::GetBestImageFormat(VkPhysicalDevice gpu, const std::vector<VkFormat>& formats, VkImageTiling tiling, VkFormatFeatureFlags features)
+VkFormat vge::GetBestImageFormat(const std::vector<VkFormat>& formats, VkImageTiling tiling, VkFormatFeatureFlags features)
 {
 	for (const VkFormat& format : formats)
 	{
 		VkFormatProperties formatProps;
-		vkGetPhysicalDeviceFormatProperties(gpu, format, &formatProps);
+		vkGetPhysicalDeviceFormatProperties(VulkanContext::Gpu, format, &formatProps);
 
 		if (tiling == VK_IMAGE_TILING_LINEAR && (formatProps.linearTilingFeatures & features) == features)
 		{
@@ -295,7 +296,7 @@ VkFormat vge::GetBestImageFormat(VkPhysicalDevice gpu, const std::vector<VkForma
 	return VK_FORMAT_UNDEFINED;
 }
 
-void vge::CreateImage(VkPhysicalDevice gpu, VkDevice device, VkExtent2D extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags memProps, VkImage& outImage, VkDeviceMemory& outImageMemory)
+void vge::CreateImage(VkExtent2D extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags memProps, VkImage& outImage, VkDeviceMemory& outImageMemory)
 {
 	VkImageCreateInfo imageCreateInfo = {};
 	imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -312,22 +313,22 @@ void vge::CreateImage(VkPhysicalDevice gpu, VkDevice device, VkExtent2D extent, 
 	imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 	imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE; // whether can be shared between queues
 
-	VK_ENSURE_MSG(vkCreateImage(device, &imageCreateInfo, nullptr, &outImage), "Failed to create image.");
+	VK_ENSURE_MSG(vkCreateImage(VulkanContext::Device, &imageCreateInfo, nullptr, &outImage), "Failed to create image.");
 
 	VkMemoryRequirements memRequriements = {};
-	vkGetImageMemoryRequirements(device, outImage, &memRequriements);
+	vkGetImageMemoryRequirements(VulkanContext::Device, outImage, &memRequriements);
 
 	VkMemoryAllocateInfo imageMemoryAllocInfo = {};
 	imageMemoryAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	imageMemoryAllocInfo.allocationSize = memRequriements.size;
-	imageMemoryAllocInfo.memoryTypeIndex = FindMemoryTypeIndex(gpu, memRequriements.memoryTypeBits, memProps);
+	imageMemoryAllocInfo.memoryTypeIndex = FindMemoryTypeIndex(VulkanContext::Gpu, memRequriements.memoryTypeBits, memProps);
 
-	VK_ENSURE_MSG(vkAllocateMemory(device, &imageMemoryAllocInfo, nullptr, &outImageMemory), "Failed to allocate image memory.");
+	VK_ENSURE_MSG(vkAllocateMemory(VulkanContext::Device, &imageMemoryAllocInfo, nullptr, &outImageMemory), "Failed to allocate image memory.");
 
-	vkBindImageMemory(device, outImage, outImageMemory, 0);
+	vkBindImageMemory(VulkanContext::Device, outImage, outImageMemory, 0);
 }
 
-void vge::CreateImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlagBits aspectFlags, VkImageView& outImageView)
+void vge::CreateImageView(VkImage image, VkFormat format, VkImageAspectFlagBits aspectFlags, VkImageView& outImageView)
 {
 	VkImageViewCreateInfo createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -344,21 +345,21 @@ void vge::CreateImageView(VkDevice device, VkImage image, VkFormat format, VkIma
 	createInfo.subresourceRange.baseArrayLayer = 0;
 	createInfo.subresourceRange.layerCount = 1;
 
-	VK_ENSURE_MSG(vkCreateImageView(device, &createInfo, nullptr, &outImageView), "Failed to create image view.");
+	VK_ENSURE_MSG(vkCreateImageView(VulkanContext::Device, &createInfo, nullptr, &outImageView), "Failed to create image view.");
 }
 
-void vge::CreateTextureImage(VkPhysicalDevice gpu, VkDevice device, VkQueue transferQueue, VkCommandPool transferCmdPool, const char* filename, VkImage& outImage, VkDeviceMemory& outImageMemory)
+void vge::CreateTextureImage(VkQueue transferQueue, VkCommandPool transferCmdPool, const char* filename, VkImage& outImage, VkDeviceMemory& outImageMemory)
 {
 	int32 width = 0, height = 0;
 	VkDeviceSize textureSize = 0;
 	stbi_uc* textureData = file::LoadTexture(filename, width, height, textureSize);
 
-	ScopeStageBuffer textureStageBuffer(gpu, device, textureSize);
+	ScopeStageBuffer textureStageBuffer(textureSize);
 
 	void* data;
-	vkMapMemory(device, textureStageBuffer.GetMemory(), 0, textureSize, 0, &data);
+	vkMapMemory(VulkanContext::Device, textureStageBuffer.GetMemory(), 0, textureSize, 0, &data);
 	memcpy(data, textureData, static_cast<size_t>(textureSize));
-	vkUnmapMemory(device, textureStageBuffer.GetMemory());
+	vkUnmapMemory(VulkanContext::Device, textureStageBuffer.GetMemory());
 
 	stbi_image_free(textureData);
 
@@ -367,26 +368,26 @@ void vge::CreateTextureImage(VkPhysicalDevice gpu, VkDevice device, VkQueue tran
 	const VkImageTiling textureTiling = VK_IMAGE_TILING_OPTIMAL;
 	const VkImageUsageFlags textureUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 	const VkMemoryPropertyFlags textureMemProps = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-	CreateImage(gpu, device, textureExtent, textureFormat, textureTiling, textureUsage, textureMemProps, outImage, outImageMemory);
+	CreateImage(textureExtent, textureFormat, textureTiling, textureUsage, textureMemProps, outImage, outImageMemory);
 
 	// Transition image to be destination for copy operation.
 	{
 		const VkImageLayout oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		const VkImageLayout newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		TransitionImageLayout(device, transferQueue, transferCmdPool, outImage, oldLayout, newLayout);
+		TransitionImageLayout(transferQueue, transferCmdPool, outImage, oldLayout, newLayout);
 	}
 
-	CopyImageBuffer(device, transferQueue, transferCmdPool, textureStageBuffer.GetHandle(), outImage, textureExtent);
+	CopyImageBuffer(transferQueue, transferCmdPool, textureStageBuffer.GetHandle(), outImage, textureExtent);
 
 	// Transition image to be shader readable for shade usage.
 	{
 		const VkImageLayout oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		const VkImageLayout newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		TransitionImageLayout(device, transferQueue, transferCmdPool, outImage, oldLayout, newLayout);
+		TransitionImageLayout(transferQueue, transferCmdPool, outImage, oldLayout, newLayout);
 	}
 }
 
-void vge::CreateTextureDescriptorSet(VkDevice device, VkSampler sampler, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descrptorSetLayout, VkImageView textureImageView, VkDescriptorSet& outTextureDescriptorSet)
+void vge::CreateTextureDescriptorSet(VkSampler sampler, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descrptorSetLayout, VkImageView textureImageView, VkDescriptorSet& outTextureDescriptorSet)
 {
 	VkDescriptorSetAllocateInfo descriptorSetAllocInfo = {};
 	descriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -394,7 +395,7 @@ void vge::CreateTextureDescriptorSet(VkDevice device, VkSampler sampler, VkDescr
 	descriptorSetAllocInfo.descriptorSetCount = 1;
 	descriptorSetAllocInfo.pSetLayouts = &descrptorSetLayout;
 
-	VK_ENSURE_MSG(vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &outTextureDescriptorSet), "Failed to allocate texture descriptor set.");
+	VK_ENSURE_MSG(vkAllocateDescriptorSets(VulkanContext::Device, &descriptorSetAllocInfo, &outTextureDescriptorSet), "Failed to allocate texture descriptor set.");
 
 	VkDescriptorImageInfo descriptorImageInfo = {};
 	descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -410,12 +411,12 @@ void vge::CreateTextureDescriptorSet(VkDevice device, VkSampler sampler, VkDescr
 	descriptorSetWrite.descriptorCount = 1;
 	descriptorSetWrite.pImageInfo = &descriptorImageInfo;
 
-	vkUpdateDescriptorSets(device, 1, &descriptorSetWrite, 0, nullptr);
+	vkUpdateDescriptorSets(VulkanContext::Device, 1, &descriptorSetWrite, 0, nullptr);
 }
 
-void vge::TransitionImageLayout(VkDevice device, VkQueue queue, VkCommandPool cmdPool, VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout)
+void vge::TransitionImageLayout(VkQueue queue, VkCommandPool cmdPool, VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout)
 {
-	ScopeCmdBuffer cmdBuffer(device, cmdPool, queue);
+	ScopeCmdBuffer cmdBuffer(cmdPool, queue);
 
 	VkImageMemoryBarrier imageMemoryBarrier = {};
 	imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
