@@ -1,6 +1,6 @@
 #include "Model.h"
 
-void vge::Model::LoadNode(VkQueue transferQueue, VkCommandPool transferCmdPool, const aiScene* scene, const aiNode* node, const std::vector<int32>& textureToDescriptorSet)
+void vge::Model::LoadNode(VkQueue transferQueue, VkCommandPool transferCmdPool, const aiScene* scene, const aiNode* node, const std::vector<int32>& materialToTextureId)
 {
 	if (!node)
 	{
@@ -10,16 +10,16 @@ void vge::Model::LoadNode(VkQueue transferQueue, VkCommandPool transferCmdPool, 
 
 	for (uint32 i = 0; i < node->mNumMeshes; ++i)
 	{
-		LoadMesh(transferQueue, transferCmdPool, scene, scene->mMeshes[node->mMeshes[i]], textureToDescriptorSet);
+		LoadMesh(transferQueue, transferCmdPool, scene, scene->mMeshes[node->mMeshes[i]], materialToTextureId);
 	}
 
 	for (uint32 i = 0; i < node->mNumChildren; ++i)
 	{
-		LoadNode(transferQueue, transferCmdPool, scene, node->mChildren[i], textureToDescriptorSet);
+		LoadNode(transferQueue, transferCmdPool, scene, node->mChildren[i], materialToTextureId);
 	}
 }
 
-void vge::Model::LoadMesh(VkQueue transferQueue, VkCommandPool transferCmdPool, const aiScene* scene, const aiMesh* mesh, const std::vector<int32>& textureToDescriptorSet)
+void vge::Model::LoadMesh(VkQueue transferQueue, VkCommandPool transferCmdPool, const aiScene* scene, const aiMesh* mesh, const std::vector<int32>& materialToTextureId)
 {
 	static constexpr glm::vec3 DontCareColor = glm::vec3(0.0f);
 
@@ -55,7 +55,7 @@ void vge::Model::LoadMesh(VkQueue transferQueue, VkCommandPool transferCmdPool, 
 		}
 	}
 
-	m_Meshes.emplace_back(transferCmdPool, vertices, indices, textureToDescriptorSet[mesh->mMaterialIndex]);
+	m_Meshes.emplace_back(transferQueue, transferCmdPool, vertices, indices, materialToTextureId[mesh->mMaterialIndex]);
 }
 
 void vge::Model::Destroy()

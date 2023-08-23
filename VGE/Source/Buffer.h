@@ -62,7 +62,7 @@ namespace vge
 	{
 	public:
 		IndexBuffer() = default;
-		IndexBuffer(VkCommandPool transferCmdPool, const std::vector<uint32>& indices);
+		IndexBuffer(VkQueue transferQueue, VkCommandPool transferCmdPool, const std::vector<uint32>& indices);
 
 		VkBuffer GetHandle() const { return m_Handle; }
 		VkDeviceMemory GetMemory() const { return m_Memory; }
@@ -85,7 +85,7 @@ namespace vge
 	{
 	public:
 		VertexBuffer() = default;
-		VertexBuffer(VkCommandPool transferCmdPool, const std::vector<Vertex>& vertices);
+		VertexBuffer(VkQueue transferQueue, VkCommandPool transferCmdPool, const std::vector<Vertex>& vertices);
 
 		VkBuffer GetHandle() const { return m_Handle; }
 		VkDeviceMemory GetMemory() const { return m_Memory; }

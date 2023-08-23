@@ -1,5 +1,13 @@
 #pragma once
 
+// Settings
+
+#ifndef COMPILE_SHADERS_ON_INIT
+	#define COMPILE_SHADERS_ON_INIT 1
+#endif
+
+// Misc
+
 #define INDEX_NONE -1
 
 #define STD_VECTOR_ALLOC_SIZE(vector) (sizeof(vector[0]) * vector.size())

@@ -9,9 +9,9 @@ namespace vge
 	public:
 		Model() = default;
 
-		// Recursively load all meshes from this node and its children.
-		void LoadNode(VkQueue transferQueue, VkCommandPool transferCmdPool, const aiScene* scene, const aiNode* node, const std::vector<int32>& textureToDescriptorSet);
-		void LoadMesh(VkQueue transferQueue, VkCommandPool transferCmdPool, const aiScene* scene, const aiMesh* mesh, const std::vector<int32>& textureToDescriptorSet);
+		// Recursively load all meshes starting from a given node as root.
+		void LoadNode(VkQueue transferQueue, VkCommandPool transferCmdPool, const aiScene* scene, const aiNode* node, const std::vector<int32>& materialToTextureId);
+		void LoadMesh(VkQueue transferQueue, VkCommandPool transferCmdPool, const aiScene* scene, const aiMesh* mesh, const std::vector<int32>& materialToTextureId);
 
 	public:
 		size_t GetMeshCount() const { return m_Meshes.size(); }

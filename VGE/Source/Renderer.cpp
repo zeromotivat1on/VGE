@@ -137,6 +137,12 @@ vge::Renderer::Renderer(GLFWwindow* window) : m_Window(window)
 
 void vge::Renderer::Initialize()
 {
+#if COMPILE_SHADERS_ON_INIT
+	LOG_RAW("\n----- Shader compilation started -----\n");
+	ENSURE(system("compile_shaders.bat") >= 0);
+	LOG_RAW("\n----- Shader compilation finished -----\n\n");
+#endif
+
 	CreateInstance();
 	SetupDebugMessenger();
 	CreateSurface();

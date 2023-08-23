@@ -103,7 +103,7 @@ void vge::CopyImageBuffer(VkQueue transferQueue, VkCommandPool transferCmdPool, 
 	vkCmdCopyBufferToImage(transferCmdBuffer.GetHandle(), srcBuffer, dstImage, imageLayout, 1, &bufferImageCopyRegion);
 }
 
-vge::IndexBuffer::IndexBuffer(VkCommandPool transferCmdPool, const std::vector<uint32>& indices)
+vge::IndexBuffer::IndexBuffer(VkQueue transferQueue, VkCommandPool transferCmdPool, const std::vector<uint32>& indices)
 {
 	const VkDeviceSize bufferSize = STD_VECTOR_ALLOC_SIZE(indices);
 
@@ -115,10 +115,10 @@ vge::IndexBuffer::IndexBuffer(VkCommandPool transferCmdPool, const std::vector<u
 	vkUnmapMemory(VulkanContext::Device, stageBuffer.GetMemory());
 
 	CreateBuffer(bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_Handle, m_Memory);
-	CopyBuffer(VulkanContext::GfxQueue, transferCmdPool, stageBuffer.GetHandle(), m_Handle, bufferSize);
+	CopyBuffer(transferQueue, transferCmdPool, stageBuffer.GetHandle(), m_Handle, bufferSize);
 }
 
-vge::VertexBuffer::VertexBuffer(VkCommandPool transferCmdPool, const std::vector<Vertex>& vertices)
+vge::VertexBuffer::VertexBuffer(VkQueue transferQueue, VkCommandPool transferCmdPool, const std::vector<Vertex>& vertices)
 {
 	const VkDeviceSize bufferSize = STD_VECTOR_ALLOC_SIZE(vertices);
 
@@ -131,5 +131,5 @@ vge::VertexBuffer::VertexBuffer(VkCommandPool transferCmdPool, const std::vector
 
 	CreateBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_Handle, m_Memory);
 
-	CopyBuffer(VulkanContext::GfxQueue, transferCmdPool, stageBuffer.GetHandle(), m_Handle, bufferSize);
+	CopyBuffer(transferQueue, transferCmdPool, stageBuffer.GetHandle(), m_Handle, bufferSize);
 }

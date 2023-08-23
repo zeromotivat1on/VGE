@@ -15,7 +15,7 @@ namespace vge
 	{
 	public:
 		Mesh() = default;
-		Mesh(VkCommandPool transferCmdPool, const std::vector<Vertex>& vertices, const std::vector<uint32>& indices, int32 TextureId);
+		Mesh(VkQueue transferQueue, VkCommandPool transferCmdPool, const std::vector<Vertex>& vertices, const std::vector<uint32>& indices, int32 TextureId);
 
 		size_t GetVertexCount() const { return m_VertexCount; }
 		size_t GetIndexCount() const { return m_IndexCount; }
