@@ -123,22 +123,20 @@ vge::IndexBuffer::IndexBuffer(VkQueue transferQueue, VkCommandPool transferCmdPo
 
 	ScopeStageBuffer stageBuffer(bufferSize);
 
-	void* data; // cpu accessible data from buffer memory on gpu
-	vkMapMemory(VulkanContext::Device, stageBuffer.GetMemory(), 0, bufferSize, 0, &data);
+	void* data;
+	vmaMapMemory(VulkanContext::VmaAllocator, m_AllocatedBuffer.Allocation, &data);
 	memcpy(data, indices.data(), static_cast<size_t>(bufferSize));
-	vkUnmapMemory(VulkanContext::Device, stageBuffer.GetMemory());
+	vmaUnmapMemory(VulkanContext::VmaAllocator, m_AllocatedBuffer.Allocation);
 
-	CreateBuffer(bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_Handle, m_Memory);
-	CopyBuffer(transferQueue, transferCmdPool, stageBuffer.GetHandle(), m_Handle, bufferSize);
+	CreateBuffer(VulkanContext::VmaAllocator, bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY, m_AllocatedBuffer);
+
+	CopyBuffer(transferQueue, transferCmdPool, stageBuffer.Get().Handle, m_AllocatedBuffer.Handle, bufferSize);
 }
 
 void vge::IndexBuffer::Destroy()
 {
-	vkDestroyBuffer(VulkanContext::Device, m_Handle, nullptr);
-	m_Handle = VK_NULL_HANDLE;
-
-	vkFreeMemory(VulkanContext::Device, m_Memory, nullptr);
-	m_Memory = VK_NULL_HANDLE;
+	vmaDestroyBuffer(VulkanContext::VmaAllocator, m_AllocatedBuffer.Handle, m_AllocatedBuffer.Allocation);
+	memset(&m_AllocatedBuffer, 0, sizeof(VmaBuffer));
 }
 
 vge::VertexBuffer::VertexBuffer(VkQueue transferQueue, VkCommandPool transferCmdPool, const std::vector<Vertex>& vertices)
@@ -147,21 +145,18 @@ vge::VertexBuffer::VertexBuffer(VkQueue transferQueue, VkCommandPool transferCmd
 
 	ScopeStageBuffer stageBuffer(bufferSize);
 
-	void* data; // cpu accessible data from buffer memory on gpu
-	vkMapMemory(VulkanContext::Device, stageBuffer.GetMemory(), 0, bufferSize, 0, &data);
+	void* data;
+	vmaMapMemory(VulkanContext::VmaAllocator, m_AllocatedBuffer.Allocation, &data);
 	memcpy(data, vertices.data(), static_cast<size_t>(bufferSize));
-	vkUnmapMemory(VulkanContext::Device, stageBuffer.GetMemory());
+	vmaUnmapMemory(VulkanContext::VmaAllocator, m_AllocatedBuffer.Allocation);
 
-	CreateBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_Handle, m_Memory);
+	CreateBuffer(VulkanContext::VmaAllocator, bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY, m_AllocatedBuffer);
 
-	CopyBuffer(transferQueue, transferCmdPool, stageBuffer.GetHandle(), m_Handle, bufferSize);
+	CopyBuffer(transferQueue, transferCmdPool, stageBuffer.Get().Handle, m_AllocatedBuffer.Handle, bufferSize);
 }
 
 void vge::VertexBuffer::Destroy()
 {
-	vkDestroyBuffer(VulkanContext::Device, m_Handle, nullptr);
-	m_Handle = VK_NULL_HANDLE;
-
-	vkFreeMemory(VulkanContext::Device, m_Memory, nullptr);
-	m_Memory = VK_NULL_HANDLE;
+	vmaDestroyBuffer(VulkanContext::VmaAllocator, m_AllocatedBuffer.Handle, m_AllocatedBuffer.Allocation);
+	memset(&m_AllocatedBuffer, 0, sizeof(VmaBuffer));
 }

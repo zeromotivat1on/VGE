@@ -49,21 +49,18 @@ namespace vge
 	public:
 		ScopeStageBuffer(VkDeviceSize size)
 		{
-			CreateBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_Handle, m_Memory);
+			CreateBuffer(VulkanContext::VmaAllocator, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, m_AllocatedBuffer);
 		}
 
 		~ScopeStageBuffer()
 		{
-			vkDestroyBuffer(VulkanContext::Device, m_Handle, nullptr);
-			vkFreeMemory(VulkanContext::Device, m_Memory, nullptr);
+			vmaDestroyBuffer(VulkanContext::VmaAllocator, m_AllocatedBuffer.Handle, m_AllocatedBuffer.Allocation);
 		}
 
-		VkBuffer GetHandle() const { return m_Handle; }
-		VkDeviceMemory GetMemory() const { return m_Memory; }
+		VmaBuffer Get() const { return m_AllocatedBuffer; }
 
 	private:
-		VkBuffer m_Handle = VK_NULL_HANDLE;
-		VkDeviceMemory m_Memory = VK_NULL_HANDLE;
+		VmaBuffer m_AllocatedBuffer = {};
 	};
 
 	class IndexBuffer
@@ -72,14 +69,12 @@ namespace vge
 		IndexBuffer() = default;
 		IndexBuffer(VkQueue transferQueue, VkCommandPool transferCmdPool, const std::vector<uint32>& indices);
 
-		VkBuffer GetHandle() const { return m_Handle; }
-		VkDeviceMemory GetMemory() const { return m_Memory; }
+		VmaBuffer Get() const { return m_AllocatedBuffer; }
 
 		void Destroy();
 
 	private:
-		VkBuffer m_Handle = VK_NULL_HANDLE;
-		VkDeviceMemory m_Memory = VK_NULL_HANDLE;
+		VmaBuffer m_AllocatedBuffer = {};
 	};
 
 	class VertexBuffer
@@ -88,13 +83,11 @@ namespace vge
 		VertexBuffer() = default;
 		VertexBuffer(VkQueue transferQueue, VkCommandPool transferCmdPool, const std::vector<Vertex>& vertices);
 
-		VkBuffer GetHandle() const { return m_Handle; }
-		VkDeviceMemory GetMemory() const { return m_Memory; }
+		VmaBuffer Get() const { return m_AllocatedBuffer; }
 
 		void Destroy();
 
 	private:
-		VkBuffer m_Handle = VK_NULL_HANDLE;
-		VkDeviceMemory m_Memory = VK_NULL_HANDLE;
+		VmaBuffer m_AllocatedBuffer = {};
 	};
 }
