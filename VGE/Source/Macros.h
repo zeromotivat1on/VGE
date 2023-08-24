@@ -23,6 +23,7 @@
 #define ENSURE(expr)																							\
 if (!(expr))																									\
 {																												\
+	LOG(Error, "Ensure condition failed: %s", #expr);															\
 	exit(EXIT_FAILURE);																							\
 }																												\
 

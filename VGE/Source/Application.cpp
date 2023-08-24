@@ -1,3 +1,6 @@
+#define STB_IMAGE_IMPLEMENTATION
+#define VMA_IMPLEMENTATION
+
 #include "Application.h"
 #include "Window.h"
 #include "Renderer.h"

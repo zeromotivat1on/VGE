@@ -5,6 +5,14 @@
 
 namespace vge
 {
+	struct VmaBuffer
+	{
+		VkBuffer Handle = VK_NULL_HANDLE;
+		VmaAllocation Allocation = VK_NULL_HANDLE;
+	};
+
+	void CreateBuffer(VmaAllocator vmaAllocator, VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memAllocUsage, VmaBuffer& outBuffer);
+
 	VkCommandBuffer BeginOneTimeCmdBuffer(VkCommandPool cmdPool);
 	void			EndOneTimeCmdBuffer(VkCommandPool cmdPool, VkQueue queue, VkCommandBuffer cmdBuffer);
 
@@ -67,14 +75,7 @@ namespace vge
 		VkBuffer GetHandle() const { return m_Handle; }
 		VkDeviceMemory GetMemory() const { return m_Memory; }
 
-		void Destroy() 
-		{
-			vkDestroyBuffer(VulkanContext::Device, m_Handle, nullptr);
-			m_Handle = VK_NULL_HANDLE;
-
-			vkFreeMemory(VulkanContext::Device, m_Memory, nullptr);
-			m_Memory = VK_NULL_HANDLE;
-		}
+		void Destroy();
 
 	private:
 		VkBuffer m_Handle = VK_NULL_HANDLE;
@@ -90,14 +91,7 @@ namespace vge
 		VkBuffer GetHandle() const { return m_Handle; }
 		VkDeviceMemory GetMemory() const { return m_Memory; }
 
-		void Destroy()
-		{
-			vkDestroyBuffer(VulkanContext::Device, m_Handle, nullptr);
-			m_Handle = VK_NULL_HANDLE;
-
-			vkFreeMemory(VulkanContext::Device, m_Memory, nullptr);
-			m_Memory = VK_NULL_HANDLE;
-		}
+		void Destroy();
 
 	private:
 		VkBuffer m_Handle = VK_NULL_HANDLE;

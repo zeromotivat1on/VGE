@@ -23,6 +23,7 @@
 #include <assimp/postprocess.h>
 
 #include <stb_image.h>
+#include <vk_mem_alloc.h>
 
 #include "Types.h"
 #include "Macros.h"

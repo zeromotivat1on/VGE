@@ -148,6 +148,7 @@ void vge::Renderer::Initialize()
 	CreateSurface();
 	FindGpu();
 	CreateDevice();
+	CreateCustomAllocator();
 	CreateSwapchain();
 	CreateColorBufferImages();
 	CreateDepthBufferImages();
@@ -177,15 +178,15 @@ void vge::Renderer::Initialize()
 
 void vge::Renderer::Draw()
 {
-	VkFence& currentDrawFence = m_DrawFences[GRenderFrame];
-	VkSemaphore& currentImageAvailableSemaphore = m_ImageAvailableSemas[GRenderFrame];
-	VkSemaphore& currentRenderFinishedSemaphore = m_RenderFinishedSemas[GRenderFrame];
+	VkFence& drawFence = m_DrawFences[GRenderFrame];
+	VkSemaphore& imageAvailableSemaphore = m_ImageAvailableSemas[GRenderFrame];
+	VkSemaphore& renderFinishedSemaphore = m_RenderFinishedSemas[GRenderFrame];
 
-	vkWaitForFences(m_Device, 1, &currentDrawFence, VK_TRUE, UINT64_MAX);	// wait till open
-	vkResetFences(m_Device, 1, &currentDrawFence);							// close after enter
+	vkWaitForFences(m_Device, 1, &drawFence, VK_TRUE, UINT64_MAX);	// wait till open
+	vkResetFences(m_Device, 1, &drawFence);							// close after enter
 
 	uint32 AcquiredImageIndex = 0;
-	vkAcquireNextImageKHR(m_Device, m_Swapchain, UINT64_MAX, currentImageAvailableSemaphore, VK_NULL_HANDLE, &AcquiredImageIndex);
+	vkAcquireNextImageKHR(m_Device, m_Swapchain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &AcquiredImageIndex);
 
 	RecordCommandBuffers(AcquiredImageIndex);
 	UpdateUniformBuffers(AcquiredImageIndex);
@@ -197,20 +198,20 @@ void vge::Renderer::Draw()
 	VkSubmitInfo submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.waitSemaphoreCount = 1;
-	submitInfo.pWaitSemaphores = &currentImageAvailableSemaphore;
+	submitInfo.pWaitSemaphores = &imageAvailableSemaphore;
 	submitInfo.pWaitDstStageMask = waitStages;
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &currentCmdBuffer;
 	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = &currentRenderFinishedSemaphore;
+	submitInfo.pSignalSemaphores = &renderFinishedSemaphore;
 
 	// Open fence after successful render.
-	VK_ENSURE_MSG(vkQueueSubmit(m_GfxQueue, 1, &submitInfo, currentDrawFence), "Failed to submit info to graphics queue.");
+	VK_ENSURE_MSG(vkQueueSubmit(m_GfxQueue, 1, &submitInfo, drawFence), "Failed to submit info to graphics queue.");
 
 	VkPresentInfoKHR presentInfo = {};
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 	presentInfo.waitSemaphoreCount = 1;
-	presentInfo.pWaitSemaphores = &currentRenderFinishedSemaphore;
+	presentInfo.pWaitSemaphores = &renderFinishedSemaphore;
 	presentInfo.swapchainCount = 1;
 	presentInfo.pSwapchains = &m_Swapchain;
 	presentInfo.pImageIndices = &AcquiredImageIndex;
@@ -459,6 +460,17 @@ void vge::Renderer::CreateDevice()
 	vkGetDeviceQueue(m_Device, m_QueueIndices.PresentFamily, 0, &m_PresentQueue);
 	VulkanContext::PresentQueue = m_PresentQueue;
 
+}
+
+void vge::Renderer::CreateCustomAllocator()
+{
+	VmaAllocatorCreateInfo vmaAllocatorCreateInfo = {};
+	vmaAllocatorCreateInfo.instance = m_Instance;
+	vmaAllocatorCreateInfo.physicalDevice = m_Gpu;
+	vmaAllocatorCreateInfo.device = m_Device;
+
+	VK_ENSURE_MSG(vmaCreateAllocator(&vmaAllocatorCreateInfo, &m_Allocator), "Failed to create custom allocator.");
+	VulkanContext::VmaAllocator = m_Allocator;
 }
 
 void vge::Renderer::CreateSwapchain()

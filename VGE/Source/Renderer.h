@@ -50,6 +50,7 @@ namespace vge
 		VkInstance m_Instance = VK_NULL_HANDLE;
 		VkPhysicalDevice m_Gpu = VK_NULL_HANDLE;
 		VkDevice m_Device = VK_NULL_HANDLE;
+		VmaAllocator m_Allocator = VK_NULL_HANDLE;
 		VkSurfaceKHR m_Surface = VK_NULL_HANDLE;
 		
 		QueueFamilyIndices m_QueueIndices = {};
@@ -123,6 +124,7 @@ namespace vge
 		void CreateSurface();
 		void FindGpu();
 		void CreateDevice();
+		void CreateCustomAllocator();
 		void CreateSwapchain();
 		void CreateColorBufferImages();
 		void CreateDepthBufferImages();

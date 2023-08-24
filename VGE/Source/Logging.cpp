@@ -85,6 +85,7 @@ void vge::NotifyVulkanEnsureFailure(VkResult result, const char* function, const
 	}
 
 	LOG(Error, "%s failed with VkResult=%s(%d) in %s:%u.", function, resultString, result, filename, line);
+	
 	if (errMessage)
 	{
 		LOG(Error, " Custom error message: %s", errMessage);

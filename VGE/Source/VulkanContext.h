@@ -4,7 +4,7 @@
 
 namespace vge
 {
-	// Global context with main persistent vulkan entities.
+	// Global context with main persistent vulkan-concerned entities.
 	class VulkanContext
 	{
 	public:
@@ -13,5 +13,7 @@ namespace vge
 		static inline VkDevice Device;
 		static inline VkQueue GfxQueue;
 		static inline VkQueue PresentQueue;
+
+		static inline VmaAllocator VmaAllocator;
 	};
 }

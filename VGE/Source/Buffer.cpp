@@ -1,6 +1,20 @@
 #include "Buffer.h"
 #include "Logging.h"
 
+void vge::CreateBuffer(VmaAllocator vmaAllocator, VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memAllocUsage, VmaBuffer& outBuffer)
+{
+	VkBufferCreateInfo bufferCreateInfo = {};
+	bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	bufferCreateInfo.size = size;
+	bufferCreateInfo.usage = usage;
+	bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+	VmaAllocationCreateInfo vmaAllocCreateInfo = {};
+	vmaAllocCreateInfo.usage = memAllocUsage;
+
+	VK_ENSURE(vmaCreateBuffer(vmaAllocator, &bufferCreateInfo, &vmaAllocCreateInfo, &outBuffer.Handle, &outBuffer.Allocation, nullptr));
+}
+
 VkCommandBuffer vge::BeginOneTimeCmdBuffer(VkCommandPool cmdPool)
 {
 	VkCommandBuffer cmdBuffer = VK_NULL_HANDLE;
@@ -118,6 +132,15 @@ vge::IndexBuffer::IndexBuffer(VkQueue transferQueue, VkCommandPool transferCmdPo
 	CopyBuffer(transferQueue, transferCmdPool, stageBuffer.GetHandle(), m_Handle, bufferSize);
 }
 
+void vge::IndexBuffer::Destroy()
+{
+	vkDestroyBuffer(VulkanContext::Device, m_Handle, nullptr);
+	m_Handle = VK_NULL_HANDLE;
+
+	vkFreeMemory(VulkanContext::Device, m_Memory, nullptr);
+	m_Memory = VK_NULL_HANDLE;
+}
+
 vge::VertexBuffer::VertexBuffer(VkQueue transferQueue, VkCommandPool transferCmdPool, const std::vector<Vertex>& vertices)
 {
 	const VkDeviceSize bufferSize = STD_VECTOR_ALLOC_SIZE(vertices);
@@ -132,4 +155,13 @@ vge::VertexBuffer::VertexBuffer(VkQueue transferQueue, VkCommandPool transferCmd
 	CreateBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_Handle, m_Memory);
 
 	CopyBuffer(transferQueue, transferCmdPool, stageBuffer.GetHandle(), m_Handle, bufferSize);
+}
+
+void vge::VertexBuffer::Destroy()
+{
+	vkDestroyBuffer(VulkanContext::Device, m_Handle, nullptr);
+	m_Handle = VK_NULL_HANDLE;
+
+	vkFreeMemory(VulkanContext::Device, m_Memory, nullptr);
+	m_Memory = VK_NULL_HANDLE;
 }

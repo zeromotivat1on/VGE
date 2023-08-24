@@ -40,5 +40,5 @@ namespace vge
 		static void PrintLogRaw_Implementation(const char* message, va_list args);
 	};
 
-	extern void NotifyVulkanEnsureFailure(VkResult result, const char* function, const char* filename, uint32 line, const char* errMessage);
+	extern void NotifyVulkanEnsureFailure(VkResult result, const char* function, const char* filename, uint32 line, const char* errMessage = "");
 }
