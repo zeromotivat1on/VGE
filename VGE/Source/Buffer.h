@@ -9,9 +9,10 @@ namespace vge
 	{
 		VkBuffer Handle = VK_NULL_HANDLE;
 		VmaAllocation Allocation = VK_NULL_HANDLE;
+		VmaAllocationInfo AllocInfo = {};
 	};
 
-	void CreateBuffer(VmaAllocator vmaAllocator, VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memAllocUsage, VmaBuffer& outBuffer);
+	void CreateBuffer(VmaAllocator allocator, VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memAllocUsage, VmaBuffer& outBuffer);
 
 	VkCommandBuffer BeginOneTimeCmdBuffer(VkCommandPool cmdPool);
 	void			EndOneTimeCmdBuffer(VkCommandPool cmdPool, VkQueue queue, VkCommandBuffer cmdBuffer);
@@ -49,12 +50,12 @@ namespace vge
 	public:
 		ScopeStageBuffer(VkDeviceSize size)
 		{
-			CreateBuffer(VulkanContext::VmaAllocator, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, m_AllocatedBuffer);
+			CreateBuffer(VulkanContext::Allocator, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, m_AllocatedBuffer);
 		}
 
 		~ScopeStageBuffer()
 		{
-			vmaDestroyBuffer(VulkanContext::VmaAllocator, m_AllocatedBuffer.Handle, m_AllocatedBuffer.Allocation);
+			vmaDestroyBuffer(VulkanContext::Allocator, m_AllocatedBuffer.Handle, m_AllocatedBuffer.Allocation);
 		}
 
 		VmaBuffer Get() const { return m_AllocatedBuffer; }

@@ -1,7 +1,7 @@
 #include "Buffer.h"
 #include "Logging.h"
 
-void vge::CreateBuffer(VmaAllocator vmaAllocator, VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memAllocUsage, VmaBuffer& outBuffer)
+void vge::CreateBuffer(VmaAllocator allocator, VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memAllocUsage, VmaBuffer& outBuffer)
 {
 	VkBufferCreateInfo bufferCreateInfo = {};
 	bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -12,7 +12,7 @@ void vge::CreateBuffer(VmaAllocator vmaAllocator, VkDeviceSize size, VkBufferUsa
 	VmaAllocationCreateInfo vmaAllocCreateInfo = {};
 	vmaAllocCreateInfo.usage = memAllocUsage;
 
-	VK_ENSURE(vmaCreateBuffer(vmaAllocator, &bufferCreateInfo, &vmaAllocCreateInfo, &outBuffer.Handle, &outBuffer.Allocation, nullptr));
+	VK_ENSURE(vmaCreateBuffer(allocator, &bufferCreateInfo, &vmaAllocCreateInfo, &outBuffer.Handle, &outBuffer.Allocation, &outBuffer.AllocInfo));
 }
 
 VkCommandBuffer vge::BeginOneTimeCmdBuffer(VkCommandPool cmdPool)
@@ -124,18 +124,18 @@ vge::IndexBuffer::IndexBuffer(VkQueue transferQueue, VkCommandPool transferCmdPo
 	ScopeStageBuffer stageBuffer(bufferSize);
 
 	void* data;
-	vmaMapMemory(VulkanContext::VmaAllocator, m_AllocatedBuffer.Allocation, &data);
+	vmaMapMemory(VulkanContext::Allocator, stageBuffer.Get().Allocation, &data);
 	memcpy(data, indices.data(), static_cast<size_t>(bufferSize));
-	vmaUnmapMemory(VulkanContext::VmaAllocator, m_AllocatedBuffer.Allocation);
+	vmaUnmapMemory(VulkanContext::Allocator, stageBuffer.Get().Allocation);
 
-	CreateBuffer(VulkanContext::VmaAllocator, bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY, m_AllocatedBuffer);
+	CreateBuffer(VulkanContext::Allocator, bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY, m_AllocatedBuffer);
 
 	CopyBuffer(transferQueue, transferCmdPool, stageBuffer.Get().Handle, m_AllocatedBuffer.Handle, bufferSize);
 }
 
 void vge::IndexBuffer::Destroy()
 {
-	vmaDestroyBuffer(VulkanContext::VmaAllocator, m_AllocatedBuffer.Handle, m_AllocatedBuffer.Allocation);
+	vmaDestroyBuffer(VulkanContext::Allocator, m_AllocatedBuffer.Handle, m_AllocatedBuffer.Allocation);
 	memset(&m_AllocatedBuffer, 0, sizeof(VmaBuffer));
 }
 
@@ -146,17 +146,17 @@ vge::VertexBuffer::VertexBuffer(VkQueue transferQueue, VkCommandPool transferCmd
 	ScopeStageBuffer stageBuffer(bufferSize);
 
 	void* data;
-	vmaMapMemory(VulkanContext::VmaAllocator, m_AllocatedBuffer.Allocation, &data);
+	vmaMapMemory(VulkanContext::Allocator, stageBuffer.Get().Allocation, &data);
 	memcpy(data, vertices.data(), static_cast<size_t>(bufferSize));
-	vmaUnmapMemory(VulkanContext::VmaAllocator, m_AllocatedBuffer.Allocation);
+	vmaUnmapMemory(VulkanContext::Allocator, stageBuffer.Get().Allocation);
 
-	CreateBuffer(VulkanContext::VmaAllocator, bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY, m_AllocatedBuffer);
+	CreateBuffer(VulkanContext::Allocator, bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY, m_AllocatedBuffer);
 
 	CopyBuffer(transferQueue, transferCmdPool, stageBuffer.Get().Handle, m_AllocatedBuffer.Handle, bufferSize);
 }
 
 void vge::VertexBuffer::Destroy()
 {
-	vmaDestroyBuffer(VulkanContext::VmaAllocator, m_AllocatedBuffer.Handle, m_AllocatedBuffer.Allocation);
+	vmaDestroyBuffer(VulkanContext::Allocator, m_AllocatedBuffer.Handle, m_AllocatedBuffer.Allocation);
 	memset(&m_AllocatedBuffer, 0, sizeof(VmaBuffer));
 }

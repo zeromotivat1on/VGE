@@ -242,12 +242,11 @@ void vge::Renderer::Cleanup()
 	for (size_t i = 0; i < m_SwapchainImages.size(); ++i)
 	{
 		vkDestroyImageView(m_Device, m_ColorBufferImageViews[i], nullptr);
-		vkDestroyImage(m_Device, m_ColorBufferImages[i], nullptr);
-		vkFreeMemory(m_Device, m_ColorBufferImagesMemory[i], nullptr);
+		vmaDestroyImage(m_Allocator, m_ColorBufferImages[i].Handle, m_ColorBufferImages[i].Allocation);
+
 
 		vkDestroyImageView(m_Device, m_DepthBufferImageViews[i], nullptr);
-		vkDestroyImage(m_Device, m_DepthBufferImages[i], nullptr);
-		vkFreeMemory(m_Device, m_DepthBufferImagesMemory[i], nullptr);
+		vmaDestroyImage(m_Allocator, m_DepthBufferImages[i].Handle, m_DepthBufferImages[i].Allocation);
 	}
 
 	vkDestroyDescriptorPool(m_Device, m_InputDescriptorPool, nullptr);
@@ -261,8 +260,7 @@ void vge::Renderer::Cleanup()
 
 	for (size_t i = 0; i < m_SwapchainImages.size(); ++i)
 	{
-		vkDestroyBuffer(m_Device, m_VpUniformBuffers[i], nullptr);
-		vkFreeMemory(m_Device, m_VpUniformBuffersMemory[i], nullptr);
+		vmaDestroyBuffer(m_Allocator, m_VpUniformBuffers[i].Handle, m_VpUniformBuffers[i].Allocation);
 		//vkDestroyBuffer(m_Device, m_ModelDynamicUniformBuffers[i], nullptr);
 		//vkFreeMemory(m_Device, m_ModelDynamicUniformBuffersMemory[i], nullptr);
 	}
@@ -293,6 +291,9 @@ void vge::Renderer::Cleanup()
 	{
 		vkDestroyImageView(m_Device, swapchainImage.View, nullptr);
 	}
+
+	vmaDestroyAllocator(m_Allocator);
+	VulkanContext::Allocator = VK_NULL_HANDLE;
 
 	vkDestroySwapchainKHR(m_Device, m_Swapchain, nullptr);
 	vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
@@ -470,7 +471,7 @@ void vge::Renderer::CreateCustomAllocator()
 	vmaAllocatorCreateInfo.device = m_Device;
 
 	VK_ENSURE_MSG(vmaCreateAllocator(&vmaAllocatorCreateInfo, &m_Allocator), "Failed to create custom allocator.");
-	VulkanContext::VmaAllocator = m_Allocator;
+	VulkanContext::Allocator = m_Allocator;
 }
 
 void vge::Renderer::CreateSwapchain()
@@ -546,38 +547,34 @@ void vge::Renderer::CreateSwapchain()
 void vge::Renderer::CreateColorBufferImages()
 {
 	static constexpr VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
-	static constexpr VkMemoryPropertyFlags memProps = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
 	const std::vector<VkFormat> formats = { VK_FORMAT_R8G8B8A8_UNORM };
 	m_ColorFormat = GetBestImageFormat(formats, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
 	m_ColorBufferImages.resize(m_SwapchainImages.size());
 	m_ColorBufferImageViews.resize(m_SwapchainImages.size());
-	m_ColorBufferImagesMemory.resize(m_SwapchainImages.size());
 
 	for (size_t i = 0; i < m_SwapchainImages.size(); ++i)
 	{
-		CreateImage(m_SwapchainExtent, m_ColorFormat, VK_IMAGE_TILING_OPTIMAL, usage, memProps, m_ColorBufferImages[i], m_ColorBufferImagesMemory[i]);
-		CreateImageView(m_ColorBufferImages[i], m_ColorFormat, VK_IMAGE_ASPECT_COLOR_BIT, m_ColorBufferImageViews[i]);
+		CreateImage(m_Allocator, m_SwapchainExtent, m_ColorFormat, VK_IMAGE_TILING_OPTIMAL, usage, VMA_MEMORY_USAGE_GPU_ONLY, m_ColorBufferImages[i]);
+		CreateImageView(m_ColorBufferImages[i].Handle, m_ColorFormat, VK_IMAGE_ASPECT_COLOR_BIT, m_ColorBufferImageViews[i]);
 	}
 }
 
 void vge::Renderer::CreateDepthBufferImages()
 {
 	static constexpr VkImageUsageFlags usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
-	static constexpr VkMemoryPropertyFlags memProps = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
 	const std::vector<VkFormat> formats = { VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT };
 	m_DepthFormat = GetBestImageFormat(formats, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
 	m_DepthBufferImages.resize(m_SwapchainImages.size());
 	m_DepthBufferImageViews.resize(m_SwapchainImages.size());
-	m_DepthBufferImagesMemory.resize(m_SwapchainImages.size());
 
 	for (size_t i = 0; i < m_SwapchainImages.size(); ++i)
 	{
-		CreateImage(m_SwapchainExtent, m_DepthFormat, VK_IMAGE_TILING_OPTIMAL, usage, memProps, m_DepthBufferImages[i], m_DepthBufferImagesMemory[i]);
-		CreateImageView(m_DepthBufferImages[i], m_DepthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, m_DepthBufferImageViews[i]);
+		CreateImage(m_Allocator, m_SwapchainExtent, m_DepthFormat, VK_IMAGE_TILING_OPTIMAL, usage, VMA_MEMORY_USAGE_GPU_ONLY, m_DepthBufferImages[i]);
+		CreateImageView(m_DepthBufferImages[i].Handle, m_DepthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, m_DepthBufferImageViews[i]);
 	}
 }
 
@@ -1046,17 +1043,17 @@ void vge::Renderer::CreateUniformBuffers()
 	//const VkDeviceSize modelBufferSize = m_ModelUniformAlignment * GMaxSceneObjects;
 
 	m_VpUniformBuffers.resize(m_SwapchainImages.size());
-	m_VpUniformBuffersMemory.resize(m_SwapchainImages.size());
 
 	//m_ModelDynamicUniformBuffers.resize(m_SwapchainImages.size());
 	//m_ModelDynamicUniformBuffersMemory.resize(m_SwapchainImages.size());
 
 	constexpr VkBufferUsageFlags usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 	constexpr VkMemoryPropertyFlags props = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+	constexpr VmaMemoryUsage memUsage = VMA_MEMORY_USAGE_CPU_ONLY;
 
 	for (size_t i = 0; i < m_SwapchainImages.size(); ++i)
 	{
-		CreateBuffer(vpBufferSize, usage, props, m_VpUniformBuffers[i], m_VpUniformBuffersMemory[i]);
+		CreateBuffer(m_Allocator, vpBufferSize, usage, memUsage, m_VpUniformBuffers[i]);
 		//CreateBuffer(m_Gpu, m_Device, modelBufferSize, usage, props, m_ModelDynamicUniformBuffers[i], m_ModelDynamicUniformBuffersMemory[i]);
 	}
 }
@@ -1138,7 +1135,7 @@ void vge::Renderer::CreateDescriptorSets()
 		for (size_t i = 0; i < m_SwapchainImages.size(); ++i)
 		{
 			VkDescriptorBufferInfo vpDescriptorBufferInfo = {};
-			vpDescriptorBufferInfo.buffer = m_VpUniformBuffers[i];
+			vpDescriptorBufferInfo.buffer = m_VpUniformBuffers[i].Handle;
 			vpDescriptorBufferInfo.offset = 0;
 			vpDescriptorBufferInfo.range = sizeof(UboViewProjection);
 
@@ -1269,11 +1266,11 @@ void vge::Renderer::RecordCommandBuffers(uint32 ImageIndex)
 
 				const std::array<VkDescriptorSet, 2> currentDescriptorSets = { m_UniformDescriptorSets[ImageIndex], m_Textures[mesh->GetTextureId()].Descriptor};
 
-				VkBuffer vertexBuffers[] = { mesh->GetVertexBuffer().GetHandle() };
+				VkBuffer vertexBuffers[] = { mesh->GetVertexBuffer().Get().Handle };
 				VkDeviceSize offsets[] = { 0 };
 				vkCmdBindVertexBuffers(currentCmdBuffer, 0, 1, vertexBuffers, offsets);
 
-				vkCmdBindIndexBuffer(currentCmdBuffer, mesh->GetIndexBuffer().GetHandle(), 0, VK_INDEX_TYPE_UINT32);
+				vkCmdBindIndexBuffer(currentCmdBuffer, mesh->GetIndexBuffer().Get().Handle, 0, VK_INDEX_TYPE_UINT32);
 
 				//const uint32 dynamicOffset = static_cast<uint32>(m_ModelUniformAlignment * MeshIndex);
 				vkCmdBindDescriptorSets(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GfxPipelineLayout, 
@@ -1324,9 +1321,9 @@ void vge::Renderer::CreateSyncObjects()
 void vge::Renderer::UpdateUniformBuffers(uint32 ImageIndex)
 {
 	void* data;
-	vkMapMemory(m_Device, m_VpUniformBuffersMemory[ImageIndex], 0, sizeof(UboViewProjection), 0, &data);
+	vmaMapMemory(m_Allocator, m_VpUniformBuffers[ImageIndex].Allocation, &data);
 	memcpy(data, &m_UboViewProjection, sizeof(UboViewProjection));
-	vkUnmapMemory(m_Device, m_VpUniformBuffersMemory[ImageIndex]);
+	vmaUnmapMemory(m_Allocator, m_VpUniformBuffers[ImageIndex].Allocation);
 
 	// Usage of dynamic uniform buffer example. Costly for frequent actions like model matrix update.
 	//for (size_t i = 0; i < m_Meshes.size(); ++i)
@@ -1343,8 +1340,8 @@ void vge::Renderer::UpdateUniformBuffers(uint32 ImageIndex)
 int32 vge::Renderer::CreateTexture(const char* filename)
 {
 	Texture texture = {};
-	CreateTextureImage(m_GfxQueue, m_GfxCommandPool, filename, texture.Image, texture.Memory);
-	CreateImageView(texture.Image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, texture.View);
+	CreateTextureImage(m_Allocator, m_GfxQueue, m_GfxCommandPool, filename, texture.Image);
+	CreateImageView(texture.Image.Handle, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, texture.View);
 	CreateTextureDescriptorSet(m_TextureSampler, m_SamplerDescriptorPool, m_SamplerDescriptorSetLayout, texture.View, texture.Descriptor);
 	m_Textures.push_back(texture);
 

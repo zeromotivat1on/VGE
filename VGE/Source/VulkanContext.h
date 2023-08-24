@@ -14,6 +14,6 @@ namespace vge
 		static inline VkQueue GfxQueue;
 		static inline VkQueue PresentQueue;
 
-		static inline VmaAllocator VmaAllocator;
+		static inline VmaAllocator Allocator;
 	};
 }

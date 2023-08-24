@@ -73,14 +73,12 @@ namespace vge
 
 		// TODO: create separate structure for subpass data (images, view, memory, format).
 
-		std::vector <VkImage> m_ColorBufferImages = {};
+		std::vector<VmaImage> m_ColorBufferImages = {};
 		std::vector <VkImageView> m_ColorBufferImageViews = {};
-		std::vector <VkDeviceMemory> m_ColorBufferImagesMemory = {};
 		VkFormat m_ColorFormat = VK_FORMAT_UNDEFINED;
 
-		std::vector <VkImage> m_DepthBufferImages = {};
+		std::vector <VmaImage> m_DepthBufferImages = {};
 		std::vector <VkImageView> m_DepthBufferImageViews = {};
-		std::vector <VkDeviceMemory> m_DepthBufferImagesMemory = {};
 		VkFormat m_DepthFormat = VK_FORMAT_UNDEFINED;
 
 		VkDescriptorPool m_UniformDescriptorPool = VK_NULL_HANDLE;	// uniform data
@@ -96,8 +94,8 @@ namespace vge
 
 		VkPushConstantRange m_PushConstantRange = {};
 
-		std::vector<VkBuffer> m_VpUniformBuffers = {};
-		std::vector<VkDeviceMemory> m_VpUniformBuffersMemory = {};
+		std::vector<VmaBuffer> m_VpUniformBuffers = {};
+		//std::vector<VkDeviceMemory> m_VpUniformBuffersMemory = {};
 
 		//std::vector<VkBuffer> m_ModelDynamicUniformBuffers = {};
 		//std::vector<VkDeviceMemory> m_ModelDynamicUniformBuffersMemory = {};

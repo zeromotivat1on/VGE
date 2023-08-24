@@ -84,19 +84,24 @@ namespace vge
 		VkImageView View = VK_NULL_HANDLE;
 	};
 
+	struct VmaImage
+	{
+		VkImage Handle = VK_NULL_HANDLE;
+		VmaAllocation Allocation = VK_NULL_HANDLE;
+		VmaAllocationInfo AllocInfo = {};
+	};
+
+	// TODO: Have 1 VkDeviceMemory and VkImage's just reference it with offsets.
 	struct Texture
 	{
-		VkImage Image = VK_NULL_HANDLE;
+		VmaImage Image = {};
 		VkImageView View = VK_NULL_HANDLE;
-		// TODO: Have 1 VkDeviceMemory and VkImage's just reference it with offsets.
-		VkDeviceMemory Memory = VK_NULL_HANDLE;
 		VkDescriptorSet Descriptor = VK_NULL_HANDLE;
 
 		void Destroy(VkDevice device)
 		{
 			vkDestroyImageView(device, View, nullptr);
-			vkDestroyImage(device, Image, nullptr);
-			vkFreeMemory(device, Memory, nullptr);
+			vmaDestroyImage(VulkanContext::Allocator, Image.Handle, Image.Allocation);
 		}
 	};
 
@@ -117,9 +122,10 @@ namespace vge
 	VkExtent2D GetBestSwapchainExtent(VkSurfaceCapabilitiesKHR surfaceCapabilities);
 	VkFormat GetBestImageFormat(const std::vector<VkFormat>& formats, VkImageTiling tiling, VkFormatFeatureFlags features);
 
+	void CreateImage(VmaAllocator allocator, VkExtent2D extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VmaMemoryUsage memAllocUsage, VmaImage& outImage);
 	void CreateImage(VkExtent2D extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags memProps, VkImage& outImage, VkDeviceMemory& outImageMemory);
 	void CreateImageView(VkImage image, VkFormat format, VkImageAspectFlagBits aspectFlags, VkImageView& outImageView);
-	void CreateTextureImage(VkQueue transferQueue, VkCommandPool transferCmdPool, const char* filename, VkImage& outImage, VkDeviceMemory& outImageMemory);
+	void CreateTextureImage(VmaAllocator allocator, VkQueue transferQueue, VkCommandPool transferCmdPool, const char* filename, VmaImage& outImage);
 	void CreateTextureDescriptorSet(VkSampler sampler, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descrptorSetLayout, VkImageView textureImageView, VkDescriptorSet& outTextureDescriptorSet);
 	void TransitionImageLayout(VkQueue queue, VkCommandPool cmdPool, VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout);
 }

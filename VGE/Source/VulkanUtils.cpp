@@ -296,6 +296,29 @@ VkFormat vge::GetBestImageFormat(const std::vector<VkFormat>& formats, VkImageTi
 	return VK_FORMAT_UNDEFINED;
 }
 
+void vge::CreateImage(VmaAllocator allocator, VkExtent2D extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VmaMemoryUsage memAllocUsage, VmaImage& outImage)
+{
+	VkImageCreateInfo imageCreateInfo = {};
+	imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+	imageCreateInfo.extent.width = extent.width;
+	imageCreateInfo.extent.height = extent.height;
+	imageCreateInfo.extent.depth = 1;
+	imageCreateInfo.mipLevels = 1;
+	imageCreateInfo.arrayLayers = 1;
+	imageCreateInfo.format = format;
+	imageCreateInfo.tiling = tiling;
+	imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; // dont care
+	imageCreateInfo.usage = usage;
+	imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE; // whether can be shared between queues
+
+	VmaAllocationCreateInfo vmaAllocCreateInfo = {};
+	vmaAllocCreateInfo.usage = memAllocUsage;
+
+	VK_ENSURE(vmaCreateImage(allocator, &imageCreateInfo, &vmaAllocCreateInfo, &outImage.Handle, &outImage.Allocation, &outImage.AllocInfo));
+}
+
 void vge::CreateImage(VkExtent2D extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags memProps, VkImage& outImage, VkDeviceMemory& outImageMemory)
 {
 	VkImageCreateInfo imageCreateInfo = {};
@@ -348,7 +371,7 @@ void vge::CreateImageView(VkImage image, VkFormat format, VkImageAspectFlagBits 
 	VK_ENSURE_MSG(vkCreateImageView(VulkanContext::Device, &createInfo, nullptr, &outImageView), "Failed to create image view.");
 }
 
-void vge::CreateTextureImage(VkQueue transferQueue, VkCommandPool transferCmdPool, const char* filename, VkImage& outImage, VkDeviceMemory& outImageMemory)
+void vge::CreateTextureImage(VmaAllocator allocator, VkQueue transferQueue, VkCommandPool transferCmdPool, const char* filename, VmaImage& outImage)
 {
 	int32 width = 0, height = 0;
 	VkDeviceSize textureSize = 0;
@@ -357,33 +380,33 @@ void vge::CreateTextureImage(VkQueue transferQueue, VkCommandPool transferCmdPoo
 	ScopeStageBuffer textureStageBuffer(textureSize);
 
 	void* data;
-	vkMapMemory(VulkanContext::Device, textureStageBuffer.GetMemory(), 0, textureSize, 0, &data);
+	vmaMapMemory(VulkanContext::Allocator, textureStageBuffer.Get().Allocation, &data);
 	memcpy(data, textureData, static_cast<size_t>(textureSize));
-	vkUnmapMemory(VulkanContext::Device, textureStageBuffer.GetMemory());
+	vmaUnmapMemory(VulkanContext::Allocator, textureStageBuffer.Get().Allocation);
 
-	stbi_image_free(textureData);
+	file::FreeTexture(textureData);
 
 	const VkExtent2D textureExtent = { static_cast<uint32>(width), static_cast<uint32>(height) };
 	const VkFormat textureFormat = VK_FORMAT_R8G8B8A8_UNORM;
 	const VkImageTiling textureTiling = VK_IMAGE_TILING_OPTIMAL;
 	const VkImageUsageFlags textureUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-	const VkMemoryPropertyFlags textureMemProps = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-	CreateImage(textureExtent, textureFormat, textureTiling, textureUsage, textureMemProps, outImage, outImageMemory);
-
+	const VmaMemoryUsage textureMemUsage = VMA_MEMORY_USAGE_GPU_ONLY;
+	CreateImage(allocator, textureExtent, textureFormat, textureTiling, textureUsage, textureMemUsage, outImage);
+	
 	// Transition image to be destination for copy operation.
 	{
 		const VkImageLayout oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		const VkImageLayout newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		TransitionImageLayout(transferQueue, transferCmdPool, outImage, oldLayout, newLayout);
+		TransitionImageLayout(transferQueue, transferCmdPool, outImage.Handle, oldLayout, newLayout);
 	}
 
-	CopyImageBuffer(transferQueue, transferCmdPool, textureStageBuffer.GetHandle(), outImage, textureExtent);
+	CopyImageBuffer(transferQueue, transferCmdPool, textureStageBuffer.Get().Handle, outImage.Handle, textureExtent);
 
 	// Transition image to be shader readable for shade usage.
 	{
 		const VkImageLayout oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		const VkImageLayout newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		TransitionImageLayout(transferQueue, transferCmdPool, outImage, oldLayout, newLayout);
+		TransitionImageLayout(transferQueue, transferCmdPool, outImage.Handle, oldLayout, newLayout);
 	}
 }
 
