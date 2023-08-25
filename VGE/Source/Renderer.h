@@ -95,7 +95,6 @@ namespace vge
 		VkPushConstantRange m_PushConstantRange = {};
 
 		std::vector<VmaBuffer> m_VpUniformBuffers = {};
-		//std::vector<VkDeviceMemory> m_VpUniformBuffersMemory = {};
 
 		//std::vector<VkBuffer> m_ModelDynamicUniformBuffers = {};
 		//std::vector<VkDeviceMemory> m_ModelDynamicUniformBuffersMemory = {};
