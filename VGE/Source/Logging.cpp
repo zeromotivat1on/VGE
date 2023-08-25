@@ -1,5 +1,6 @@
 #include "Logging.h"
-#include "Macros.h"
+
+#if USE_LOGGING
 
 void vge::Logger::PrintLog(const LogCategory category, const char* message, ...)
 {
@@ -32,18 +33,15 @@ void vge::Logger::PrintLogRaw_Implementation(const char* message, va_list args)
 
 std::string vge::Logger::LogCategoryToString(const LogCategory category)
 {
-	return [category]()
+	switch (category)
 	{
-		switch (category)
-		{
-		case LogCategory::Warning:
-			return "Warning: ";
-		case LogCategory::Error:
-			return "Error: ";
-		default:
-			return "Log: ";
-		}
-	}();
+	case LogCategory::Warning:
+		return "Warning: ";
+	case LogCategory::Error:
+		return "Error: ";
+	default:
+		return "Log: ";
+	}
 }
 
 void vge::NotifyVulkanEnsureFailure(VkResult result, const char* function, const char* filename, uint32 line, const char* errMessage)
@@ -88,8 +86,9 @@ void vge::NotifyVulkanEnsureFailure(VkResult result, const char* function, const
 	
 	if (errMessage)
 	{
-		LOG(Error, " Custom error message: %s", errMessage);
+		LOG(Error, " User error message: %s", errMessage);
 	}
 
 	exit(EXIT_FAILURE);
 }
+#endif

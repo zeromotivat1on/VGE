@@ -44,6 +44,7 @@ void vge::MainLoop()
 	}
 
 	const float loopDurationTime = lastTime - loopStartTime;
-	LOG(Log, "Total engine loop duration: %fs", loopDurationTime);
-	LOG(Log, "Total rendered frames: %d", GAppFrame);
+	LOG(Log, "Engine loop stats:");
+	LOG(Log, " Duration: %.2fs", loopDurationTime);
+	LOG(Log, " Iterations: %d", GAppFrame);
 }

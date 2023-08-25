@@ -2,6 +2,12 @@
 
 // Settings
 
+#ifdef NDEBUG
+	#define DEBUG 0
+#else
+	#define DEBUG 1
+#endif
+
 #ifndef COMPILE_SHADERS_ON_INIT
 	#define COMPILE_SHADERS_ON_INIT 1
 #endif
@@ -25,29 +31,37 @@ if (!(expr))																									\
 {																												\
 	LOG(Error, "Ensure condition failed: %s", #expr);															\
 	exit(EXIT_FAILURE);																							\
-}																												\
+}
 
 #define ENSURE_MSG(expr, errMessage)																			\
 if (!(expr))																									\
 {																												\
 	LOG(Error, errMessage);																						\
 	exit(EXIT_FAILURE);																							\
-}																												\
+}
 
-#define VK_ENSURE(vkFunction)																					\
-{																												\
-	const VkResult ScopedResult = vkFunction;																	\
-	if (ScopedResult != VK_SUCCESS)																				\
+#if USE_LOGGING
+	#define VK_ENSURE(vkFunction)																				\
 	{																											\
-		vge::NotifyVulkanEnsureFailure(ScopedResult, #vkFunction, __FILE__, __LINE__);							\
-	}																											\
-}																												\
+		const VkResult ScopedResult = vkFunction;																\
+		if (ScopedResult != VK_SUCCESS)																			\
+		{																										\
+			vge::NotifyVulkanEnsureFailure(ScopedResult, #vkFunction, __FILE__, __LINE__);						\
+		}																										\
+	}
+#else
+	#define VK_ENSURE(vkFunction) ENSURE(vkFunction == VK_SUCCESS);
+#endif
 
-#define VK_ENSURE_MSG(vkFunction, errMessage)																	\
-{																												\
-	const VkResult ScopedResult = vkFunction;																	\
-	if (ScopedResult != VK_SUCCESS)																				\
+#if USE_LOGGING
+	#define VK_ENSURE_MSG(vkFunction, errMessage)																\
 	{																											\
-		vge::NotifyVulkanEnsureFailure(ScopedResult, #vkFunction, __FILE__, __LINE__, errMessage);				\
-	}																											\
-}																												\
+		const VkResult ScopedResult = vkFunction;																\
+		if (ScopedResult != VK_SUCCESS)																			\
+		{																										\
+			vge::NotifyVulkanEnsureFailure(ScopedResult, #vkFunction, __FILE__, __LINE__, errMessage);			\
+		}																										\
+	}
+#else
+	#define VK_ENSURE_MSG(vkFunction, errMessage) ENSURE(vkFunction == VK_SUCCESS);
+#endif
