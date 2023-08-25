@@ -503,7 +503,7 @@ void vge::GetTexturesFromMaterials(const aiScene* scene, std::vector<const char*
 		}
 
 		// TODO: add possibility to load different textures.
-		if (material->GetTextureCount(aiTextureType_DIFFUSE))
+		if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0)
 		{
 			aiString path;
 			// TODO: retreive all textures from material.

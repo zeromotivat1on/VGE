@@ -7,9 +7,10 @@ layout (location = 0) out vec4 outColor;
 
 void main() 
 {
-	// Apply depth visualization on second half of the screen.
-	int winXHalf = 800 / 2;
-	if(gl_FragCoord.x > winXHalf)
+	// Apply depth visualization.
+	const bool depthViz = true;
+
+	if (depthViz)
 	{
 		const float lowerBound = 0.99f;
 		const float upperBound = 1.0f;

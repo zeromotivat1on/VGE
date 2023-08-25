@@ -37,7 +37,7 @@ if (!(expr))																									\
 if (!(expr))																									\
 {																												\
 	LOG(Error, errMessage);																						\
-	exit(EXIT_FAILURE);																							\
+	abort();																							\
 }
 
 #if USE_LOGGING

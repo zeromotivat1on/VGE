@@ -89,6 +89,6 @@ void vge::NotifyVulkanEnsureFailure(VkResult result, const char* function, const
 		LOG(Error, " User error message: %s", errMessage);
 	}
 
-	exit(EXIT_FAILURE);
+	abort();
 }
 #endif
