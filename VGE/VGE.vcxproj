@@ -160,6 +160,7 @@
     <ClCompile Include="Source\Renderer.cpp" />
     <ClCompile Include="Source\VulkanUtils.cpp" />
     <ClCompile Include="Source\Window.cpp" />
+    <ClCompile Include="Source\Texture.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Model.h" />
@@ -178,6 +179,7 @@
     <ClInclude Include="Source\VulkanGlobals.h" />
     <ClInclude Include="Source\VulkanUtils.h" />
     <ClInclude Include="Source\Window.h" />
+    <ClInclude Include="Source\Texture.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="compile_shaders.bat" />

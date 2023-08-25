@@ -1,9 +1,9 @@
 #include "Renderer.h"
 #include "Application.h"
+#include "File.h"
 #include "Window.h"
 #include "Buffer.h"
 #include "Shader.h"
-#include "File.h"
 
 #pragma region DebugMessengerSetup
 static VKAPI_ATTR VkBool32 VKAPI_CALL VulkanDebugCallback(
@@ -84,51 +84,6 @@ bool vge::DestroyRenderer()
 	delete GRenderer;
 	GRenderer = nullptr;
 	return true;
-}
-
-void vge::GetTexturesFromMaterials(const aiScene* scene, std::vector<const char*>& outTextures)
-{
-	outTextures.resize(scene->mNumMaterials, "");
-
-	for (uint32 i = 0; i < scene->mNumMaterials; ++i)
-	{
-		const aiMaterial* material = scene->mMaterials[i];
-
-		if (!material)
-		{
-			continue;
-		}
-
-		// TODO: add possibility to load different textures.
-		if (material->GetTextureCount(aiTextureType_DIFFUSE))
-		{
-			aiString path;
-			// TODO: retreive all textures from material.
-			if (material->GetTexture(aiTextureType_DIFFUSE, 0, &path) == AI_SUCCESS)
-			{
-				const int32 LastSlashIndex = static_cast<int32>(std::string(path.data).rfind("\\"));
-				const std::string filename = std::string(path.data).substr(LastSlashIndex + 1);
-				outTextures[i] = filename.c_str();
-			}
-		}
-	}
-}
-
-void vge::ResolveTexturesForDescriptors(Renderer& renderer, const std::vector<const char*>& texturePaths, std::vector<int32>& outTextureToDescriptorSet)
-{
-	outTextureToDescriptorSet.resize(texturePaths.size());
-
-	for (size_t i = 0; i < texturePaths.size(); ++i)
-	{
-		if (texturePaths[i] == "")
-		{
-			outTextureToDescriptorSet[i] = 0;
-		}
-		else
-		{
-			outTextureToDescriptorSet[i] = renderer.CreateTexture(texturePaths[i]);
-		}
-	}
 }
 #pragma endregion NamespaceFunctions
 
@@ -1264,7 +1219,7 @@ void vge::Renderer::RecordCommandBuffers(uint32 ImageIndex)
 					continue;
 				}
 
-				const std::array<VkDescriptorSet, 2> currentDescriptorSets = { m_UniformDescriptorSets[ImageIndex], m_Textures[mesh->GetTextureId()].Descriptor};
+				const std::array<VkDescriptorSet, 2> currentDescriptorSets = { m_UniformDescriptorSets[ImageIndex], m_Textures[mesh->GetTextureId()].GetDescriptor()};
 
 				VkBuffer vertexBuffers[] = { mesh->GetVertexBuffer().Get().Handle };
 				VkDeviceSize offsets[] = { 0 };
@@ -1339,37 +1294,29 @@ void vge::Renderer::UpdateUniformBuffers(uint32 ImageIndex)
 
 int32 vge::Renderer::CreateTexture(const char* filename)
 {
-	Texture texture = {};
-	CreateTextureImage(m_Allocator, m_GfxQueue, m_GfxCommandPool, filename, texture.Image);
-	CreateImageView(texture.Image.Handle, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, texture.View);
-	CreateTextureDescriptorSet(m_TextureSampler, m_SamplerDescriptorPool, m_SamplerDescriptorSetLayout, texture.View, texture.Descriptor);
+	TextureCreateInfo texCreateInfo = {};
+	texCreateInfo.Id = static_cast<int32>(m_Textures.size());
+	texCreateInfo.Filename = filename;
+	texCreateInfo.CmdPool = m_GfxCommandPool;
+	texCreateInfo.Sampler = m_TextureSampler;
+	texCreateInfo.DescriptorPool = m_SamplerDescriptorPool;
+	texCreateInfo.DescriptorLayout = m_SamplerDescriptorSetLayout;
+
+	Texture texture = Texture::Create(texCreateInfo);
 	m_Textures.push_back(texture);
 
-	const int32 textureId = static_cast<int32>(m_Textures.size() - 1);
-	LOG(Log, "ID: %d, path: %s", textureId, filename);
-
-	return textureId;
+	return texture.GetId();
 }
 
 int32 vge::Renderer::CreateModel(const char* filename)
 {
-	Assimp::Importer importer;
-	const aiScene* scene = file::LoadModel(filename, importer);
+	ModelCreateInfo modelCreateInfo = {};
+	modelCreateInfo.Id = static_cast<int32>(m_Models.size());
+	modelCreateInfo.Filename = filename;
+	modelCreateInfo.CmdPool = m_GfxCommandPool;
 
-	// TODO: find a better way to determine which texture id to pass to mesh, current one is kinda unintuitive.
-	std::vector<const char*> texturePaths;
-	GetTexturesFromMaterials(scene, texturePaths);
-
-	std::vector<int32> textureToDescriptorSet;
-	ResolveTexturesForDescriptors(*this, texturePaths, textureToDescriptorSet);
-
-	Model model;
-	model.LoadNode(m_GfxQueue, m_GfxCommandPool, scene, scene->mRootNode, textureToDescriptorSet);
-
+	Model model = Model::Create(modelCreateInfo);
 	m_Models.push_back(model);
 
-	const int32 modelId = static_cast<int32>(m_Models.size() - 1);
-	LOG(Log, "ID: %d, path: %s", modelId, filename);
-
-	return modelId;
+	return model.GetId();
 }

@@ -1,5 +1,6 @@
 ﻿#include "VulkanUtils.h"
 #include "VulkanContext.h"
+#include "Renderer.h"
 #include "Window.h"
 #include "Buffer.h"
 #include "File.h"
@@ -486,4 +487,54 @@ void vge::TransitionImageLayout(VkQueue queue, VkCommandPool cmdPool, VkImage im
 		0, nullptr,						// buffer memory barrier
 		1, &imageMemoryBarrier			// image memory barrier
 	);
+}
+
+void vge::GetTexturesFromMaterials(const aiScene* scene, std::vector<const char*>& outTextures)
+{
+	outTextures.resize(scene->mNumMaterials, "");
+
+	for (uint32 i = 0; i < scene->mNumMaterials; ++i)
+	{
+		const aiMaterial* material = scene->mMaterials[i];
+
+		if (!material)
+		{
+			continue;
+		}
+
+		// TODO: add possibility to load different textures.
+		if (material->GetTextureCount(aiTextureType_DIFFUSE))
+		{
+			aiString path;
+			// TODO: retreive all textures from material.
+			if (material->GetTexture(aiTextureType_DIFFUSE, 0, &path) == AI_SUCCESS)
+			{
+				const int32 LastSlashIndex = static_cast<int32>(std::string(path.data).rfind("\\"));
+				const std::string filename = std::string(path.data).substr(LastSlashIndex + 1);
+				outTextures[i] = filename.c_str();
+			}
+		}
+	}
+}
+
+void vge::ResolveTexturesForDescriptors(Renderer* renderer, const std::vector<const char*>& texturePaths, std::vector<int32>& outTextureToDescriptorSet)
+{
+	if (!renderer)
+	{
+		return;
+	}
+
+	outTextureToDescriptorSet.resize(texturePaths.size());
+
+	for (size_t i = 0; i < texturePaths.size(); ++i)
+	{
+		if (texturePaths[i] == "")
+		{
+			outTextureToDescriptorSet[i] = 0;
+		}
+		else
+		{
+			outTextureToDescriptorSet[i] = renderer->CreateTexture(texturePaths[i]);
+		}
+	}
 }

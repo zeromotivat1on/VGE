@@ -91,20 +91,6 @@ namespace vge
 		VmaAllocationInfo AllocInfo = {};
 	};
 
-	// TODO: Have 1 VkDeviceMemory and VkImage's just reference it with offsets.
-	struct Texture
-	{
-		VmaImage Image = {};
-		VkImageView View = VK_NULL_HANDLE;
-		VkDescriptorSet Descriptor = VK_NULL_HANDLE;
-
-		void Destroy(VkDevice device)
-		{
-			vkDestroyImageView(device, View, nullptr);
-			vmaDestroyImage(VulkanContext::Allocator, Image.Handle, Image.Allocation);
-		}
-	};
-
 	bool SupportValidationLayers();
 	void GetRequriedInstanceExtensions(std::vector<const char*>& outExtensions);
 	bool SupportInstanceExtensions(const std::vector<const char*>& checkExtensions);
@@ -128,4 +114,11 @@ namespace vge
 	void CreateTextureImage(VmaAllocator allocator, VkQueue transferQueue, VkCommandPool transferCmdPool, const char* filename, VmaImage& outImage);
 	void CreateTextureDescriptorSet(VkSampler sampler, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descrptorSetLayout, VkImageView textureImageView, VkDescriptorSet& outTextureDescriptorSet);
 	void TransitionImageLayout(VkQueue queue, VkCommandPool cmdPool, VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout);
+
+	// Get texture names from a given scene, preserves 1 to 1 relationship.
+	// If failed to get a texture from material, its name will be empty in out array.
+	void GetTexturesFromMaterials(const aiScene* scene, std::vector<const char*>& outTextures);
+
+	// Resolve given textures to be mapped with descriptor sets.
+	void ResolveTexturesForDescriptors(class Renderer* renderer, const std::vector<const char*>& texturePaths, std::vector<int32>& outTextureToDescriptorSet);
 }

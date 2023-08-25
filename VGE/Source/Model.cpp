@@ -1,4 +1,28 @@
 #include "Model.h"
+#include "Renderer.h"
+#include "File.h"
+
+vge::Model vge::Model::Create(const ModelCreateInfo& data)
+{
+	Assimp::Importer importer;
+	const aiScene* scene = file::LoadModel(data.Filename, importer);
+
+	std::vector<const char*> texturePaths;
+	GetTexturesFromMaterials(scene, texturePaths);
+
+	std::vector<int32> textureToDescriptorSet;
+	ResolveTexturesForDescriptors(GRenderer, texturePaths, textureToDescriptorSet);
+
+	Model model = {};
+	model.m_Id = data.Id;
+	model.m_Filename = data.Filename;
+
+	model.LoadNode(VulkanContext::GfxQueue, data.CmdPool, scene, scene->mRootNode, textureToDescriptorSet);
+
+	LOG(Log, "New - ID: %d, name: %s", model.GetId(), model.GetFilename());
+
+	return model;
+}
 
 void vge::Model::LoadNode(VkQueue transferQueue, VkCommandPool transferCmdPool, const aiScene* scene, const aiNode* node, const std::vector<int32>& materialToTextureId)
 {
