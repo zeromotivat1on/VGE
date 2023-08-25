@@ -72,7 +72,7 @@ void vge::Model::LoadMesh(VkQueue transferQueue, VkCommandPool transferCmdPool, 
 
 	for (uint32 i = 0; i < mesh->mNumFaces; ++i)
 	{
-		aiFace face = mesh->mFaces[i];
+		const aiFace face = mesh->mFaces[i];
 		for (uint32 j = 0; j < face.mNumIndices; ++j)
 		{
 			indices.push_back(face.mIndices[j]);
