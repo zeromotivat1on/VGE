@@ -28,5 +28,6 @@
 #include "Types.h"
 #include "Macros.h"
 #include "Logging.h"
+#include "Profiling.h"
 #include "VulkanGlobals.h"
 #include "VulkanContext.h"
