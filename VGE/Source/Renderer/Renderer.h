@@ -6,6 +6,8 @@
 
 namespace vge
 {
+	class VgeWindow;
+
 	inline class Renderer* GRenderer = nullptr;
 	
 	inline constexpr int32 GMaxDrawFrames = 3;
@@ -22,7 +24,7 @@ namespace vge
 	class Renderer final
 	{
 	public:
-		Renderer(GLFWwindow* window);
+		Renderer(VgeWindow* window);
 		~Renderer() = default;
 
 		void Initialize();
@@ -47,7 +49,7 @@ namespace vge
 
 		UboViewProjection m_UboViewProjection = {};
 
-		GLFWwindow* m_Window = nullptr;
+		VgeWindow* m_Window = nullptr;
 		VkInstance m_Instance = VK_NULL_HANDLE;
 		VkPhysicalDevice m_Gpu = VK_NULL_HANDLE;
 		VkDevice m_Device = VK_NULL_HANDLE;
@@ -144,7 +146,7 @@ namespace vge
 		void UpdateUniformBuffers(uint32 ImageIndex);
 	};
 
-	Renderer* CreateRenderer(GLFWwindow* window);
+	Renderer* CreateRenderer(VgeWindow* window);
 	bool DestroyRenderer();
 
 	inline void IncrementRenderFrame() { GRenderFrame = (GRenderFrame + 1) % GMaxDrawFrames; }

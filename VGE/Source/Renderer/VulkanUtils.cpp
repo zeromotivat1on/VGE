@@ -36,7 +36,11 @@ bool vge::SupportValidationLayers()
 
 void vge::GetRequriedInstanceExtensions(std::vector<const char*>& outExtensions)
 {
-	GetGlfwInstanceExtensions(outExtensions);
+	if (GWindow)
+	{
+		GWindow->GetInstanceExtensions(outExtensions);
+	}
+
 	outExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 }
 
@@ -266,8 +270,8 @@ VkExtent2D vge::GetBestSwapchainExtent(VkSurfaceCapabilitiesKHR surfaceCapabilit
 		return surfaceCapabilities.currentExtent;
 	}
 
-	int width, height;
-	glfwGetFramebufferSize(GWindow, &width, &height);
+	int32 width, height;
+	GWindow->GetFramebufferSize(width, height);
 
 	VkExtent2D newExtent = {};
 	newExtent.width = std::clamp(static_cast<uint32>(width), surfaceCapabilities.minImageExtent.width, surfaceCapabilities.maxImageExtent.width);

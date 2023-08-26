@@ -28,6 +28,8 @@ namespace vge
 		void Initialize();
 		void Close();
 
+		bool ShouldClose() const;
+
 	public:
 		const ApplicationSpecs Specs = {};
 	};

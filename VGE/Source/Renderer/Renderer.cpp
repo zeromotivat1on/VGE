@@ -71,7 +71,7 @@ static void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT&
 #pragma endregion DebugMessengerSetup
 
 #pragma region NamespaceFunctions
-vge::Renderer* vge::CreateRenderer(GLFWwindow* window)
+vge::Renderer* vge::CreateRenderer(VgeWindow* window)
 {
 	if (GRenderer) return GRenderer;
 	return (GRenderer = new Renderer(window));
@@ -87,7 +87,7 @@ bool vge::DestroyRenderer()
 }
 #pragma endregion NamespaceFunctions
 
-vge::Renderer::Renderer(GLFWwindow* window) : m_Window(window)
+vge::Renderer::Renderer(VgeWindow* window) : m_Window(window)
 {}
 
 void vge::Renderer::Initialize()
@@ -329,7 +329,7 @@ void vge::Renderer::SetupDebugMessenger()
 
 void vge::Renderer::CreateSurface()
 {
-	VK_ENSURE_MSG(glfwCreateWindowSurface(m_Instance, m_Window, nullptr, &m_Surface), "Failed to create window surface.");
+	m_Window->CreateSurface(m_Instance, m_Surface);
 }
 
 void vge::Renderer::FindGpu()

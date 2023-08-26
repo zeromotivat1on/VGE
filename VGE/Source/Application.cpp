@@ -2,9 +2,9 @@
 #define VMA_IMPLEMENTATION
 
 #include "Application.h"
-#include "Window.h"
-#include "Renderer.h"
 #include "EngineLoop.h"
+#include "Renderer/Window.h"
+#include "Renderer/Renderer.h"
 
 vge::Application* vge::CreateApplication(const ApplicationSpecs& specs)
 {
@@ -27,11 +27,11 @@ vge::Application::Application(const ApplicationSpecs& specs) : Specs(specs)
 void vge::Application::Initialize()
 {
 	CreateWindow(Specs.Window.Name, Specs.Window.Width, Specs.Window.Height);
-	ENSURE_MSG(GWindow, "Failed to create GLFW window.");
+	ENSURE(GWindow);
+	GWindow->Initialize();
 
 	CreateRenderer(vge::GWindow);
-	ENSURE_MSG(GRenderer, "Failed to create renderer.")
-
+	ENSURE(GRenderer);
 	GRenderer->Initialize();
 }
 
@@ -39,6 +39,11 @@ void vge::Application::Close()
 {
 	DestroyRenderer();
 	DestroyWindow();
+}
+
+bool vge::Application::ShouldClose() const
+{
+	return GWindow->ShouldClose();
 }
 
 int32 vge::Main(int argc, const char** argv)
@@ -51,13 +56,13 @@ int32 vge::Main(int argc, const char** argv)
 	specs.Window.Height = 600;
 
 	CreateApplication(specs);
-	ENSURE_MSG(GApplication, "Failed to create application.");
+	ENSURE(GApplication);
 
 	GApplication->Initialize();
 
-	MainLoop();
+	EngineLoop::Start();
 
-	DestroyApplication();
+	ENSURE(DestroyApplication());
 
 	return EXIT_SUCCESS;
 }

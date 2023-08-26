@@ -2,5 +2,9 @@
 
 namespace vge
 {
-	void MainLoop();
+	class EngineLoop
+	{
+	public:
+		static void Start();
+	};
 }

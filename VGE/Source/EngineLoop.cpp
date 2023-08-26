@@ -1,10 +1,10 @@
 #include "EngineLoop.h"
 #include "Application.h"
-#include "Window.h"
-#include "Renderer.h"
 #include "Profiling.h"
+#include "Renderer/Window.h"
+#include "Renderer/Renderer.h"
 
-void vge::MainLoop()
+void vge::EngineLoop::Start()
 {
 	const float loopStartTime = static_cast<float>(glfwGetTime());
 
@@ -14,7 +14,7 @@ void vge::MainLoop()
 
 	const int32 firstModelID = GRenderer->CreateModel("Models/cottage/Cottage_FREE.obj");
 
-	while (!glfwWindowShouldClose(GWindow))
+	while (!GApplication->ShouldClose())
 	{
 		SCOPE_TIMER("Tick");
 

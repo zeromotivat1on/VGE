@@ -18,16 +18,16 @@
     <ClCompile Include="Source\Main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Renderer.cpp">
+    <ClCompile Include="Source\Renderer\Renderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Window.cpp">
+    <ClCompile Include="Source\Renderer\Window.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Source\Macros.h">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\VulkanUtils.cpp">
+    <ClCompile Include="Source\Renderer\VulkanUtils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Source\EngineLoop.cpp">
@@ -39,42 +39,45 @@
     <ClCompile Include="Source\File.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Shader.cpp">
+    <ClCompile Include="Source\Renderer\Shader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Mesh.cpp">
+    <ClCompile Include="Source\Renderer\Mesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Buffer.cpp">
+    <ClCompile Include="Source\Renderer\Buffer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Model.cpp">
+    <ClCompile Include="Source\Renderer\Model.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Source\Logging.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Texture.cpp">
+    <ClCompile Include="Source\Renderer\Texture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Renderer\Device.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Source\Renderer.h">
+    <ClInclude Include="Source\Renderer\Renderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Window.h">
+    <ClInclude Include="Source\Renderer\Window.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\Common.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\VulkanUtils.h">
+    <ClInclude Include="Source\Renderer\VulkanUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\Logging.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\VulkanGlobals.h">
+    <ClInclude Include="Source\Renderer\VulkanGlobals.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\EngineLoop.h">
@@ -86,10 +89,10 @@
     <ClInclude Include="Source\File.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Shader.h">
+    <ClInclude Include="Source\Renderer\Shader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Mesh.h">
+    <ClInclude Include="Source\Renderer\Mesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\Profiling.h">
@@ -98,16 +101,19 @@
     <ClInclude Include="Source\Types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Buffer.h">
+    <ClInclude Include="Source\Renderer\Buffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Model.h">
+    <ClInclude Include="Source\Renderer\Model.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\VulkanContext.h">
+    <ClInclude Include="Source\Renderer\VulkanContext.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Texture.h">
+    <ClInclude Include="Source\Renderer\Texture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Renderer\Device.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
