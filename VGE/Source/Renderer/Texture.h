@@ -35,9 +35,10 @@ namespace vge
 	public:
 		static Texture Create(const TextureCreateInfo& data);
 
-	public:
+	private:
 		Texture() = default;
 
+	public:
 		inline void Destroy()
 		{
 			vkDestroyImageView(VulkanContext::Device, m_View, nullptr);
