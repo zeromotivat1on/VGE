@@ -133,12 +133,6 @@ vge::IndexBuffer::IndexBuffer(VkQueue transferQueue, VkCommandPool transferCmdPo
 	CopyBuffer(transferQueue, transferCmdPool, stageBuffer.Get().Handle, m_AllocatedBuffer.Handle, bufferSize);
 }
 
-void vge::IndexBuffer::Destroy()
-{
-	vmaDestroyBuffer(VulkanContext::Allocator, m_AllocatedBuffer.Handle, m_AllocatedBuffer.Allocation);
-	memset(&m_AllocatedBuffer, 0, sizeof(VmaBuffer));
-}
-
 vge::VertexBuffer::VertexBuffer(VkQueue transferQueue, VkCommandPool transferCmdPool, const std::vector<Vertex>& vertices)
 {
 	const VkDeviceSize bufferSize = STD_VECTOR_ALLOC_SIZE(vertices);
@@ -153,10 +147,4 @@ vge::VertexBuffer::VertexBuffer(VkQueue transferQueue, VkCommandPool transferCmd
 	CreateBuffer(VulkanContext::Allocator, bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY, m_AllocatedBuffer);
 
 	CopyBuffer(transferQueue, transferCmdPool, stageBuffer.Get().Handle, m_AllocatedBuffer.Handle, bufferSize);
-}
-
-void vge::VertexBuffer::Destroy()
-{
-	vmaDestroyBuffer(VulkanContext::Allocator, m_AllocatedBuffer.Handle, m_AllocatedBuffer.Allocation);
-	memset(&m_AllocatedBuffer, 0, sizeof(VmaBuffer));
 }

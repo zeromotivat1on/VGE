@@ -4,6 +4,7 @@
 #include "Application.h"
 #include "EngineLoop.h"
 #include "Renderer/Window.h"
+#include "Renderer/Device.h"
 #include "Renderer/Renderer.h"
 
 vge::Application* vge::CreateApplication(const ApplicationSpecs& specs)
@@ -26,11 +27,21 @@ vge::Application::Application(const ApplicationSpecs& specs) : Specs(specs)
 
 void vge::Application::Initialize()
 {
+#if COMPILE_SHADERS_ON_INIT
+	LOG_RAW("\n----- Shader compilation started -----\n");
+	ENSURE(system("compile_shaders.bat") >= 0);
+	LOG_RAW("\n----- Shader compilation finished -----\n\n");
+#endif
+
 	CreateWindow(Specs.Window.Name, Specs.Window.Width, Specs.Window.Height);
 	ENSURE(GWindow);
 	GWindow->Initialize();
 
-	CreateRenderer(vge::GWindow);
+	CreateDevice(GWindow);
+	ENSURE(GDevice);
+	GDevice->Initialize();
+
+	CreateRenderer(GDevice);
 	ENSURE(GRenderer);
 	GRenderer->Initialize();
 }
@@ -38,6 +49,7 @@ void vge::Application::Initialize()
 void vge::Application::Close()
 {
 	DestroyRenderer();
+	DestroyDevice();
 	DestroyWindow();
 }
 

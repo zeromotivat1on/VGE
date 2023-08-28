@@ -4,6 +4,8 @@
 #include "Renderer/Window.h"
 #include "Renderer/Renderer.h"
 
+static inline void IncrementAppFrame() { ++vge::GAppFrame; }
+
 void vge::EngineLoop::Start()
 {
 	const float loopStartTime = static_cast<float>(glfwGetTime());
@@ -18,7 +20,7 @@ void vge::EngineLoop::Start()
 	{
 		SCOPE_TIMER("Tick");
 
-		glfwPollEvents();
+		GWindow->PollEvents();
 
 		const float now = static_cast<float>(glfwGetTime());
 		deltaTime = now - lastTime;

@@ -27,6 +27,7 @@
 
 #include "Types.h"
 #include "Macros.h"
+#include "Memory.h"
 #include "Logging.h"
 #include "Profiling.h"
 #include "Renderer/VulkanGlobals.h"

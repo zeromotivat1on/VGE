@@ -10,6 +10,14 @@ namespace vge
 		VkBuffer Handle = VK_NULL_HANDLE;
 		VmaAllocation Allocation = VK_NULL_HANDLE;
 		VmaAllocationInfo AllocInfo = {};
+
+		inline void Destroy()
+		{
+			vmaDestroyBuffer(VulkanContext::Allocator, Handle, Allocation);
+			Handle = VK_NULL_HANDLE;
+			Allocation = VK_NULL_HANDLE;
+			memory::memzero(&AllocInfo, sizeof(VmaAllocationInfo));
+		}
 	};
 
 	void CreateBuffer(VmaAllocator allocator, VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memAllocUsage, VmaBuffer& outBuffer);
@@ -58,7 +66,7 @@ namespace vge
 			vmaDestroyBuffer(VulkanContext::Allocator, m_AllocatedBuffer.Handle, m_AllocatedBuffer.Allocation);
 		}
 
-		VmaBuffer Get() const { return m_AllocatedBuffer; }
+		inline VmaBuffer Get() const { return m_AllocatedBuffer; }
 
 	private:
 		VmaBuffer m_AllocatedBuffer = {};
@@ -70,9 +78,14 @@ namespace vge
 		IndexBuffer() = default;
 		IndexBuffer(VkQueue transferQueue, VkCommandPool transferCmdPool, const std::vector<uint32>& indices);
 
-		VmaBuffer Get() const { return m_AllocatedBuffer; }
+		inline VmaBuffer Get() const { return m_AllocatedBuffer; }
 
-		void Destroy();
+		inline void Destroy() 
+		{
+			vmaDestroyBuffer(VulkanContext::Allocator, m_AllocatedBuffer.Handle, m_AllocatedBuffer.Allocation);
+			memory::memzero(&m_AllocatedBuffer, sizeof(VmaBuffer));
+
+		}
 
 	private:
 		VmaBuffer m_AllocatedBuffer = {};
@@ -84,9 +97,13 @@ namespace vge
 		VertexBuffer() = default;
 		VertexBuffer(VkQueue transferQueue, VkCommandPool transferCmdPool, const std::vector<Vertex>& vertices);
 
-		VmaBuffer Get() const { return m_AllocatedBuffer; }
+		inline VmaBuffer Get() const { return m_AllocatedBuffer; }
 
-		void Destroy();
+		inline void Destroy()
+		{
+			vmaDestroyBuffer(VulkanContext::Allocator, m_AllocatedBuffer.Handle, m_AllocatedBuffer.Allocation);
+			memory::memzero(&m_AllocatedBuffer, sizeof(VmaBuffer));
+		}
 
 	private:
 		VmaBuffer m_AllocatedBuffer = {};

@@ -5,6 +5,21 @@
 
 namespace vge
 {
+	struct VmaImage
+	{
+		VkImage Handle = VK_NULL_HANDLE;
+		VmaAllocation Allocation = VK_NULL_HANDLE;
+		VmaAllocationInfo AllocInfo = {};
+
+		inline void Destroy()
+		{
+			vmaDestroyImage(VulkanContext::Allocator, Handle, Allocation);
+			Handle = VK_NULL_HANDLE;
+			Allocation = VK_NULL_HANDLE;
+			memory::memzero(&AllocInfo, sizeof(VmaAllocationInfo));
+		}
+	};
+
 	struct TextureCreateInfo
 	{
 		int32 Id = INDEX_NONE;
@@ -23,11 +38,17 @@ namespace vge
 	public:
 		Texture() = default;
 
-		void Destroy(VkDevice device);
+		inline void Destroy()
+		{
+			vkDestroyImageView(VulkanContext::Device, m_View, nullptr);
+			m_View = VK_NULL_HANDLE;
+			vmaDestroyImage(VulkanContext::Allocator, m_Image.Handle, m_Image.Allocation);
+			memory::memzero(&m_Image, sizeof(VmaImage));
+		}
 
-		int32 GetId() const { return m_Id; }
-		const char* GetFilename() const { return m_Filename; }
-		VkDescriptorSet GetDescriptor() const { return m_Descriptor; }
+		inline int32 GetId() const { return m_Id; }
+		inline const char* GetFilename() const { return m_Filename; }
+		inline VkDescriptorSet GetDescriptor() const { return m_Descriptor; }
 
 	private:
 		int32 m_Id = INDEX_NONE;

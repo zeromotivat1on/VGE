@@ -14,7 +14,9 @@ namespace vge
 		void Initialize();
 		void Destroy();
 
-		bool ShouldClose() const { return glfwWindowShouldClose(m_Handle); }
+		inline void PollEvents() const { glfwPollEvents(); }
+		inline bool ShouldClose() const { return glfwWindowShouldClose(m_Handle); }
+
 		void GetFramebufferSize(int32& outw, int32& outh) const;
 
 		void GetInstanceExtensions(std::vector<const char*>& outExtensions) const;

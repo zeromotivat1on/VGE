@@ -7,6 +7,7 @@
 namespace vge
 {
 	class VgeWindow;
+	class VgeDevice;
 
 	inline class Renderer* GRenderer = nullptr;
 	
@@ -24,18 +25,18 @@ namespace vge
 	class Renderer final
 	{
 	public:
-		Renderer(VgeWindow* window);
+		Renderer(VgeDevice* device);
 		~Renderer() = default;
 
 		void Initialize();
 		void Draw();
-		void Cleanup();
+		void Destroy();
 
 		// TODO: for now 1 game object can have only 1 texture which is cringe.
 		int32 CreateTexture(const char* filename);
 		int32 CreateModel(const char* filename);
 
-		void UpdateModelMatrix(int32 modelIndex, glm::mat4 model) 
+		inline void UpdateModelMatrix(int32 modelIndex, glm::mat4 model) 
 		{
 			if (modelIndex < m_Models.size()) 
 			{ 
@@ -49,16 +50,7 @@ namespace vge
 
 		UboViewProjection m_UboViewProjection = {};
 
-		VgeWindow* m_Window = nullptr;
-		VkInstance m_Instance = VK_NULL_HANDLE;
-		VkPhysicalDevice m_Gpu = VK_NULL_HANDLE;
-		VkDevice m_Device = VK_NULL_HANDLE;
-		VmaAllocator m_Allocator = VK_NULL_HANDLE;
-		VkSurfaceKHR m_Surface = VK_NULL_HANDLE;
-		
-		QueueFamilyIndices m_QueueIndices = {};
-		VkQueue m_GfxQueue = VK_NULL_HANDLE;
-		VkQueue m_PresentQueue = VK_NULL_HANDLE;
+		VgeDevice* m_Device = nullptr;
 
 		VkSwapchainKHR m_Swapchain = VK_NULL_HANDLE;
 		VkFormat m_SwapchainImageFormat = {};
@@ -114,17 +106,7 @@ namespace vge
 		VkPipeline m_SecondPipeline = VK_NULL_HANDLE;
 		VkPipelineLayout m_SecondPipelineLayout = VK_NULL_HANDLE;
 
-		VkCommandPool m_GfxCommandPool = VK_NULL_HANDLE;
-
-		VkDebugUtilsMessengerEXT m_DebugMessenger = VK_NULL_HANDLE;
-
 	private:
-		void CreateInstance();
-		void SetupDebugMessenger();
-		void CreateSurface();
-		void FindGpu();
-		void CreateDevice();
-		void CreateCustomAllocator();
 		void CreateSwapchain();
 		void CreateColorBufferImages();
 		void CreateDepthBufferImages();
@@ -133,7 +115,6 @@ namespace vge
 		void CreatePushConstantRange();
 		void CreatePipelines();
 		void CreateFramebuffers();
-		void CreateCommandPool();
 		void CreateCommandBuffers();
 		void CreateTextureSampler();
 		//void AllocateDynamicBufferTransferSpace();
@@ -146,8 +127,6 @@ namespace vge
 		void UpdateUniformBuffers(uint32 ImageIndex);
 	};
 
-	Renderer* CreateRenderer(VgeWindow* window);
+	Renderer* CreateRenderer(VgeDevice* device);
 	bool DestroyRenderer();
-
-	inline void IncrementRenderFrame() { GRenderFrame = (GRenderFrame + 1) % GMaxDrawFrames; }
 }

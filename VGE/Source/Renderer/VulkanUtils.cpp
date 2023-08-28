@@ -1,128 +1,10 @@
 ﻿#include "VulkanUtils.h"
 #include "VulkanContext.h"
 #include "Renderer.h"
+#include "Texture.h"
 #include "Window.h"
 #include "Buffer.h"
 #include "File.h"
-
-bool vge::SupportValidationLayers()
-{
-	uint32 layerCount;
-	vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-
-	std::vector<VkLayerProperties> availableLayers(layerCount);
-	vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
-
-	for (const char* layerName : GValidationLayers)
-	{
-		bool hasLayer = false;
-		for (const auto& layerProperties : availableLayers)
-		{
-			if (strcmp(layerName, layerProperties.layerName) == 0)
-			{
-				hasLayer = true;
-				break;
-			}
-		}
-
-		if (!hasLayer)
-		{
-			return false;
-		}
-	}
-
-	return true;
-}
-
-void vge::GetRequriedInstanceExtensions(std::vector<const char*>& outExtensions)
-{
-	if (GWindow)
-	{
-		GWindow->GetInstanceExtensions(outExtensions);
-	}
-
-	outExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-}
-
-bool vge::SupportInstanceExtensions(const std::vector<const char*>& checkExtensions)
-{
-	uint32 extensionCount = 0;
-	vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-
-	if (extensionCount == 0) return false;
-
-	std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-	vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, availableExtensions.data());
-
-	for (const auto& checkExtension : checkExtensions)
-	{
-		bool hasExtension = false;
-		for (const auto& availableExtension : availableExtensions)
-		{
-			if (strcmp(checkExtension, availableExtension.extensionName) == 0)
-			{
-				hasExtension = true;
-				break;
-			}
-		}
-
-		if (!hasExtension)
-		{
-			return false;
-		}
-	}
-
-	return true;
-}
-
-bool vge::SupportDeviceExtensions(VkPhysicalDevice gpu, const std::vector<const char*>& checkExtensions)
-{
-	uint32 extensionCount = 0;
-	vkEnumerateDeviceExtensionProperties(gpu, nullptr, &extensionCount, nullptr);
-
-	if (extensionCount == 0) return false;
-
-	std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-	vkEnumerateDeviceExtensionProperties(gpu, nullptr, &extensionCount, availableExtensions.data());
-
-	for (const auto& checkExtension : checkExtensions)
-	{
-		bool hasExtension = false;
-		for (const auto& availableExtension : availableExtensions)
-		{
-			if (strcmp(checkExtension, availableExtension.extensionName) == 0)
-			{
-				hasExtension = true;
-				break;
-			}
-		}
-
-		if (!hasExtension)
-		{
-			return false;
-		}
-	}
-
-	return true;
-}
-
-bool vge::SuitableGpu(VkPhysicalDevice gpu, VkSurfaceKHR surface)
-{
-	//VkPhysicalDeviceProperties gpuProps;
-	//vkGetPhysicalDeviceProperties(gpu, &gpuProps);
-
-	VkPhysicalDeviceFeatures gpuFeatures;
-	vkGetPhysicalDeviceFeatures(gpu, &gpuFeatures);
-
-	QueueFamilyIndices indices = GetQueueFamilies(gpu, surface);
-
-	std::vector<const char*> deviceExtensions;
-	deviceExtensions.assign(GDeviceExtensions, GDeviceExtensions + C_ARRAY_NUM(GDeviceExtensions));
-
-	SwapchainDetails swapchainDetails = GetSwapchainDetails(gpu, surface);
-
-	return indices.IsValid() && SupportDeviceExtensions(gpu, deviceExtensions) && swapchainDetails.IsValid() && gpuFeatures.samplerAnisotropy;
-}
 
 const char* vge::GpuTypeToString(VkPhysicalDeviceType gpuType)
 {
@@ -139,70 +21,6 @@ const char* vge::GpuTypeToString(VkPhysicalDeviceType gpuType)
 	default:
 		return "Other";
 	}
-}
-
-vge::QueueFamilyIndices vge::GetQueueFamilies(VkPhysicalDevice gpu, VkSurfaceKHR surface)
-{
-	uint32 queueFamilyCount = 0;
-	vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queueFamilyCount, nullptr);
-
-	std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-	vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queueFamilyCount, queueFamilies.data());
-
-	QueueFamilyIndices indices = {};
-	int32 queueFamilyIndex = 0;
-	for (const auto& queueFamily : queueFamilies)
-	{
-		if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
-		{
-			indices.GraphicsFamily = queueFamilyIndex;
-		}
-
-		if (surface)
-		{
-			VkBool32 presentSupport = false;
-			vkGetPhysicalDeviceSurfaceSupportKHR(gpu, queueFamilyIndex, surface, &presentSupport);
-			if (queueFamily.queueCount > 0 && presentSupport)
-			{
-				indices.PresentFamily = queueFamilyIndex;
-			}
-		}
-
-		if (indices.IsValid())
-		{
-			break;
-		}
-
-		queueFamilyIndex++;
-	}
-
-	return indices;
-}
-
-vge::SwapchainDetails vge::GetSwapchainDetails(VkPhysicalDevice gpu, VkSurfaceKHR surface)
-{
-	SwapchainDetails details;
-	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(gpu, surface, &details.SurfaceCapabilities);
-
-	uint32 formatCount = 0;
-	vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, surface, &formatCount, nullptr);
-
-	if (formatCount != 0)
-	{
-		details.SurfaceFormats.resize(formatCount);
-		vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, surface, &formatCount, details.SurfaceFormats.data());
-	}
-
-	uint32 presentCount = 0;
-	vkGetPhysicalDeviceSurfacePresentModesKHR(gpu, surface, &presentCount, nullptr);
-
-	if (presentCount != 0)
-	{
-		details.PresentModes.resize(presentCount);
-		vkGetPhysicalDeviceSurfacePresentModesKHR(gpu, surface, &presentCount, details.PresentModes.data());
-	}
-
-	return details;
 }
 
 uint32 vge::FindMemoryTypeIndex(VkPhysicalDevice gpu, uint32 allowedTypes, VkMemoryPropertyFlags flags)
@@ -301,8 +119,14 @@ VkFormat vge::GetBestImageFormat(const std::vector<VkFormat>& formats, VkImageTi
 	return VK_FORMAT_UNDEFINED;
 }
 
-void vge::CreateImage(VmaAllocator allocator, VkExtent2D extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VmaMemoryUsage memAllocUsage, VmaImage& outImage)
+void vge::CreateImage(VmaAllocator allocator, VkExtent2D extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VmaMemoryUsage memAllocUsage, VmaImage* outImage)
 {
+	if (!outImage)
+	{
+		LOG(Warning, "Given out image parameter is null.");
+		return;
+	}
+
 	VkImageCreateInfo imageCreateInfo = {};
 	imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -321,7 +145,7 @@ void vge::CreateImage(VmaAllocator allocator, VkExtent2D extent, VkFormat format
 	VmaAllocationCreateInfo vmaAllocCreateInfo = {};
 	vmaAllocCreateInfo.usage = memAllocUsage;
 
-	VK_ENSURE(vmaCreateImage(allocator, &imageCreateInfo, &vmaAllocCreateInfo, &outImage.Handle, &outImage.Allocation, &outImage.AllocInfo));
+	VK_ENSURE(vmaCreateImage(allocator, &imageCreateInfo, &vmaAllocCreateInfo, &outImage->Handle, &outImage->Allocation, &outImage->AllocInfo));
 }
 
 void vge::CreateImage(VkExtent2D extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags memProps, VkImage& outImage, VkDeviceMemory& outImageMemory)
@@ -376,8 +200,14 @@ void vge::CreateImageView(VkImage image, VkFormat format, VkImageAspectFlagBits 
 	VK_ENSURE_MSG(vkCreateImageView(VulkanContext::Device, &createInfo, nullptr, &outImageView), "Failed to create image view.");
 }
 
-void vge::CreateTextureImage(VmaAllocator allocator, VkQueue transferQueue, VkCommandPool transferCmdPool, const char* filename, VmaImage& outImage)
+void vge::CreateTextureImage(VmaAllocator allocator, VkQueue transferQueue, VkCommandPool transferCmdPool, const char* filename, VmaImage* outImage)
 {
+	if (!outImage)
+	{
+		LOG(Warning, "Given out image parameter is null.");
+		return;
+	}
+
 	int32 width = 0, height = 0;
 	VkDeviceSize textureSize = 0;
 	stbi_uc* textureData = file::LoadTexture(filename, width, height, textureSize);
@@ -402,16 +232,16 @@ void vge::CreateTextureImage(VmaAllocator allocator, VkQueue transferQueue, VkCo
 	{
 		const VkImageLayout oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		const VkImageLayout newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		TransitionImageLayout(transferQueue, transferCmdPool, outImage.Handle, oldLayout, newLayout);
+		TransitionImageLayout(transferQueue, transferCmdPool, outImage->Handle, oldLayout, newLayout);
 	}
 
-	CopyImageBuffer(transferQueue, transferCmdPool, textureStageBuffer.Get().Handle, outImage.Handle, textureExtent);
+	CopyImageBuffer(transferQueue, transferCmdPool, textureStageBuffer.Get().Handle, outImage->Handle, textureExtent);
 
 	// Transition image to be shader readable for shade usage.
 	{
 		const VkImageLayout oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		const VkImageLayout newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		TransitionImageLayout(transferQueue, transferCmdPool, outImage.Handle, oldLayout, newLayout);
+		TransitionImageLayout(transferQueue, transferCmdPool, outImage->Handle, oldLayout, newLayout);
 	}
 }
 

@@ -26,6 +26,14 @@
 #define STRING_INNER(x) #x
 #define STRING(x) STRING_INNER(x)
 
+#define NOT_COPYABLE(userType)																					\
+	userType(const userType&) = delete;																			\
+	void operator=(const userType&) = delete;
+
+#define NOT_MOVABLE(userType)																					\
+	userType(userType&&) = delete;																				\
+	userType& operator=(userType&&) = delete;
+
 #define ENSURE(expr)																							\
 if (!(expr))																									\
 {																												\

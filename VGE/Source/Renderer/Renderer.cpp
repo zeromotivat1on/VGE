@@ -1,109 +1,35 @@
 #include "Renderer.h"
 #include "Application.h"
+#include "Device.h"
 #include "File.h"
 #include "Window.h"
 #include "Buffer.h"
 #include "Shader.h"
 
-#pragma region DebugMessengerSetup
-static VKAPI_ATTR VkBool32 VKAPI_CALL VulkanDebugCallback(
-	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-	VkDebugUtilsMessageTypeFlagsEXT messageType,
-	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-	void* pUserData)
-{
-	switch (messageSeverity)
-	{
-	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-		LOG(Warning, "%s", pCallbackData->pMessage);
-		break;
+static inline void IncrementRenderFrame() { vge::GRenderFrame = (vge::GRenderFrame + 1) % vge::GMaxDrawFrames; }
 
-	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-		LOG(Error, "%s", pCallbackData->pMessage);
-		break;
-	}
-
-#if LOG_VK_VERBOSE
-	LOG(Log, "%s", pCallbackData->pMessage);
-#endif
-
-	return VK_FALSE;
-}
-
-static VkResult CreateDebugUtilsMessengerEXT(
-	VkInstance instance,
-	const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-	const VkAllocationCallbacks* pAllocator,
-	VkDebugUtilsMessengerEXT* pDebugMessenger)
-{
-	if (auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"))
-	{
-		return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-	}
-	else
-	{
-		return VK_ERROR_EXTENSION_NOT_PRESENT;
-	}
-}
-
-static void DestroyDebugUtilsMessengerEXT(
-	VkInstance instance,
-	VkDebugUtilsMessengerEXT debugMessenger,
-	const VkAllocationCallbacks* pAllocator)
-{
-	auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-	if (func != nullptr)
-	{
-		func(instance, debugMessenger, pAllocator);
-	}
-}
-
-static void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
-{
-	createInfo = {};
-	createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-	createInfo.messageSeverity =
-		VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-	createInfo.messageType =
-		VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-	createInfo.pfnUserCallback = VulkanDebugCallback;
-}
-#pragma endregion DebugMessengerSetup
-
-#pragma region NamespaceFunctions
-vge::Renderer* vge::CreateRenderer(VgeWindow* window)
+vge::Renderer* vge::CreateRenderer(VgeDevice* device)
 {
 	if (GRenderer) return GRenderer;
-	return (GRenderer = new Renderer(window));
+	return (GRenderer = new Renderer(device));
 }
 
 bool vge::DestroyRenderer()
 {
 	if (!GRenderer) return false;
-	GRenderer->Cleanup();
+	GRenderer->Destroy();
 	delete GRenderer;
 	GRenderer = nullptr;
 	return true;
 }
-#pragma endregion NamespaceFunctions
 
-vge::Renderer::Renderer(VgeWindow* window) : m_Window(window)
-{}
+vge::Renderer::Renderer(VgeDevice* device) : m_Device(device)
+{
+	ENSURE(m_Device);
+}
 
 void vge::Renderer::Initialize()
 {
-#if COMPILE_SHADERS_ON_INIT
-	LOG_RAW("\n----- Shader compilation started -----\n");
-	ENSURE(system("compile_shaders.bat") >= 0);
-	LOG_RAW("\n----- Shader compilation finished -----\n\n");
-#endif
-
-	CreateInstance();
-	SetupDebugMessenger();
-	CreateSurface();
-	FindGpu();
-	CreateDevice();
-	CreateCustomAllocator();
 	CreateSwapchain();
 	CreateColorBufferImages();
 	CreateDepthBufferImages();
@@ -112,7 +38,6 @@ void vge::Renderer::Initialize()
 	CreatePushConstantRange();
 	CreatePipelines();
 	CreateFramebuffers();
-	CreateCommandPool();
 	CreateCommandBuffers();
 	CreateTextureSampler();
 	//AllocateDynamicBufferTransferSpace();
@@ -137,11 +62,11 @@ void vge::Renderer::Draw()
 	VkSemaphore& imageAvailableSemaphore = m_ImageAvailableSemas[GRenderFrame];
 	VkSemaphore& renderFinishedSemaphore = m_RenderFinishedSemas[GRenderFrame];
 
-	vkWaitForFences(m_Device, 1, &drawFence, VK_TRUE, UINT64_MAX);	// wait till open
-	vkResetFences(m_Device, 1, &drawFence);							// close after enter
+	vkWaitForFences(m_Device->GetDevice(), 1, &drawFence, VK_TRUE, UINT64_MAX);	// wait till open
+	vkResetFences(m_Device->GetDevice(), 1, &drawFence);						// close after enter
 
 	uint32 AcquiredImageIndex = 0;
-	vkAcquireNextImageKHR(m_Device, m_Swapchain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &AcquiredImageIndex);
+	vkAcquireNextImageKHR(m_Device->GetDevice(), m_Swapchain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &AcquiredImageIndex);
 
 	RecordCommandBuffers(AcquiredImageIndex);
 	UpdateUniformBuffers(AcquiredImageIndex);
@@ -161,7 +86,7 @@ void vge::Renderer::Draw()
 	submitInfo.pSignalSemaphores = &renderFinishedSemaphore;
 
 	// Open fence after successful render.
-	VK_ENSURE_MSG(vkQueueSubmit(m_GfxQueue, 1, &submitInfo, drawFence), "Failed to submit info to graphics queue.");
+	VK_ENSURE_MSG(vkQueueSubmit(m_Device->GetGfxQueue(), 1, &submitInfo, drawFence), "Failed to submit info to graphics queue.");
 
 	VkPresentInfoKHR presentInfo = {};
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -171,268 +96,254 @@ void vge::Renderer::Draw()
 	presentInfo.pSwapchains = &m_Swapchain;
 	presentInfo.pImageIndices = &AcquiredImageIndex;
 
-	VK_ENSURE_MSG(vkQueuePresentKHR(m_PresentQueue, &presentInfo), "Failed to present info to present queue.");
+	VK_ENSURE_MSG(vkQueuePresentKHR(m_Device->GetPresentQueue(), &presentInfo), "Failed to present info to present queue.");
 
 	IncrementRenderFrame();
 }
 
-void vge::Renderer::Cleanup()
+void vge::Renderer::Destroy()
 {
-	vkDeviceWaitIdle(m_Device);
+	vkDeviceWaitIdle(m_Device->GetDevice());
 
 	for (size_t i = 0; i < m_Models.size(); ++i)
 	{
 		m_Models[i].Destroy();
 	}
 
-	vkDestroySampler(m_Device, m_TextureSampler, nullptr);
+	vkDestroySampler(m_Device->GetDevice(), m_TextureSampler, nullptr);
 
 	for (size_t i = 0; i < m_Textures.size(); ++i)
 	{
-		m_Textures[i].Destroy(m_Device);
+		m_Textures[i].Destroy();
 	}
 
 	//_aligned_free(m_ModelTransferSpace);
 
 	for (size_t i = 0; i < m_SwapchainImages.size(); ++i)
 	{
-		vkDestroyImageView(m_Device, m_ColorBufferImageViews[i], nullptr);
-		vmaDestroyImage(m_Allocator, m_ColorBufferImages[i].Handle, m_ColorBufferImages[i].Allocation);
+		vkDestroyImageView(m_Device->GetDevice(), m_ColorBufferImageViews[i], nullptr);
+		m_ColorBufferImages[i].Destroy();
 
-
-		vkDestroyImageView(m_Device, m_DepthBufferImageViews[i], nullptr);
-		vmaDestroyImage(m_Allocator, m_DepthBufferImages[i].Handle, m_DepthBufferImages[i].Allocation);
+		vkDestroyImageView(m_Device->GetDevice(), m_DepthBufferImageViews[i], nullptr);
+		m_DepthBufferImages[i].Destroy();
 	}
 
-	vkDestroyDescriptorPool(m_Device, m_InputDescriptorPool, nullptr);
-	vkDestroyDescriptorSetLayout(m_Device, m_InputDescriptorSetLayout, nullptr);
+	vkDestroyDescriptorPool(m_Device->GetDevice(), m_InputDescriptorPool, nullptr);
+	vkDestroyDescriptorSetLayout(m_Device->GetDevice(), m_InputDescriptorSetLayout, nullptr);
 
-	vkDestroyDescriptorPool(m_Device, m_SamplerDescriptorPool, nullptr);
-	vkDestroyDescriptorSetLayout(m_Device, m_SamplerDescriptorSetLayout, nullptr);
+	vkDestroyDescriptorPool(m_Device->GetDevice(), m_SamplerDescriptorPool, nullptr);
+	vkDestroyDescriptorSetLayout(m_Device->GetDevice(), m_SamplerDescriptorSetLayout, nullptr);
 
-	vkDestroyDescriptorPool(m_Device, m_UniformDescriptorPool, nullptr);
-	vkDestroyDescriptorSetLayout(m_Device, m_UniformDescriptorSetLayout, nullptr);
+	vkDestroyDescriptorPool(m_Device->GetDevice(), m_UniformDescriptorPool, nullptr);
+	vkDestroyDescriptorSetLayout(m_Device->GetDevice(), m_UniformDescriptorSetLayout, nullptr);
 
 	for (size_t i = 0; i < m_SwapchainImages.size(); ++i)
 	{
-		vmaDestroyBuffer(m_Allocator, m_VpUniformBuffers[i].Handle, m_VpUniformBuffers[i].Allocation);
+		m_VpUniformBuffers[i].Destroy();
 		//vkDestroyBuffer(m_Device, m_ModelDynamicUniformBuffers[i], nullptr);
 		//vkFreeMemory(m_Device, m_ModelDynamicUniformBuffersMemory[i], nullptr);
 	}
 
 	for (int32 i = 0; i < GMaxDrawFrames; ++i)
 	{
-		vkDestroyFence(m_Device, m_DrawFences[i], nullptr);
-		vkDestroySemaphore(m_Device, m_RenderFinishedSemas[i], nullptr);
-		vkDestroySemaphore(m_Device, m_ImageAvailableSemas[i], nullptr);
+		vkDestroyFence(m_Device->GetDevice(), m_DrawFences[i], nullptr);
+		vkDestroySemaphore(m_Device->GetDevice(), m_RenderFinishedSemas[i], nullptr);
+		vkDestroySemaphore(m_Device->GetDevice(), m_ImageAvailableSemas[i], nullptr);
 	}
-
-	vkDestroyCommandPool(m_Device, m_GfxCommandPool, nullptr);
 
 	for (auto framebuffer : m_SwapchainFramebuffers)
 	{
-		vkDestroyFramebuffer(m_Device, framebuffer, nullptr);
+		vkDestroyFramebuffer(m_Device->GetDevice(), framebuffer, nullptr);
 	}
 
-	vkDestroyPipeline(m_Device, m_SecondPipeline, nullptr);
-	vkDestroyPipelineLayout(m_Device, m_SecondPipelineLayout, nullptr);
+	vkDestroyPipeline(m_Device->GetDevice(), m_SecondPipeline, nullptr);
+	vkDestroyPipelineLayout(m_Device->GetDevice(), m_SecondPipelineLayout, nullptr);
 
-	vkDestroyPipeline(m_Device, m_GfxPipeline, nullptr);
-	vkDestroyPipelineLayout(m_Device, m_GfxPipelineLayout, nullptr);
+	vkDestroyPipeline(m_Device->GetDevice(), m_GfxPipeline, nullptr);
+	vkDestroyPipelineLayout(m_Device->GetDevice(), m_GfxPipelineLayout, nullptr);
 
-	vkDestroyRenderPass(m_Device, m_RenderPass, nullptr);
+	vkDestroyRenderPass(m_Device->GetDevice(), m_RenderPass, nullptr);
 
 	for (auto swapchainImage : m_SwapchainImages)
 	{
-		vkDestroyImageView(m_Device, swapchainImage.View, nullptr);
+		vkDestroyImageView(m_Device->GetDevice(), swapchainImage.View, nullptr);
 	}
 
-	vmaDestroyAllocator(m_Allocator);
-	VulkanContext::Allocator = VK_NULL_HANDLE;
-
-	vkDestroySwapchainKHR(m_Device, m_Swapchain, nullptr);
-	vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
-	vkDestroyDevice(m_Device, nullptr);
-
-	if (GEnableValidationLayers)
-	{
-		DestroyDebugUtilsMessengerEXT(m_Instance, m_DebugMessenger, nullptr);
-	}
-
-	vkDestroyInstance(m_Instance, nullptr);
+	vkDestroySwapchainKHR(m_Device->GetDevice(), m_Swapchain, nullptr);
 }
 
-void vge::Renderer::CreateInstance()
-{
-	if (GEnableValidationLayers)
-	{
-		ENSURE_MSG(SupportValidationLayers(), "Validation layers requested, but not supported.");
-	}
-
-	VkApplicationInfo appInfo = {};
-	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-	appInfo.pApplicationName = GApplication->Specs.Name;
-	appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-	appInfo.pEngineName = GApplication->Specs.InternalName;
-	appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-	appInfo.apiVersion = VK_API_VERSION_1_0;
-
-	std::vector<const char*> instanceExtensions = {};
-	GetRequriedInstanceExtensions(instanceExtensions);
-
-	ENSURE_MSG(SupportInstanceExtensions(instanceExtensions), "Instance does not support requried extensions.");
-
-	VkInstanceCreateInfo createInfo = {};
-	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-	createInfo.pApplicationInfo = &appInfo;
-	createInfo.enabledExtensionCount = static_cast<uint32>(instanceExtensions.size());
-	createInfo.ppEnabledExtensionNames = instanceExtensions.data();
-
-	if (GEnableValidationLayers)
-	{
-		createInfo.enabledLayerCount = static_cast<uint32>(C_ARRAY_NUM(GValidationLayers));
-		createInfo.ppEnabledLayerNames = GValidationLayers;
-
-		// Validate VkCreateInstance and VkDestroyInstance function calls.
-		VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-		PopulateDebugMessengerCreateInfo(debugCreateInfo);
-		createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
-
-		std::string layersString;
-		for (int32 i = C_ARRAY_NUM(GValidationLayers) - 1; i >= 0; --i)
-		{
-			layersString.append(GValidationLayers[i]);
-			layersString.append(" ");
-		}
-
-		LOG(Log, "Validation layers in use: %s", layersString.c_str());
-	}
-	else
-	{
-		createInfo.enabledLayerCount = 0;
-		createInfo.ppEnabledLayerNames = nullptr;
-	}
-
-	VK_ENSURE_MSG(vkCreateInstance(&createInfo, nullptr, &m_Instance), "Failed to create Vulkan instance.");
-	VulkanContext::Instance = m_Instance;
-}
-
-void vge::Renderer::SetupDebugMessenger()
-{
-	if (!GEnableValidationLayers) return;
-
-	VkDebugUtilsMessengerCreateInfoEXT createInfo;
-	PopulateDebugMessengerCreateInfo(createInfo);
-
-	VK_ENSURE_MSG(CreateDebugUtilsMessengerEXT(m_Instance, &createInfo, nullptr, &m_DebugMessenger), "Failed to set up debug messenger.");
-}
-
-void vge::Renderer::CreateSurface()
-{
-	m_Window->CreateSurface(m_Instance, m_Surface);
-}
-
-void vge::Renderer::FindGpu()
-{
-	uint32 gpuCount = 0;
-	vkEnumeratePhysicalDevices(m_Instance, &gpuCount, nullptr);
-
-	ENSURE_MSG(gpuCount > 0, "Can't find GPUs that support Vulkan.");
-
-	std::vector<VkPhysicalDevice> availableGpus(gpuCount);
-	vkEnumeratePhysicalDevices(m_Instance, &gpuCount, availableGpus.data());
-
-	for (const VkPhysicalDevice& gpu : availableGpus)
-	{
-		if (SuitableGpu(gpu, m_Surface))
-		{
-			m_Gpu = gpu;
-			VulkanContext::Gpu = m_Gpu;
-
-			m_QueueIndices = GetQueueFamilies(m_Gpu, m_Surface);
-
-			VkPhysicalDeviceProperties gpuProps;
-			vkGetPhysicalDeviceProperties(m_Gpu, &gpuProps);
-			LOG(Log, "Chosen GPU properties:");
-			LOG(Log, " Name: %s", gpuProps.deviceName);
-			LOG(Log, " Device ID: %u", gpuProps.deviceID);
-			LOG(Log, " Vendor ID: %u", gpuProps.vendorID);
-			LOG(Log, " Device type: %s", GpuTypeToString(gpuProps.deviceType));
-			LOG(Log, " Driver version: %u", gpuProps.driverVersion);
-
-			//m_MinUniformBufferOffset = gpuProps.limits.minUniformBufferOffsetAlignment;
-
-			return;
-		}
-	}
-
-	ENSURE_MSG(false, "Can't find suitable GPUs.");
-}
-
-void vge::Renderer::CreateDevice()
-{
-	std::unordered_set<int32> queueFamilyIndices = { m_QueueIndices.GraphicsFamily, m_QueueIndices.PresentFamily };
-	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-
-	for (int32 queueFamilyIndex : queueFamilyIndices)
-	{
-		const float priority = 1.0f;
-		VkDeviceQueueCreateInfo queueCreateInfo = {};
-		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		queueCreateInfo.queueFamilyIndex = queueFamilyIndex;
-		queueCreateInfo.queueCount = 1;
-		queueCreateInfo.pQueuePriorities = &priority;
-
-		queueCreateInfos.push_back(queueCreateInfo);
-	}
-
-	VkPhysicalDeviceFeatures gpuFeatures = {};
-	gpuFeatures.samplerAnisotropy = VK_TRUE;
-
-	VkDeviceCreateInfo deviceCreateInfo = {};
-	deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	deviceCreateInfo.queueCreateInfoCount = static_cast<uint32>(queueCreateInfos.size());
-	deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
-	deviceCreateInfo.enabledExtensionCount = static_cast<uint32>(C_ARRAY_NUM(GDeviceExtensions));
-	deviceCreateInfo.ppEnabledExtensionNames = GDeviceExtensions;
-	deviceCreateInfo.pEnabledFeatures = &gpuFeatures;
-
-	{
-		std::string extensionsString;
-		for (int32 i = C_ARRAY_NUM(GDeviceExtensions) - 1; i >= 0; --i)
-		{
-			extensionsString.append(GDeviceExtensions[i]);
-			extensionsString.append(" ");
-		}
-		LOG(Log, "Device extensions enabled: %s", extensionsString.c_str());
-	}
-
-	VK_ENSURE_MSG(vkCreateDevice(m_Gpu, &deviceCreateInfo, nullptr, &m_Device), "Failed to create Vulkan device.");
-	VulkanContext::Device = m_Device;
-
-	vkGetDeviceQueue(m_Device, m_QueueIndices.GraphicsFamily, 0, &m_GfxQueue);
-	VulkanContext::GfxQueue = m_GfxQueue;
-
-	vkGetDeviceQueue(m_Device, m_QueueIndices.PresentFamily, 0, &m_PresentQueue);
-	VulkanContext::PresentQueue = m_PresentQueue;
-
-}
-
-void vge::Renderer::CreateCustomAllocator()
-{
-	VmaAllocatorCreateInfo vmaAllocatorCreateInfo = {};
-	vmaAllocatorCreateInfo.instance = m_Instance;
-	vmaAllocatorCreateInfo.physicalDevice = m_Gpu;
-	vmaAllocatorCreateInfo.device = m_Device;
-
-	VK_ENSURE_MSG(vmaCreateAllocator(&vmaAllocatorCreateInfo, &m_Allocator), "Failed to create custom allocator.");
-	VulkanContext::Allocator = m_Allocator;
-}
+//void vge::Renderer::CreateInstance()
+//{
+//	if (GEnableValidationLayers)
+//	{
+//		ENSURE_MSG(SupportValidationLayers(), "Validation layers requested, but not supported.");
+//	}
+//
+//	VkApplicationInfo appInfo = {};
+//	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+//	appInfo.pApplicationName = GApplication->Specs.Name;
+//	appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+//	appInfo.pEngineName = GApplication->Specs.InternalName;
+//	appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+//	appInfo.apiVersion = VK_API_VERSION_1_0;
+//
+//	std::vector<const char*> instanceExtensions = {};
+//	GetRequriedInstanceExtensions(instanceExtensions);
+//
+//	ENSURE_MSG(SupportInstanceExtensions(instanceExtensions), "Instance does not support requried extensions.");
+//
+//	VkInstanceCreateInfo createInfo = {};
+//	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+//	createInfo.pApplicationInfo = &appInfo;
+//	createInfo.enabledExtensionCount = static_cast<uint32>(instanceExtensions.size());
+//	createInfo.ppEnabledExtensionNames = instanceExtensions.data();
+//
+//	if (GEnableValidationLayers)
+//	{
+//		createInfo.enabledLayerCount = static_cast<uint32>(C_ARRAY_NUM(GValidationLayers));
+//		createInfo.ppEnabledLayerNames = GValidationLayers;
+//
+//		// Validate VkCreateInstance and VkDestroyInstance function calls.
+//		VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
+//		PopulateDebugMessengerCreateInfo(debugCreateInfo);
+//		createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
+//
+//		std::string layersString;
+//		for (int32 i = C_ARRAY_NUM(GValidationLayers) - 1; i >= 0; --i)
+//		{
+//			layersString.append(GValidationLayers[i]);
+//			layersString.append(" ");
+//		}
+//
+//		LOG(Log, "Validation layers in use: %s", layersString.c_str());
+//	}
+//	else
+//	{
+//		createInfo.enabledLayerCount = 0;
+//		createInfo.ppEnabledLayerNames = nullptr;
+//	}
+//
+//	VK_ENSURE_MSG(vkCreateInstance(&createInfo, nullptr, &m_Instance), "Failed to create Vulkan instance.");
+//	VulkanContext::Instance = m_Instance;
+//}
+//
+//void vge::Renderer::SetupDebugMessenger()
+//{
+//	if (!GEnableValidationLayers) return;
+//
+//	VkDebugUtilsMessengerCreateInfoEXT createInfo;
+//	PopulateDebugMessengerCreateInfo(createInfo);
+//
+//	VK_ENSURE_MSG(CreateDebugUtilsMessengerEXT(m_Instance, &createInfo, nullptr, &m_DebugMessenger), "Failed to set up debug messenger.");
+//}
+//
+//void vge::Renderer::CreateSurface()
+//{
+//	m_Window->CreateSurface(m_Instance, m_Surface);
+//}
+//
+//void vge::Renderer::FindGpu()
+//{
+//	uint32 gpuCount = 0;
+//	vkEnumeratePhysicalDevices(m_Instance, &gpuCount, nullptr);
+//
+//	ENSURE_MSG(gpuCount > 0, "Can't find GPUs that support Vulkan.");
+//
+//	std::vector<VkPhysicalDevice> availableGpus(gpuCount);
+//	vkEnumeratePhysicalDevices(m_Instance, &gpuCount, availableGpus.data());
+//
+//	for (const VkPhysicalDevice& gpu : availableGpus)
+//	{
+//		if (SuitableGpu(gpu, m_Surface))
+//		{
+//			m_Gpu = gpu;
+//			VulkanContext::Gpu = m_Gpu;
+//
+//			m_QueueIndices = GetQueueFamilies(m_Gpu, m_Surface);
+//
+//			VkPhysicalDeviceProperties gpuProps;
+//			vkGetPhysicalDeviceProperties(m_Gpu, &gpuProps);
+//			LOG(Log, "Chosen GPU properties:");
+//			LOG(Log, " Name: %s", gpuProps.deviceName);
+//			LOG(Log, " Device ID: %u", gpuProps.deviceID);
+//			LOG(Log, " Vendor ID: %u", gpuProps.vendorID);
+//			LOG(Log, " Device type: %s", GpuTypeToString(gpuProps.deviceType));
+//			LOG(Log, " Driver version: %u", gpuProps.driverVersion);
+//
+//			//m_MinUniformBufferOffset = gpuProps.limits.minUniformBufferOffsetAlignment;
+//
+//			return;
+//		}
+//	}
+//
+//	ENSURE_MSG(false, "Can't find suitable GPUs.");
+//}
+//
+//void vge::Renderer::CreateDevice()
+//{
+//	std::unordered_set<int32> queueFamilyIndices = { m_QueueIndices.GraphicsFamily, m_QueueIndices.PresentFamily };
+//	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+//
+//	for (int32 queueFamilyIndex : queueFamilyIndices)
+//	{
+//		const float priority = 1.0f;
+//		VkDeviceQueueCreateInfo queueCreateInfo = {};
+//		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+//		queueCreateInfo.queueFamilyIndex = queueFamilyIndex;
+//		queueCreateInfo.queueCount = 1;
+//		queueCreateInfo.pQueuePriorities = &priority;
+//
+//		queueCreateInfos.push_back(queueCreateInfo);
+//	}
+//
+//	VkPhysicalDeviceFeatures gpuFeatures = {};
+//	gpuFeatures.samplerAnisotropy = VK_TRUE;
+//
+//	VkDeviceCreateInfo deviceCreateInfo = {};
+//	deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+//	deviceCreateInfo.queueCreateInfoCount = static_cast<uint32>(queueCreateInfos.size());
+//	deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
+//	deviceCreateInfo.enabledExtensionCount = static_cast<uint32>(C_ARRAY_NUM(GDeviceExtensions));
+//	deviceCreateInfo.ppEnabledExtensionNames = GDeviceExtensions;
+//	deviceCreateInfo.pEnabledFeatures = &gpuFeatures;
+//
+//	{
+//		std::string extensionsString;
+//		for (int32 i = C_ARRAY_NUM(GDeviceExtensions) - 1; i >= 0; --i)
+//		{
+//			extensionsString.append(GDeviceExtensions[i]);
+//			extensionsString.append(" ");
+//		}
+//		LOG(Log, "Device extensions enabled: %s", extensionsString.c_str());
+//	}
+//
+//	VK_ENSURE_MSG(vkCreateDevice(m_Gpu, &deviceCreateInfo, nullptr, &m_Device), "Failed to create Vulkan device.");
+//	VulkanContext::Device = m_Device;
+//
+//	vkGetDeviceQueue(m_Device, m_QueueIndices.GraphicsFamily, 0, &m_GfxQueue);
+//	VulkanContext::GfxQueue = m_GfxQueue;
+//
+//	vkGetDeviceQueue(m_Device, m_QueueIndices.PresentFamily, 0, &m_PresentQueue);
+//	VulkanContext::PresentQueue = m_PresentQueue;
+//
+//}
+//
+//void vge::Renderer::CreateCustomAllocator()
+//{
+//	VmaAllocatorCreateInfo vmaAllocatorCreateInfo = {};
+//	vmaAllocatorCreateInfo.instance = m_Instance;
+//	vmaAllocatorCreateInfo.physicalDevice = m_Gpu;
+//	vmaAllocatorCreateInfo.device = m_Device;
+//
+//	VK_ENSURE_MSG(vmaCreateAllocator(&vmaAllocatorCreateInfo, &m_Allocator), "Failed to create custom allocator.");
+//	VulkanContext::Allocator = m_Allocator;
+//}
 
 void vge::Renderer::CreateSwapchain()
 {
-	SwapchainDetails swapchainDetails = GetSwapchainDetails(m_Gpu, m_Surface);
-	
+	SwapchainSupportDetails swapchainDetails = m_Device->GetSwapchainDetails();
+	QueueFamilyIndices queueIndices = m_Device->GetQueueIndices();
+
 	VkSurfaceFormatKHR surfaceFormat = GetBestSurfaceFormat(swapchainDetails.SurfaceFormats);
 	VkPresentModeKHR presentMode = GetBestPresentMode(swapchainDetails.PresentModes);
 	VkExtent2D extent = GetBestSwapchainExtent(swapchainDetails.SurfaceCapabilities);
@@ -445,7 +356,7 @@ void vge::Renderer::CreateSwapchain()
 
 	VkSwapchainCreateInfoKHR swapchainCreateInfo = {};
 	swapchainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-	swapchainCreateInfo.surface = m_Surface;
+	swapchainCreateInfo.surface = m_Device->GetSurface();
 	swapchainCreateInfo.imageFormat = surfaceFormat.format;
 	swapchainCreateInfo.imageColorSpace = surfaceFormat.colorSpace;
 	swapchainCreateInfo.presentMode = presentMode;
@@ -457,12 +368,12 @@ void vge::Renderer::CreateSwapchain()
 	swapchainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 	swapchainCreateInfo.clipped = VK_TRUE;
 	
-	if (m_QueueIndices.GraphicsFamily != m_QueueIndices.PresentFamily)
+	if (queueIndices.GraphicsFamily != queueIndices.PresentFamily)
 	{
 		const uint32 queueFamilyIndices[] = 
 		{ 
-			static_cast<uint32>(m_QueueIndices.GraphicsFamily),
-			static_cast<uint32>(m_QueueIndices.PresentFamily)
+			static_cast<uint32>(queueIndices.GraphicsFamily),
+			static_cast<uint32>(queueIndices.PresentFamily)
 		};
 
 		swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
@@ -478,16 +389,16 @@ void vge::Renderer::CreateSwapchain()
 
 	swapchainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
 
-	VK_ENSURE_MSG(vkCreateSwapchainKHR(m_Device, &swapchainCreateInfo, nullptr, &m_Swapchain), "Failed to create swapchain.");
+	VK_ENSURE_MSG(vkCreateSwapchainKHR(m_Device->GetDevice(), &swapchainCreateInfo, nullptr, &m_Swapchain), "Failed to create swapchain.");
 
 	m_SwapchainImageFormat = surfaceFormat.format;
 	m_SwapchainExtent = extent;
 
 	uint32 swapchainImageCount = 0;
-	vkGetSwapchainImagesKHR(m_Device, m_Swapchain, &swapchainImageCount, nullptr);
+	vkGetSwapchainImagesKHR(m_Device->GetDevice(), m_Swapchain, &swapchainImageCount, nullptr);
 
 	std::vector<VkImage> images(swapchainImageCount);
-	vkGetSwapchainImagesKHR(m_Device, m_Swapchain, &swapchainImageCount, images.data());
+	vkGetSwapchainImagesKHR(m_Device->GetDevice(), m_Swapchain, &swapchainImageCount, images.data());
 
 	for (const auto& image : images)
 	{
@@ -511,7 +422,7 @@ void vge::Renderer::CreateColorBufferImages()
 
 	for (size_t i = 0; i < m_SwapchainImages.size(); ++i)
 	{
-		CreateImage(m_Allocator, m_SwapchainExtent, m_ColorFormat, VK_IMAGE_TILING_OPTIMAL, usage, VMA_MEMORY_USAGE_GPU_ONLY, m_ColorBufferImages[i]);
+		CreateImage(m_Device->GetAllocator(), m_SwapchainExtent, m_ColorFormat, VK_IMAGE_TILING_OPTIMAL, usage, VMA_MEMORY_USAGE_GPU_ONLY, &m_ColorBufferImages[i]);
 		CreateImageView(m_ColorBufferImages[i].Handle, m_ColorFormat, VK_IMAGE_ASPECT_COLOR_BIT, m_ColorBufferImageViews[i]);
 	}
 }
@@ -528,7 +439,7 @@ void vge::Renderer::CreateDepthBufferImages()
 
 	for (size_t i = 0; i < m_SwapchainImages.size(); ++i)
 	{
-		CreateImage(m_Allocator, m_SwapchainExtent, m_DepthFormat, VK_IMAGE_TILING_OPTIMAL, usage, VMA_MEMORY_USAGE_GPU_ONLY, m_DepthBufferImages[i]);
+		CreateImage(m_Device->GetAllocator(), m_SwapchainExtent, m_DepthFormat, VK_IMAGE_TILING_OPTIMAL, usage, VMA_MEMORY_USAGE_GPU_ONLY, &m_DepthBufferImages[i]);
 		CreateImageView(m_DepthBufferImages[i].Handle, m_DepthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, m_DepthBufferImageViews[i]);
 	}
 }
@@ -658,7 +569,7 @@ void vge::Renderer::CreateRenderPass()
 	renderPassCreateInfo.dependencyCount = static_cast<uint32>(subpassDependencies.size());
 	renderPassCreateInfo.pDependencies = subpassDependencies.data();
 
-	VK_ENSURE_MSG(vkCreateRenderPass(m_Device, &renderPassCreateInfo, nullptr, &m_RenderPass), "Failed to create render pass.");
+	VK_ENSURE_MSG(vkCreateRenderPass(m_Device->GetDevice(), &renderPassCreateInfo, nullptr, &m_RenderPass), "Failed to create render pass.");
 }
 
 void vge::Renderer::CreateDescriptorSetLayouts()
@@ -685,7 +596,7 @@ void vge::Renderer::CreateDescriptorSetLayouts()
 		uniformLayoutCreateInfo.bindingCount = static_cast<uint32>(uniformLayoutBindings.size());
 		uniformLayoutCreateInfo.pBindings = uniformLayoutBindings.data();
 
-		VK_ENSURE_MSG(vkCreateDescriptorSetLayout(m_Device, &uniformLayoutCreateInfo, nullptr, &m_UniformDescriptorSetLayout), "Failed to create uniform descriptor set layout.");
+		VK_ENSURE_MSG(vkCreateDescriptorSetLayout(m_Device->GetDevice(), &uniformLayoutCreateInfo, nullptr, &m_UniformDescriptorSetLayout), "Failed to create uniform descriptor set layout.");
 	}
 
 	{
@@ -703,7 +614,7 @@ void vge::Renderer::CreateDescriptorSetLayouts()
 		samplerLayoutCreateInfo.bindingCount = static_cast<uint32>(samplerLayoutBindings.size());
 		samplerLayoutCreateInfo.pBindings = samplerLayoutBindings.data();
 
-		VK_ENSURE_MSG(vkCreateDescriptorSetLayout(m_Device, &samplerLayoutCreateInfo, nullptr, &m_SamplerDescriptorSetLayout), "Failed to create sampler descriptor set layout.");
+		VK_ENSURE_MSG(vkCreateDescriptorSetLayout(m_Device->GetDevice(), &samplerLayoutCreateInfo, nullptr, &m_SamplerDescriptorSetLayout), "Failed to create sampler descriptor set layout.");
 	}
 
 	{
@@ -726,7 +637,7 @@ void vge::Renderer::CreateDescriptorSetLayouts()
 		inputLayoutCreateInfo.bindingCount = static_cast<uint32>(inputLayoutBindings.size());
 		inputLayoutCreateInfo.pBindings = inputLayoutBindings.data();
 
-		VK_ENSURE_MSG(vkCreateDescriptorSetLayout(m_Device, &inputLayoutCreateInfo, nullptr, &m_InputDescriptorSetLayout), "Failed to create input descriptor set layout.");
+		VK_ENSURE_MSG(vkCreateDescriptorSetLayout(m_Device->GetDevice(), &inputLayoutCreateInfo, nullptr, &m_InputDescriptorSetLayout), "Failed to create input descriptor set layout.");
 	}
 }
 
@@ -742,8 +653,8 @@ void vge::Renderer::CreatePipelines()
 	std::vector<char> firstVertexShaderCode = file::ReadShader("Shaders/Bin/first_vert.spv");
 	std::vector<char> firstFragmentShaderCode = file::ReadShader("Shaders/Bin/first_frag.spv");
 
-	VkShaderModule firstVertexShaderModule = CreateShaderModule(m_Device, firstVertexShaderCode);
-	VkShaderModule firstFragmentShaderModule = CreateShaderModule(m_Device, firstFragmentShaderCode);
+	VkShaderModule firstVertexShaderModule = CreateShaderModule(m_Device->GetDevice(), firstVertexShaderCode);
+	VkShaderModule firstFragmentShaderModule = CreateShaderModule(m_Device->GetDevice(), firstFragmentShaderCode);
 
 	VkPipelineShaderStageCreateInfo vertexStageCreateInfo = {};
 	vertexStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -843,7 +754,7 @@ void vge::Renderer::CreatePipelines()
 	pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
 	pipelineLayoutCreateInfo.pPushConstantRanges = &m_PushConstantRange;
 
-	VK_ENSURE_MSG(vkCreatePipelineLayout(m_Device, &pipelineLayoutCreateInfo, nullptr, &m_GfxPipelineLayout), "Failed to create graphics pipeline layout.");
+	VK_ENSURE_MSG(vkCreatePipelineLayout(m_Device->GetDevice(), &pipelineLayoutCreateInfo, nullptr, &m_GfxPipelineLayout), "Failed to create graphics pipeline layout.");
 
 	VkPipelineDepthStencilStateCreateInfo depthStencilCreateInfo = {};
 	depthStencilCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
@@ -871,10 +782,10 @@ void vge::Renderer::CreatePipelines()
 	pipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
 	pipelineCreateInfo.basePipelineIndex = INDEX_NONE;
 
-	VK_ENSURE_MSG(vkCreateGraphicsPipelines(m_Device, nullptr, 1, &pipelineCreateInfo, nullptr, &m_GfxPipeline), "Failed to create graphics pipeline.");
+	VK_ENSURE_MSG(vkCreateGraphicsPipelines(m_Device->GetDevice(), nullptr, 1, &pipelineCreateInfo, nullptr, &m_GfxPipeline), "Failed to create graphics pipeline.");
 
-	vkDestroyShaderModule(m_Device, firstFragmentShaderModule, nullptr);
-	vkDestroyShaderModule(m_Device, firstVertexShaderModule, nullptr);
+	vkDestroyShaderModule(m_Device->GetDevice(), firstFragmentShaderModule, nullptr);
+	vkDestroyShaderModule(m_Device->GetDevice(), firstVertexShaderModule, nullptr);
 
 	// Second pipeline creation
 	// TODO: use pipeline base instead of this.
@@ -882,8 +793,8 @@ void vge::Renderer::CreatePipelines()
 		std::vector<char> secondVertexShaderCode = file::ReadShader("Shaders/Bin/second_vert.spv");
 		std::vector<char> secondFragmentShaderCode = file::ReadShader("Shaders/Bin/second_frag.spv");
 
-		VkShaderModule secondVertexShaderModule = CreateShaderModule(m_Device, secondVertexShaderCode);
-		VkShaderModule secondFragmentShaderModule = CreateShaderModule(m_Device, secondFragmentShaderCode);
+		VkShaderModule secondVertexShaderModule = CreateShaderModule(m_Device->GetDevice(), secondVertexShaderCode);
+		VkShaderModule secondFragmentShaderModule = CreateShaderModule(m_Device->GetDevice(), secondFragmentShaderCode);
 
 		vertexStageCreateInfo.module = secondVertexShaderModule;
 		fragmentStageCreateInfo.module = secondFragmentShaderModule;
@@ -905,16 +816,16 @@ void vge::Renderer::CreatePipelines()
 		secondPipelineLayoutCreateInfo.pushConstantRangeCount = 0;
 		secondPipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
 
-		VK_ENSURE_MSG(vkCreatePipelineLayout(m_Device, &secondPipelineLayoutCreateInfo, nullptr, &m_SecondPipelineLayout), "Failed to create second pipeline layout.");
+		VK_ENSURE_MSG(vkCreatePipelineLayout(m_Device->GetDevice(), &secondPipelineLayoutCreateInfo, nullptr, &m_SecondPipelineLayout), "Failed to create second pipeline layout.");
 
 		pipelineCreateInfo.pStages = secondShaderStages;
 		pipelineCreateInfo.layout = m_SecondPipelineLayout;
 		pipelineCreateInfo.subpass = 1; // use second subpass
 
-		VK_ENSURE_MSG(vkCreateGraphicsPipelines(m_Device, nullptr, 1, &pipelineCreateInfo, nullptr, &m_SecondPipeline), "Failed to create second pipeline.");
+		VK_ENSURE_MSG(vkCreateGraphicsPipelines(m_Device->GetDevice(), nullptr, 1, &pipelineCreateInfo, nullptr, &m_SecondPipeline), "Failed to create second pipeline.");
 
-		vkDestroyShaderModule(m_Device, secondFragmentShaderModule, nullptr);
-		vkDestroyShaderModule(m_Device, secondVertexShaderModule, nullptr);
+		vkDestroyShaderModule(m_Device->GetDevice(), secondFragmentShaderModule, nullptr);
+		vkDestroyShaderModule(m_Device->GetDevice(), secondVertexShaderModule, nullptr);
 	}
 }
 
@@ -935,18 +846,8 @@ void vge::Renderer::CreateFramebuffers()
 		framebufferCreateInfo.height = m_SwapchainExtent.height;
 		framebufferCreateInfo.layers = 1;
 
-		VK_ENSURE_MSG(vkCreateFramebuffer(m_Device, &framebufferCreateInfo, nullptr, &m_SwapchainFramebuffers[i]), "Failed to create framebuffer.");
+		VK_ENSURE_MSG(vkCreateFramebuffer(m_Device->GetDevice(), &framebufferCreateInfo, nullptr, &m_SwapchainFramebuffers[i]), "Failed to create framebuffer.");
 	}
-}
-
-void vge::Renderer::CreateCommandPool()
-{
-	VkCommandPoolCreateInfo cmdPoolCreateInfo = {};
-	cmdPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	cmdPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT; // enable cmd buffers reset (re-record)
-	cmdPoolCreateInfo.queueFamilyIndex = m_QueueIndices.GraphicsFamily;
-
-	VK_ENSURE_MSG(vkCreateCommandPool(m_Device, &cmdPoolCreateInfo, nullptr, &m_GfxCommandPool), "Failed to create graphics command pool.");
 }
 
 void vge::Renderer::CreateCommandBuffers()
@@ -955,11 +856,11 @@ void vge::Renderer::CreateCommandBuffers()
 
 	VkCommandBufferAllocateInfo cmdBufferAllocInfo = {};
 	cmdBufferAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	cmdBufferAllocInfo.commandPool = m_GfxCommandPool;
+	cmdBufferAllocInfo.commandPool = m_Device->GetCommandPool();
 	cmdBufferAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	cmdBufferAllocInfo.commandBufferCount = static_cast<uint32>(m_CommandBuffers.size());
 
-	VK_ENSURE_MSG(vkAllocateCommandBuffers(m_Device, &cmdBufferAllocInfo, m_CommandBuffers.data()), "Failed to allocate command buffers.");
+	VK_ENSURE_MSG(vkAllocateCommandBuffers(m_Device->GetDevice(), &cmdBufferAllocInfo, m_CommandBuffers.data()), "Failed to allocate command buffers.");
 }
 
 void vge::Renderer::CreateTextureSampler()
@@ -982,7 +883,7 @@ void vge::Renderer::CreateTextureSampler()
 	samplerCreateInfo.anisotropyEnable = VK_TRUE;						// generally, if enabled, handle texture stretching at strange angles
 	samplerCreateInfo.maxAnisotropy = 16;
 
-	VK_ENSURE_MSG(vkCreateSampler(m_Device, &samplerCreateInfo, nullptr, &m_TextureSampler), "Failed to create texture sampler.");
+	VK_ENSURE_MSG(vkCreateSampler(m_Device->GetDevice(), &samplerCreateInfo, nullptr, &m_TextureSampler), "Failed to create texture sampler.");
 }
 
 //void vge::Renderer::AllocateDynamicBufferTransferSpace()
@@ -1008,7 +909,7 @@ void vge::Renderer::CreateUniformBuffers()
 
 	for (size_t i = 0; i < m_SwapchainImages.size(); ++i)
 	{
-		CreateBuffer(m_Allocator, vpBufferSize, usage, memUsage, m_VpUniformBuffers[i]);
+		CreateBuffer(m_Device->GetAllocator(), vpBufferSize, usage, memUsage, m_VpUniformBuffers[i]);
 		//CreateBuffer(m_Gpu, m_Device, modelBufferSize, usage, props, m_ModelDynamicUniformBuffers[i], m_ModelDynamicUniformBuffersMemory[i]);
 	}
 }
@@ -1032,7 +933,7 @@ void vge::Renderer::CreateDescriptorPools()
 		uniformPoolCreateInfo.poolSizeCount = static_cast<uint32>(uniformPoolSizes.size());
 		uniformPoolCreateInfo.pPoolSizes = uniformPoolSizes.data();
 
-		VK_ENSURE_MSG(vkCreateDescriptorPool(m_Device, &uniformPoolCreateInfo, nullptr, &m_UniformDescriptorPool), "Failed to create uniform descriptor pool.");
+		VK_ENSURE_MSG(vkCreateDescriptorPool(m_Device->GetDevice(), &uniformPoolCreateInfo, nullptr, &m_UniformDescriptorPool), "Failed to create uniform descriptor pool.");
 	}
 
 	{
@@ -1048,7 +949,7 @@ void vge::Renderer::CreateDescriptorPools()
 		samplerPoolCreateInfo.poolSizeCount = static_cast<uint32>(samplerPoolSizes.size());
 		samplerPoolCreateInfo.pPoolSizes = samplerPoolSizes.data();
 
-		VK_ENSURE_MSG(vkCreateDescriptorPool(m_Device, &samplerPoolCreateInfo, nullptr, &m_SamplerDescriptorPool), "Failed to create sampler descriptor pool.");
+		VK_ENSURE_MSG(vkCreateDescriptorPool(m_Device->GetDevice(), &samplerPoolCreateInfo, nullptr, &m_SamplerDescriptorPool), "Failed to create sampler descriptor pool.");
 	}
 
 	{
@@ -1068,7 +969,7 @@ void vge::Renderer::CreateDescriptorPools()
 		inputPoolCreateInfo.poolSizeCount = static_cast<uint32>(inputPoolSizes.size());
 		inputPoolCreateInfo.pPoolSizes = inputPoolSizes.data();
 
-		VK_ENSURE_MSG(vkCreateDescriptorPool(m_Device, &inputPoolCreateInfo, nullptr, &m_InputDescriptorPool), "Failed to create input descriptor pool.");
+		VK_ENSURE_MSG(vkCreateDescriptorPool(m_Device->GetDevice(), &inputPoolCreateInfo, nullptr, &m_InputDescriptorPool), "Failed to create input descriptor pool.");
 	}
 }
 
@@ -1085,7 +986,7 @@ void vge::Renderer::CreateDescriptorSets()
 		setAllocInfo.descriptorSetCount = static_cast<uint32>(m_SwapchainImages.size());
 		setAllocInfo.pSetLayouts = setLayouts.data(); // 1 to 1 relationship with layout and set
 
-		VK_ENSURE_MSG(vkAllocateDescriptorSets(m_Device, &setAllocInfo, m_UniformDescriptorSets.data()), "Failed to allocate uniform descriptor sets.");
+		VK_ENSURE_MSG(vkAllocateDescriptorSets(m_Device->GetDevice(), &setAllocInfo, m_UniformDescriptorSets.data()), "Failed to allocate uniform descriptor sets.");
 
 		for (size_t i = 0; i < m_SwapchainImages.size(); ++i)
 		{
@@ -1119,7 +1020,7 @@ void vge::Renderer::CreateDescriptorSets()
 
 			const std::array<VkWriteDescriptorSet, 1> setWrites = { vpSetWrite, /*modelSetWrite*/ };
 
-			vkUpdateDescriptorSets(m_Device, static_cast<uint32>(setWrites.size()), setWrites.data(), 0, nullptr);
+			vkUpdateDescriptorSets(m_Device->GetDevice(), static_cast<uint32>(setWrites.size()), setWrites.data(), 0, nullptr);
 		}
 	}
 
@@ -1134,7 +1035,7 @@ void vge::Renderer::CreateDescriptorSets()
 		setAllocInfo.descriptorSetCount = static_cast<uint32>(m_SwapchainImages.size());
 		setAllocInfo.pSetLayouts = setLayouts.data();
 
-		VK_ENSURE_MSG(vkAllocateDescriptorSets(m_Device, &setAllocInfo, m_InputDescriptorSets.data()), "Failed to allocate input descriptor sets.");
+		VK_ENSURE_MSG(vkAllocateDescriptorSets(m_Device->GetDevice(), &setAllocInfo, m_InputDescriptorSets.data()), "Failed to allocate input descriptor sets.");
 
 		for (size_t i = 0; i < m_SwapchainImages.size(); ++i)
 		{
@@ -1168,7 +1069,7 @@ void vge::Renderer::CreateDescriptorSets()
 
 			const std::array<VkWriteDescriptorSet, 2> setWrites = { colorSetWrite, depthSetWrite };
 
-			vkUpdateDescriptorSets(m_Device, static_cast<uint32>(setWrites.size()), setWrites.data(), 0, nullptr);
+			vkUpdateDescriptorSets(m_Device->GetDevice(), static_cast<uint32>(setWrites.size()), setWrites.data(), 0, nullptr);
 		}
 	}
 }
@@ -1267,18 +1168,18 @@ void vge::Renderer::CreateSyncObjects()
 
 	for (int32 i = 0; i < GMaxDrawFrames; ++i)
 	{
-		VK_ENSURE_MSG(vkCreateSemaphore(m_Device, &semaphoreCreateInfo, nullptr, &m_ImageAvailableSemas[i]), "Failed to create image available semaphore.");
-		VK_ENSURE_MSG(vkCreateSemaphore(m_Device, &semaphoreCreateInfo, nullptr, &m_RenderFinishedSemas[i]), "Failed to create render finished semaphore.");
-		VK_ENSURE_MSG(vkCreateFence(m_Device, &fenceCreateInfo, nullptr, &m_DrawFences[i]), "Failed to create fence.");
+		VK_ENSURE_MSG(vkCreateSemaphore(m_Device->GetDevice(), &semaphoreCreateInfo, nullptr, &m_ImageAvailableSemas[i]), "Failed to create image available semaphore.");
+		VK_ENSURE_MSG(vkCreateSemaphore(m_Device->GetDevice(), &semaphoreCreateInfo, nullptr, &m_RenderFinishedSemas[i]), "Failed to create render finished semaphore.");
+		VK_ENSURE_MSG(vkCreateFence(m_Device->GetDevice(), &fenceCreateInfo, nullptr, &m_DrawFences[i]), "Failed to create fence.");
 	}
 }
 
 void vge::Renderer::UpdateUniformBuffers(uint32 ImageIndex)
 {
 	void* data;
-	vmaMapMemory(m_Allocator, m_VpUniformBuffers[ImageIndex].Allocation, &data);
+	vmaMapMemory(m_Device->GetAllocator(), m_VpUniformBuffers[ImageIndex].Allocation, &data);
 	memcpy(data, &m_UboViewProjection, sizeof(UboViewProjection));
-	vmaUnmapMemory(m_Allocator, m_VpUniformBuffers[ImageIndex].Allocation);
+	vmaUnmapMemory(m_Device->GetAllocator(), m_VpUniformBuffers[ImageIndex].Allocation);
 
 	// Usage of dynamic uniform buffer example. Costly for frequent actions like model matrix update.
 	//for (size_t i = 0; i < m_Meshes.size(); ++i)
@@ -1297,7 +1198,7 @@ int32 vge::Renderer::CreateTexture(const char* filename)
 	TextureCreateInfo texCreateInfo = {};
 	texCreateInfo.Id = static_cast<int32>(m_Textures.size());
 	texCreateInfo.Filename = filename;
-	texCreateInfo.CmdPool = m_GfxCommandPool;
+	texCreateInfo.CmdPool = m_Device->GetCommandPool();
 	texCreateInfo.Sampler = m_TextureSampler;
 	texCreateInfo.DescriptorPool = m_SamplerDescriptorPool;
 	texCreateInfo.DescriptorLayout = m_SamplerDescriptorSetLayout;
@@ -1313,7 +1214,7 @@ int32 vge::Renderer::CreateModel(const char* filename)
 	ModelCreateInfo modelCreateInfo = {};
 	modelCreateInfo.Id = static_cast<int32>(m_Models.size());
 	modelCreateInfo.Filename = filename;
-	modelCreateInfo.CmdPool = m_GfxCommandPool;
+	modelCreateInfo.CmdPool = m_Device->GetCommandPool();
 
 	Model model = Model::Create(modelCreateInfo);
 	m_Models.push_back(model);
