@@ -8,7 +8,6 @@ namespace vge
 	{
 		VkViewport Viewport = {};
 		VkRect2D Scissor = {};
-		VkPipelineViewportStateCreateInfo ViewportInfo = {};
 		VkPipelineVertexInputStateCreateInfo VertexInfo = {};
 		VkPipelineInputAssemblyStateCreateInfo InputAssemblyInfo = {};
 		VkPipelineRasterizationStateCreateInfo RasterizationInfo = {};
