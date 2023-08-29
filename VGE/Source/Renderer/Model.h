@@ -20,6 +20,8 @@ namespace vge
 		Model() = default;
 
 	public:
+		void Destroy();
+
 		inline int32 GetId() const { return m_Id; }
 		inline size_t GetMeshCount() const { return m_Meshes.size(); }
 		inline ModelData GetModelData() const { return m_ModelData; }
@@ -29,8 +31,6 @@ namespace vge
 		inline 		 Mesh* GetMesh(size_t index)	   { return index < GetMeshCount() ? &m_Meshes[index] : nullptr; }
 
 		inline void SetModelMatrix(const glm::mat4& modelMatrix) { m_ModelData.ModelMatrix = modelMatrix; }
-
-		void Destroy();
 
 	private:
 		// Recursively load all meshes starting from a given node as root.

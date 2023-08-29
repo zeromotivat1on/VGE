@@ -133,6 +133,42 @@ vge::IndexBuffer::IndexBuffer(VkQueue transferQueue, VkCommandPool transferCmdPo
 	CopyBuffer(transferQueue, transferCmdPool, stageBuffer.Get().Handle, m_AllocatedBuffer.Handle, bufferSize);
 }
 
+vge::VertexInputDescription vge::Vertex::GetDescription()
+{
+	VertexInputDescription description = {};
+
+	VkVertexInputBindingDescription mainDescription = {};
+	mainDescription.binding = 0;
+	mainDescription.stride = sizeof(Vertex);
+	mainDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+	description.Bindings.push_back(mainDescription);
+
+	VkVertexInputAttributeDescription positionAttribute = {};
+	positionAttribute.binding = 0;
+	positionAttribute.location = 0;
+	positionAttribute.format = VK_FORMAT_R32G32B32_SFLOAT;
+	positionAttribute.offset = offsetof(Vertex, Position);
+
+	VkVertexInputAttributeDescription colorAttribute = {};
+	colorAttribute.binding = 0;
+	colorAttribute.location = 1;
+	colorAttribute.format = VK_FORMAT_R32G32B32_SFLOAT;
+	colorAttribute.offset = offsetof(Vertex, Color);
+
+	VkVertexInputAttributeDescription textureAttribute = {};
+	textureAttribute.binding = 0;
+	textureAttribute.location = 2;
+	textureAttribute.format = VK_FORMAT_R32G32_SFLOAT;
+	textureAttribute.offset = offsetof(Vertex, TexCoords);
+
+	description.Attributes.push_back(positionAttribute);
+	description.Attributes.push_back(colorAttribute);
+	description.Attributes.push_back(textureAttribute);
+
+	return description;
+}
+
 vge::VertexBuffer::VertexBuffer(VkQueue transferQueue, VkCommandPool transferCmdPool, const std::vector<Vertex>& vertices)
 {
 	const VkDeviceSize bufferSize = STD_VECTOR_ALLOC_SIZE(vertices);

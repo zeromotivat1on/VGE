@@ -730,10 +730,8 @@ void vge::Renderer::RecordCommandBuffers(uint32 ImageIndex)
 	{
 		m_FirstPipeline.Bind(cmdBuffer);
 
-		for (size_t ModelIndex = 0; ModelIndex < m_Models.size(); ++ModelIndex)
+		for (Model& model : m_Models)
 		{
-			Model& model = m_Models[ModelIndex];
-
 			const ModelData& modelData = model.GetModelData();
 			vkCmdPushConstants(cmdBuffer, m_FirstPipeline.GetLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ModelData), &modelData);
 

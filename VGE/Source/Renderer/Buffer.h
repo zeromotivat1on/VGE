@@ -91,6 +91,23 @@ namespace vge
 		VmaBuffer m_AllocatedBuffer = {};
 	};
 
+	struct VertexInputDescription
+	{
+		std::vector<VkVertexInputBindingDescription> Bindings = {};
+		std::vector<VkVertexInputAttributeDescription> Attributes = {};
+
+		VkPipelineVertexInputStateCreateFlags flags = 0;
+	};
+
+	struct Vertex
+	{
+		glm::vec3 Position;
+		glm::vec3 Color;
+		glm::vec2 TexCoords;
+
+		static VertexInputDescription GetDescription();
+	};
+
 	class VertexBuffer
 	{
 	public:

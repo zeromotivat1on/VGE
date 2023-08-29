@@ -5,57 +5,6 @@
 namespace vge
 {
 	struct VmaImage;
-
-	struct VertexInputDescription
-	{
-		std::vector<VkVertexInputBindingDescription> Bindings = {};
-		std::vector<VkVertexInputAttributeDescription> Attributes = {};
-
-		VkPipelineVertexInputStateCreateFlags flags = 0;
-	};
-
-	struct Vertex
-	{
-		glm::vec3 Position;
-		glm::vec3 Color;
-		glm::vec2 TexCoords;
-
-		static VertexInputDescription GetDescription()
-		{
-			VertexInputDescription description = {};
-
-			VkVertexInputBindingDescription mainDescription = {};
-			mainDescription.binding = 0;
-			mainDescription.stride = sizeof(Vertex);
-			mainDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-			description.Bindings.push_back(mainDescription);
-
-			VkVertexInputAttributeDescription positionAttribute = {};
-			positionAttribute.binding = 0;
-			positionAttribute.location = 0;
-			positionAttribute.format = VK_FORMAT_R32G32B32_SFLOAT;
-			positionAttribute.offset = offsetof(Vertex, Position);
-
-			VkVertexInputAttributeDescription colorAttribute = {};
-			colorAttribute.binding = 0;
-			colorAttribute.location = 1;
-			colorAttribute.format = VK_FORMAT_R32G32B32_SFLOAT;
-			colorAttribute.offset = offsetof(Vertex, Color);
-
-			VkVertexInputAttributeDescription textureAttribute = {};
-			textureAttribute.binding = 0;
-			textureAttribute.location = 2;
-			textureAttribute.format = VK_FORMAT_R32G32_SFLOAT;
-			textureAttribute.offset = offsetof(Vertex, TexCoords);
-
-			description.Attributes.push_back(positionAttribute);
-			description.Attributes.push_back(colorAttribute);
-			description.Attributes.push_back(textureAttribute);
-
-			return description;
-		}
-	};
 	
 	const char* GpuTypeToString(VkPhysicalDeviceType gpuType);
 

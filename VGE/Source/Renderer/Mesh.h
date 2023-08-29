@@ -2,7 +2,6 @@
 
 #include "Common.h"
 #include "Buffer.h"
-#include "VulkanUtils.h"
 
 namespace vge
 {
