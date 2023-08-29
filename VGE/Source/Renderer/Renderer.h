@@ -121,6 +121,8 @@ namespace vge
 
 		void RecordCommandBuffers(uint32 ImageIndex);
 		void UpdateUniformBuffers(uint32 ImageIndex);
+
+		void RecreateSwapchain();
 	};
 
 	Renderer* CreateRenderer(Device* device);

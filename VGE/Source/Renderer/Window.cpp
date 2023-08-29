@@ -26,6 +26,22 @@ void vge::Window::GetInstanceExtensions(std::vector<const char*>& outExtensions)
 	}
 }
 
+void vge::Window::WaitSizeless() const
+{
+	while (m_Width == 0 || m_Height == 0)
+	{
+		glfwWaitEvents();
+	}
+}
+
+void vge::Window::FramebufferResizeCallback(GLFWwindow* windowRaw, int32 width, int32 height)
+{
+	Window* window = reinterpret_cast<Window*>(glfwGetWindowUserPointer(windowRaw));
+	window->m_FramebufferResized = true;
+	window->m_Width = width;
+	window->m_Height = height;
+}
+
 vge::Window::Window(const char* name, const int32 width, const int32 height)
 	: m_Name(name), m_Width(width), m_Height(height)
 {}
@@ -34,7 +50,11 @@ void vge::Window::Initialize()
 {
 	glfwInit();
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+
 	m_Handle = glfwCreateWindow(m_Width, m_Height, m_Name, nullptr, nullptr);
+	glfwSetWindowUserPointer(m_Handle, this);
+	glfwSetFramebufferSizeCallback(m_Handle, Window::FramebufferResizeCallback);
 }
 
 void vge::Window::Destroy()

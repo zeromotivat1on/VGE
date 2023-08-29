@@ -817,6 +817,11 @@ void vge::Renderer::UpdateUniformBuffers(uint32 ImageIndex)
 	//vkUnmapMemory(m_Device, m_ModelDynamicUniformBuffersMemory[ImageIndex]);
 }
 
+void vge::Renderer::RecreateSwapchain()
+{
+	
+}
+
 int32 vge::Renderer::CreateTexture(const char* filename)
 {
 	TextureCreateInfo texCreateInfo = {};
