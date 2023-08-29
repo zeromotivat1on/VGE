@@ -28,7 +28,7 @@
 
 #define NOT_COPYABLE(userType)																					\
 	userType(const userType&) = delete;																			\
-	void operator=(const userType&) = delete;
+	userType& operator=(const userType&) = delete;
 
 #define NOT_MOVABLE(userType)																					\
 	userType(userType&&) = delete;																				\
