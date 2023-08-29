@@ -17,31 +17,24 @@ namespace vge
 		Mesh() = default;
 		Mesh(VkQueue transferQueue, VkCommandPool transferCmdPool, const std::vector<Vertex>& vertices, const std::vector<uint32>& indices, int32 TextureId);
 
-		size_t GetVertexCount() const { return m_VertexCount; }
-		size_t GetIndexCount() const { return m_IndexCount; }
-		int32 GetTextureId() const { return m_TextureId; }
-		
-		const VertexBuffer& GetVertexBuffer() const { return m_VertexBuffer; }
-			  VertexBuffer& GetVertexBuffer()		{ return m_VertexBuffer; }
+		inline int32 GetTextureId() const { return m_TextureId; }
+		inline size_t GetIndexCount() const { return m_IndexCount; }
+		inline size_t GetVertexCount() const { return m_VertexCount; }
+		inline ModelData GetModelData() const { return m_ModelData; }
+		inline IndexBuffer GetIndexBuffer() const { return m_IndexBuffer; }
+		inline VertexBuffer GetVertexBuffer() const{ return m_VertexBuffer; }
 
-		const IndexBuffer& GetIndexBuffer() const { return m_IndexBuffer; }
-			  IndexBuffer& GetIndexBuffer()		  { return m_IndexBuffer; }
-
-		const ModelData& GetModelData() const { return m_ModelData; }
-			  ModelData& GetModelData()		  { return m_ModelData; }
-
-		void SetModelMatrix(glm::mat4 model) { m_ModelData.ModelMatrix = model; }
+		inline void SetModelData(const ModelData& data) { m_ModelData = data; }
+		inline void SetModelMatrix(const glm::mat4& model) { m_ModelData.ModelMatrix = model; }
 
 		void Destroy();
 
 	private:
-		size_t m_VertexCount = 0;
+		int32 m_TextureId = INDEX_NONE;
 		size_t m_IndexCount = 0;
-
+		size_t m_VertexCount = 0;
 		ModelData m_ModelData = {};
-		int32 m_TextureId = -1;
-
-		VertexBuffer m_VertexBuffer = {};
 		IndexBuffer m_IndexBuffer = {};
+		VertexBuffer m_VertexBuffer = {};
 	};
 }

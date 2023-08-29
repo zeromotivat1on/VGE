@@ -254,10 +254,10 @@ static bool SuitableGpu(VkPhysicalDevice gpu, VkSurfaceKHR surface)
 }
 #pragma endregion Statics
 
-vge::VgeDevice* vge::CreateDevice(VgeWindow* window)
+vge::Device* vge::CreateDevice(Window* window)
 {
 	if (GDevice) return GDevice;
-	return (GDevice = new VgeDevice(window));
+	return (GDevice = new Device(window));
 }
 
 bool vge::DestroyDevice()
@@ -269,12 +269,12 @@ bool vge::DestroyDevice()
 	return true;
 }
 
-vge::VgeDevice::VgeDevice(VgeWindow* window) : m_Window(window)
+vge::Device::Device(Window* window) : m_Window(window)
 {
 	ENSURE(m_Window);
 }
 
-void vge::VgeDevice::Initialize()
+void vge::Device::Initialize()
 {
 	CreateInstance();
 	SetupDebugMessenger();
@@ -286,7 +286,7 @@ void vge::VgeDevice::Initialize()
 	CreateCommandPool();
 }
 
-void vge::VgeDevice::Destroy()
+void vge::Device::Destroy()
 {
 	vkDeviceWaitIdle(m_Device);
 
@@ -309,7 +309,7 @@ void vge::VgeDevice::Destroy()
 	VulkanContext::Instance = VK_NULL_HANDLE;
 }
 
-void vge::VgeDevice::CreateInstance()
+void vge::Device::CreateInstance()
 {
 	if (GEnableValidationLayers)
 	{
@@ -364,7 +364,7 @@ void vge::VgeDevice::CreateInstance()
 	VulkanContext::Instance = m_Instance;
 }
 
-void vge::VgeDevice::SetupDebugMessenger()
+void vge::Device::SetupDebugMessenger()
 {
 	if (!GEnableValidationLayers) return;
 
@@ -374,12 +374,12 @@ void vge::VgeDevice::SetupDebugMessenger()
 	VK_ENSURE_MSG(CreateDebugUtilsMessengerEXT(m_Instance, &createInfo, nullptr, &m_DebugMessenger), "Failed to set up debug messenger.");
 }
 
-void vge::VgeDevice::CreateSurface()
+void vge::Device::CreateSurface()
 {
 	m_Window->CreateSurface(m_Instance, m_Surface);
 }
 
-void vge::VgeDevice::FindGpu()
+void vge::Device::FindGpu()
 {
 	uint32 gpuCount = 0;
 	vkEnumeratePhysicalDevices(m_Instance, &gpuCount, nullptr);
@@ -416,7 +416,7 @@ void vge::VgeDevice::FindGpu()
 	ENSURE_MSG(false, "Can't find suitable GPUs.");
 }
 
-void vge::VgeDevice::CreateDevice()
+void vge::Device::CreateDevice()
 {
 	std::unordered_set<int32> queueFamilyIndices = { m_QueueIndices.GraphicsFamily, m_QueueIndices.PresentFamily };
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -458,7 +458,7 @@ void vge::VgeDevice::CreateDevice()
 	VulkanContext::Device = m_Device;
 }
 
-void vge::VgeDevice::FindQueues()
+void vge::Device::FindQueues()
 {
 	vkGetDeviceQueue(m_Device, m_QueueIndices.GraphicsFamily, 0, &m_GfxQueue);
 	VulkanContext::GfxQueue = m_GfxQueue;
@@ -467,7 +467,7 @@ void vge::VgeDevice::FindQueues()
 	VulkanContext::PresentQueue = m_PresentQueue;
 }
 
-void vge::VgeDevice::CreateCustomAllocator()
+void vge::Device::CreateCustomAllocator()
 {
 	VmaAllocatorCreateInfo vmaAllocatorCreateInfo = {};
 	vmaAllocatorCreateInfo.instance = m_Instance;
@@ -478,7 +478,7 @@ void vge::VgeDevice::CreateCustomAllocator()
 	VulkanContext::Allocator = m_Allocator;
 }
 
-void vge::VgeDevice::CreateCommandPool()
+void vge::Device::CreateCommandPool()
 {
 	VkCommandPoolCreateInfo cmdPoolCreateInfo = {};
 	cmdPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;

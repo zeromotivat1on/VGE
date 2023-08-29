@@ -7,7 +7,7 @@
 
 static inline void IncrementRenderFrame() { vge::GRenderFrame = (vge::GRenderFrame + 1) % vge::GMaxDrawFrames; }
 
-vge::Renderer* vge::CreateRenderer(VgeDevice* device)
+vge::Renderer* vge::CreateRenderer(Device* device)
 {
 	if (GRenderer) return GRenderer;
 	return (GRenderer = new Renderer(device));
@@ -22,7 +22,7 @@ bool vge::DestroyRenderer()
 	return true;
 }
 
-vge::Renderer::Renderer(VgeDevice* device) : m_Device(device)
+vge::Renderer::Renderer(Device* device) : m_Device(device)
 {
 	ENSURE(m_Device);
 }
@@ -155,11 +155,8 @@ void vge::Renderer::Destroy()
 		vkDestroyFramebuffer(m_Device->GetDevice(), framebuffer, nullptr);
 	}
 
-	vkDestroyPipeline(m_Device->GetDevice(), m_SecondPipeline, nullptr);
-	vkDestroyPipelineLayout(m_Device->GetDevice(), m_SecondPipelineLayout, nullptr);
-
-	vkDestroyPipeline(m_Device->GetDevice(), m_GfxPipeline, nullptr);
-	vkDestroyPipelineLayout(m_Device->GetDevice(), m_GfxPipelineLayout, nullptr);
+	m_SecondPipeline.Destroy();
+	m_FirstPipeline.Destroy();
 
 	vkDestroyRenderPass(m_Device->GetDevice(), m_RenderPass, nullptr);
 
@@ -482,182 +479,60 @@ void vge::Renderer::CreatePushConstantRange()
 
 void vge::Renderer::CreatePipelines()
 {
-	std::vector<char> firstVertexShaderCode = file::ReadShader("Shaders/Bin/first_vert.spv");
-	std::vector<char> firstFragmentShaderCode = file::ReadShader("Shaders/Bin/first_frag.spv");
+	// TODO: create convenient abstraction for multiple pipelines creation, e.g map with pipeline and its create data.
 
-	VkShaderModule firstVertexShaderModule = CreateShaderModule(m_Device->GetDevice(), firstVertexShaderCode);
-	VkShaderModule firstFragmentShaderModule = CreateShaderModule(m_Device->GetDevice(), firstFragmentShaderCode);
-
-	VkPipelineShaderStageCreateInfo vertexStageCreateInfo = {};
-	vertexStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	vertexStageCreateInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-	vertexStageCreateInfo.module = firstVertexShaderModule;
-	vertexStageCreateInfo.pName = "main";
-
-	VkPipelineShaderStageCreateInfo fragmentStageCreateInfo = {};
-	fragmentStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	fragmentStageCreateInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-	fragmentStageCreateInfo.module = firstFragmentShaderModule;
-	fragmentStageCreateInfo.pName = "main";
-
-	const std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages = { vertexStageCreateInfo, fragmentStageCreateInfo };
-
-	const VertexInputDescription vertexDescription = Vertex::GetDescription();
-
-	VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo = {};
-	vertexInputCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	vertexInputCreateInfo.vertexBindingDescriptionCount = static_cast<uint32>(vertexDescription.Bindings.size());
-	vertexInputCreateInfo.pVertexBindingDescriptions = vertexDescription.Bindings.data();
-	vertexInputCreateInfo.vertexAttributeDescriptionCount = static_cast<uint32>(vertexDescription.Attributes.size());
-	vertexInputCreateInfo.pVertexAttributeDescriptions = vertexDescription.Attributes.data();
-
-	VkPipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo = {};
-	inputAssemblyCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-	inputAssemblyCreateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-	inputAssemblyCreateInfo.primitiveRestartEnable = VK_FALSE;
-
-	VkViewport viewport = {};
-	viewport.x = 0.0f;
-	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(m_SwapchainExtent.width);
-	viewport.height = static_cast<float>(m_SwapchainExtent.height);
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
-
-	VkRect2D scissor = {};
-	scissor.offset = { 0, 0 };
-	scissor.extent = m_SwapchainExtent;
-
-	VkPipelineViewportStateCreateInfo viewportStateCreateInfo = {};
-	viewportStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-	viewportStateCreateInfo.viewportCount = 1;
-	viewportStateCreateInfo.pViewports = &viewport;
-	viewportStateCreateInfo.scissorCount = 1;
-	viewportStateCreateInfo.pScissors= &scissor;
-
-#pragma region DynamicStateExample
-	std::vector<VkDynamicState> dynamicStates;
-	dynamicStates.push_back(VK_DYNAMIC_STATE_VIEWPORT); // can be set from vkCmdSetViewport(cmdBuffer, pos, amount, newViewport)
-	dynamicStates.push_back(VK_DYNAMIC_STATE_SCISSOR);	// can be set from vkCmdSetScissor(cmdBuffer, pos, amount, newScissor)
-	
-	VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {};
-	dynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-	dynamicStateCreateInfo.dynamicStateCount = static_cast<uint32>(dynamicStates.size());
-	dynamicStateCreateInfo.pDynamicStates = dynamicStates.data();
-#pragma endregion DynamicStateExample
-
-	VkPipelineRasterizationStateCreateInfo rasterizerCreateInfo = {};
-	rasterizerCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-	rasterizerCreateInfo.depthClampEnable = VK_FALSE;
-	rasterizerCreateInfo.rasterizerDiscardEnable = VK_FALSE;
-	rasterizerCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
-	rasterizerCreateInfo.lineWidth = 1.0f;
-	rasterizerCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
-	rasterizerCreateInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE; // projection matrix y-axis is inverted, so use counter-clockwise
-	rasterizerCreateInfo.depthBiasEnable = VK_FALSE;
-
-	VkPipelineMultisampleStateCreateInfo multisamplingCreateInfo = {};
-	multisamplingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-	multisamplingCreateInfo.sampleShadingEnable = VK_FALSE;
-	multisamplingCreateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-
-	VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
-	colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-	colorBlendAttachment.blendEnable = VK_TRUE;
-	colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-	colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-	colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
-	colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-	colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-	colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
-
-	VkPipelineColorBlendStateCreateInfo colorBlendingCreateInfo = {};
-	colorBlendingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-	colorBlendingCreateInfo.logicOpEnable = VK_FALSE;
-	colorBlendingCreateInfo.attachmentCount = 1;
-	colorBlendingCreateInfo.pAttachments = &colorBlendAttachment;
-
-	std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = { m_UniformDescriptorSetLayout, m_SamplerDescriptorSetLayout};
-
-	VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
-	pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutCreateInfo.setLayoutCount = static_cast<uint32>(descriptorSetLayouts.size());
-	pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts.data();
-	pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
-	pipelineLayoutCreateInfo.pPushConstantRanges = &m_PushConstantRange;
-
-	VK_ENSURE_MSG(vkCreatePipelineLayout(m_Device->GetDevice(), &pipelineLayoutCreateInfo, nullptr, &m_GfxPipelineLayout), "Failed to create graphics pipeline layout.");
-
-	VkPipelineDepthStencilStateCreateInfo depthStencilCreateInfo = {};
-	depthStencilCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-	depthStencilCreateInfo.depthTestEnable = VK_TRUE;			// enable depth testing to determine fragment write
-	depthStencilCreateInfo.depthWriteEnable = VK_TRUE;			// enable writing to depth buffer (to replace old values)
-	depthStencilCreateInfo.depthCompareOp = VK_COMPARE_OP_LESS;
-	depthStencilCreateInfo.depthBoundsTestEnable = VK_FALSE;	// enable check between min and max given depth values
-	depthStencilCreateInfo.stencilTestEnable = VK_FALSE;
-
-	VkGraphicsPipelineCreateInfo pipelineCreateInfo = {};
-	pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-	pipelineCreateInfo.stageCount = static_cast<uint32>(shaderStages.size());
-	pipelineCreateInfo.pStages = shaderStages.data();
-	pipelineCreateInfo.pVertexInputState = &vertexInputCreateInfo;
-	pipelineCreateInfo.pInputAssemblyState = &inputAssemblyCreateInfo;
-	pipelineCreateInfo.pViewportState = &viewportStateCreateInfo;
-	pipelineCreateInfo.pDynamicState = nullptr;
-	pipelineCreateInfo.pRasterizationState = &rasterizerCreateInfo;
-	pipelineCreateInfo.pMultisampleState = &multisamplingCreateInfo;
-	pipelineCreateInfo.pColorBlendState = &colorBlendingCreateInfo;
-	pipelineCreateInfo.pDepthStencilState = &depthStencilCreateInfo;
-	pipelineCreateInfo.layout = m_GfxPipelineLayout;
-	pipelineCreateInfo.renderPass = m_RenderPass;
-	pipelineCreateInfo.subpass = 0;
-	pipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
-	pipelineCreateInfo.basePipelineIndex = INDEX_NONE;
-
-	VK_ENSURE_MSG(vkCreateGraphicsPipelines(m_Device->GetDevice(), nullptr, 1, &pipelineCreateInfo, nullptr, &m_GfxPipeline), "Failed to create graphics pipeline.");
-
-	vkDestroyShaderModule(m_Device->GetDevice(), firstFragmentShaderModule, nullptr);
-	vkDestroyShaderModule(m_Device->GetDevice(), firstVertexShaderModule, nullptr);
-
-	// Second pipeline creation
-	// TODO: use pipeline base instead of this.
+	// First pipeline creation. Used to render evrything.
 	{
-		std::vector<char> secondVertexShaderCode = file::ReadShader("Shaders/Bin/second_vert.spv");
-		std::vector<char> secondFragmentShaderCode = file::ReadShader("Shaders/Bin/second_frag.spv");
+		std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = { m_UniformDescriptorSetLayout, m_SamplerDescriptorSetLayout};
 
-		VkShaderModule secondVertexShaderModule = CreateShaderModule(m_Device->GetDevice(), secondVertexShaderCode);
-		VkShaderModule secondFragmentShaderModule = CreateShaderModule(m_Device->GetDevice(), secondFragmentShaderCode);
+		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
+		pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		pipelineLayoutCreateInfo.setLayoutCount = static_cast<uint32>(descriptorSetLayouts.size());
+		pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts.data();
+		pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
+		pipelineLayoutCreateInfo.pPushConstantRanges = &m_PushConstantRange;
 
-		vertexStageCreateInfo.module = secondVertexShaderModule;
-		fragmentStageCreateInfo.module = secondFragmentShaderModule;
+		VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
+		VK_ENSURE(vkCreatePipelineLayout(m_Device->GetDevice(), &pipelineLayoutCreateInfo, nullptr, &pipelineLayout));
 
-		VkPipelineShaderStageCreateInfo secondShaderStages[] = { vertexStageCreateInfo, fragmentStageCreateInfo };
+		// As this pipeline is used for rendering actual data, we need vertex input.
+		const VertexInputDescription vertexDescription = Vertex::GetDescription();
+		VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo = {};
+		vertexInputCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+		vertexInputCreateInfo.vertexBindingDescriptionCount = static_cast<uint32>(vertexDescription.Bindings.size());
+		vertexInputCreateInfo.pVertexBindingDescriptions = vertexDescription.Bindings.data();
+		vertexInputCreateInfo.vertexAttributeDescriptionCount = static_cast<uint32>(vertexDescription.Attributes.size());
+		vertexInputCreateInfo.pVertexAttributeDescriptions = vertexDescription.Attributes.data();
 
-		// No vertex data for 2 subpass.
-		vertexInputCreateInfo.vertexBindingDescriptionCount = 0;
-		vertexInputCreateInfo.pVertexBindingDescriptions = nullptr;
-		vertexInputCreateInfo.vertexAttributeDescriptionCount = 0;
-		vertexInputCreateInfo.pVertexAttributeDescriptions = nullptr;
+		PipelineCreateInfo pipelineCreateInfo = Pipeline::DefaultCreateInfo(m_SwapchainExtent);
+		pipelineCreateInfo.RenderPass = m_RenderPass;
+		pipelineCreateInfo.VertexInfo = vertexInputCreateInfo;
+		pipelineCreateInfo.PipelineLayout = pipelineLayout;
+		pipelineCreateInfo.SubpassIndex = 0;
 
-		depthStencilCreateInfo.depthWriteEnable = VK_FALSE;
+		m_FirstPipeline.Initialize("Shaders/Bin/first_vert.spv", "Shaders/Bin/first_frag.spv", pipelineCreateInfo);
+	}
 
-		VkPipelineLayoutCreateInfo secondPipelineLayoutCreateInfo = {};
-		secondPipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		secondPipelineLayoutCreateInfo.setLayoutCount = 1;
-		secondPipelineLayoutCreateInfo.pSetLayouts = &m_InputDescriptorSetLayout;
-		secondPipelineLayoutCreateInfo.pushConstantRangeCount = 0;
-		secondPipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
+	// Second pipeline creation. Used to present data from previous pipeline.
+	{
+		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
+		pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		pipelineLayoutCreateInfo.setLayoutCount = 1;
+		pipelineLayoutCreateInfo.pSetLayouts = &m_InputDescriptorSetLayout;
+		pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
+		pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
 
-		VK_ENSURE_MSG(vkCreatePipelineLayout(m_Device->GetDevice(), &secondPipelineLayoutCreateInfo, nullptr, &m_SecondPipelineLayout), "Failed to create second pipeline layout.");
+		VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
+		VK_ENSURE(vkCreatePipelineLayout(m_Device->GetDevice(), &pipelineLayoutCreateInfo, nullptr, &pipelineLayout));
 
-		pipelineCreateInfo.pStages = secondShaderStages;
-		pipelineCreateInfo.layout = m_SecondPipelineLayout;
-		pipelineCreateInfo.subpass = 1; // use second subpass
+		// This pipeline just presents data on screen, so we don't need any vertex input here.
+		PipelineCreateInfo pipelineCreateInfo = Pipeline::DefaultCreateInfo(m_SwapchainExtent);
+		pipelineCreateInfo.RenderPass = m_RenderPass;
+		pipelineCreateInfo.PipelineLayout = pipelineLayout;
+		pipelineCreateInfo.SubpassIndex = 1;
+		pipelineCreateInfo.DepthStencilInfo.depthWriteEnable = VK_FALSE;
 
-		VK_ENSURE_MSG(vkCreateGraphicsPipelines(m_Device->GetDevice(), nullptr, 1, &pipelineCreateInfo, nullptr, &m_SecondPipeline), "Failed to create second pipeline.");
-
-		vkDestroyShaderModule(m_Device->GetDevice(), secondFragmentShaderModule, nullptr);
-		vkDestroyShaderModule(m_Device->GetDevice(), secondVertexShaderModule, nullptr);
+		m_SecondPipeline.Initialize("Shaders/Bin/second_vert.spv", "Shaders/Bin/second_frag.spv", pipelineCreateInfo);
 	}
 }
 
@@ -935,13 +810,14 @@ void vge::Renderer::RecordCommandBuffers(uint32 ImageIndex)
 	vkCmdBeginRenderPass(currentCmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 	{
-		vkCmdBindPipeline(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GfxPipeline);
+		vkCmdBindPipeline(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_FirstPipeline.GetHandle());
 
 		for (size_t ModelIndex = 0; ModelIndex < m_Models.size(); ++ModelIndex)
 		{
 			Model& model = m_Models[ModelIndex];
 
-			vkCmdPushConstants(currentCmdBuffer, m_GfxPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ModelData), &model.GetModelData());
+			const ModelData& modelData = model.GetModelData();
+			vkCmdPushConstants(currentCmdBuffer, m_FirstPipeline.GetLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ModelData), &modelData);
 
 			for (size_t MeshIndex = 0; MeshIndex < model.GetMeshCount(); ++MeshIndex)
 			{
@@ -961,7 +837,7 @@ void vge::Renderer::RecordCommandBuffers(uint32 ImageIndex)
 				vkCmdBindIndexBuffer(currentCmdBuffer, mesh->GetIndexBuffer().Get().Handle, 0, VK_INDEX_TYPE_UINT32);
 
 				//const uint32 dynamicOffset = static_cast<uint32>(m_ModelUniformAlignment * MeshIndex);
-				vkCmdBindDescriptorSets(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GfxPipelineLayout, 
+				vkCmdBindDescriptorSets(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_FirstPipeline.GetLayout(),
 					0, static_cast<uint32>(currentDescriptorSets.size()), currentDescriptorSets.data(), 0, nullptr);
 
 				vkCmdDrawIndexed(currentCmdBuffer, static_cast<uint32>(mesh->GetIndexCount()), 1, 0, 0, 0);
@@ -972,9 +848,9 @@ void vge::Renderer::RecordCommandBuffers(uint32 ImageIndex)
 
 		vkCmdNextSubpass(currentCmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
 
-		vkCmdBindPipeline(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_SecondPipeline);
+		vkCmdBindPipeline(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_SecondPipeline.GetHandle());
 
-		vkCmdBindDescriptorSets(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_SecondPipelineLayout,
+		vkCmdBindDescriptorSets(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_SecondPipeline.GetLayout(),
 			0, 1, &m_InputDescriptorSets[ImageIndex], 0, nullptr);
 
 		vkCmdDraw(currentCmdBuffer, 3, 1, 0, 0); // fill screen with triangle

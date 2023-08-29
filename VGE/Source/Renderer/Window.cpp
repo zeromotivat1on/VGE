@@ -1,9 +1,9 @@
 #include "Window.h"
 
-vge::VgeWindow* vge::CreateWindow(const char* name, const int32 width, const int32 height)
+vge::Window* vge::CreateWindow(const char* name, const int32 width, const int32 height)
 {
 	if (GWindow) return GWindow;
-	return (GWindow = new VgeWindow(name, width, height));
+	return (GWindow = new Window(name, width, height));
 }
 
 bool vge::DestroyWindow()
@@ -15,12 +15,7 @@ bool vge::DestroyWindow()
 	return true;
 }
 
-void vge::VgeWindow::GetFramebufferSize(int32& outw, int32& outh) const
-{
-	glfwGetFramebufferSize(m_Handle, &outw, &outh);
-}
-
-void vge::VgeWindow::GetInstanceExtensions(std::vector<const char*>& outExtensions) const
+void vge::Window::GetInstanceExtensions(std::vector<const char*>& outExtensions) const
 {
 	uint32 glfwExtensionCount = 0;
 	const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
@@ -31,23 +26,18 @@ void vge::VgeWindow::GetInstanceExtensions(std::vector<const char*>& outExtensio
 	}
 }
 
-void vge::VgeWindow::CreateSurface(VkInstance instance, VkSurfaceKHR& outSurface) const
-{
-	VK_ENSURE(glfwCreateWindowSurface(instance, m_Handle, nullptr, &outSurface));
-}
-
-vge::VgeWindow::VgeWindow(const char* name, const int32 width, const int32 height)
+vge::Window::Window(const char* name, const int32 width, const int32 height)
 	: m_Name(name), m_Width(width), m_Height(height)
 {}
 
-void vge::VgeWindow::Initialize()
+void vge::Window::Initialize()
 {
 	glfwInit();
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	m_Handle = glfwCreateWindow(m_Width, m_Height, m_Name, nullptr, nullptr);
 }
 
-void vge::VgeWindow::Destroy()
+void vge::Window::Destroy()
 {
 	glfwDestroyWindow(m_Handle);
 	m_Handle = nullptr;

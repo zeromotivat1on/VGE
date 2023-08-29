@@ -147,6 +147,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Renderer\Pipeline.cpp" />
     <ClCompile Include="Source\Renderer\Device.cpp" />
     <ClCompile Include="Source\Logging.cpp" />
     <ClCompile Include="Source\Renderer\Model.cpp" />
@@ -164,6 +165,7 @@
     <ClCompile Include="Source\Renderer\Texture.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Renderer\Pipeline.h" />
     <ClInclude Include="Source\Memory.h" />
     <ClInclude Include="Source\Renderer\Device.h" />
     <ClInclude Include="Source\Renderer\Model.h" />

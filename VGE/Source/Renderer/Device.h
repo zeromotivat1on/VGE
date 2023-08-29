@@ -4,9 +4,9 @@
 
 namespace vge
 {
-	class VgeWindow;
+	class Window;
 
-	inline class VgeDevice* GDevice = nullptr;
+	inline class Device* GDevice = nullptr;
 
 	struct QueueFamilyIndices
 	{
@@ -31,13 +31,13 @@ namespace vge
 		}
 	};
 
-	class VgeDevice
+	class Device
 	{
 	public:
-		VgeDevice() = default;
-		VgeDevice(VgeWindow* window);
-		NOT_COPYABLE(VgeDevice);
-		NOT_MOVABLE(VgeDevice);
+		Device() = default;
+		Device(Window* window);
+		NOT_COPYABLE(Device);
+		NOT_MOVABLE(Device);
 
 		void Initialize();
 		void Destroy();
@@ -52,7 +52,7 @@ namespace vge
 		inline SwapchainSupportDetails GetSwapchainDetails() const { return m_SwapchainSupportDetails; }
 
 	private:
-		VgeWindow* m_Window = nullptr;
+		Window* m_Window = nullptr;
 		VkInstance m_Instance = VK_NULL_HANDLE;
 		VkPhysicalDevice m_Gpu = VK_NULL_HANDLE;
 		VkDevice m_Device = VK_NULL_HANDLE;
@@ -78,6 +78,6 @@ namespace vge
 		void CreateCommandPool();
 	};
 
-	VgeDevice* CreateDevice(VgeWindow* window);
+	Device* CreateDevice(Window* window);
 	bool DestroyDevice();
 }

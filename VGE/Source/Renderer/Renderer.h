@@ -3,11 +3,12 @@
 #include "Common.h"
 #include "Model.h"
 #include "Texture.h"
+#include "Pipeline.h"
 
 namespace vge
 {
-	class VgeWindow;
-	class VgeDevice;
+	class Window;
+	class Device;
 
 	inline class Renderer* GRenderer = nullptr;
 	
@@ -25,7 +26,7 @@ namespace vge
 	class Renderer final
 	{
 	public:
-		Renderer(VgeDevice* device);
+		Renderer(Device* device);
 		~Renderer() = default;
 
 		void Initialize();
@@ -50,7 +51,7 @@ namespace vge
 
 		UboViewProjection m_UboViewProjection = {};
 
-		VgeDevice* m_Device = nullptr;
+		Device* m_Device = nullptr;
 
 		VkSwapchainKHR m_Swapchain = VK_NULL_HANDLE;
 		VkFormat m_SwapchainImageFormat = {};
@@ -100,11 +101,12 @@ namespace vge
 
 		VkRenderPass m_RenderPass = VK_NULL_HANDLE;
 
-		VkPipeline m_GfxPipeline = VK_NULL_HANDLE;
-		VkPipelineLayout m_GfxPipelineLayout = VK_NULL_HANDLE;
+		Pipeline m_FirstPipeline = {};
+		Pipeline m_SecondPipeline = {};
+		//VkPipelineLayout m_GfxPipelineLayout = VK_NULL_HANDLE;
 
-		VkPipeline m_SecondPipeline = VK_NULL_HANDLE;
-		VkPipelineLayout m_SecondPipelineLayout = VK_NULL_HANDLE;
+		/*VkPipeline m_SecondPipeline = VK_NULL_HANDLE;
+		VkPipelineLayout m_SecondPipelineLayout = VK_NULL_HANDLE;*/
 
 	private:
 		void CreateSwapchain();
@@ -127,6 +129,6 @@ namespace vge
 		void UpdateUniformBuffers(uint32 ImageIndex);
 	};
 
-	Renderer* CreateRenderer(VgeDevice* device);
+	Renderer* CreateRenderer(Device* device);
 	bool DestroyRenderer();
 }

@@ -4,23 +4,22 @@
 
 namespace vge
 {
-	inline class VgeWindow* GWindow = nullptr;
+	inline class Window* GWindow = nullptr;
 
-	class VgeWindow
+	class Window
 	{
 	public:
-		VgeWindow(const char* name, const int32 width, const int32 height);
+		Window(const char* name, const int32 width, const int32 height);
 
 		void Initialize();
 		void Destroy();
 
 		inline void PollEvents() const { glfwPollEvents(); }
 		inline bool ShouldClose() const { return glfwWindowShouldClose(m_Handle); }
-
-		void GetFramebufferSize(int32& outw, int32& outh) const;
+		inline void GetFramebufferSize(int32& outw, int32& outh) const { glfwGetFramebufferSize(m_Handle, &outw, &outh); }
+		inline void CreateSurface(VkInstance instance, VkSurfaceKHR& outSurface) const { VK_ENSURE(glfwCreateWindowSurface(instance, m_Handle, nullptr, &outSurface)); }
 
 		void GetInstanceExtensions(std::vector<const char*>& outExtensions) const;
-		void CreateSurface(VkInstance instance, VkSurfaceKHR& outSurface) const;
 
 	public:
 		GLFWwindow* m_Handle = nullptr;
@@ -29,6 +28,6 @@ namespace vge
 		const int32 m_Height = 0;
 	};
 
-	VgeWindow* CreateWindow(const char* name, const int32 width, const int32 height);
+	Window* CreateWindow(const char* name, const int32 width, const int32 height);
 	bool DestroyWindow();
 }

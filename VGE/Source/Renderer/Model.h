@@ -20,17 +20,15 @@ namespace vge
 		Model() = default;
 
 	public:
-		int32 GetId() const { return m_Id; }
-		const char* GetFilename() const { return m_Filename; }
-		size_t GetMeshCount() const { return m_Meshes.size(); }
+		inline int32 GetId() const { return m_Id; }
+		inline size_t GetMeshCount() const { return m_Meshes.size(); }
+		inline ModelData GetModelData() const { return m_ModelData; }
+		inline const char* GetFilename() const { return m_Filename; }
 
-		const Mesh* GetMesh(size_t index) const { return index < GetMeshCount() ? &m_Meshes[index] : nullptr; }
-			  Mesh* GetMesh(size_t index)		{ return index < GetMeshCount() ? &m_Meshes[index] : nullptr; }
+		inline const Mesh* GetMesh(size_t index) const { return index < GetMeshCount() ? &m_Meshes[index] : nullptr; }
+		inline 		 Mesh* GetMesh(size_t index)	   { return index < GetMeshCount() ? &m_Meshes[index] : nullptr; }
 
-		const ModelData& GetModelData() const { return m_ModelData; }
-			  ModelData& GetModelData()		  { return m_ModelData; }
-
-		void SetModelMatrix(const glm::mat4& modelMatrix) { m_ModelData.ModelMatrix = modelMatrix; }
+		inline void SetModelMatrix(const glm::mat4& modelMatrix) { m_ModelData.ModelMatrix = modelMatrix; }
 
 		void Destroy();
 
@@ -41,8 +39,8 @@ namespace vge
 
 	private:
 		int32 m_Id = INDEX_NONE;
-		const char* m_Filename = nullptr;
 		ModelData m_ModelData = {};
+		const char* m_Filename = nullptr;
 		std::vector<Mesh> m_Meshes = {};
 	};
 }
