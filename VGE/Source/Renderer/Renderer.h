@@ -55,7 +55,7 @@ namespace vge
 		UboViewProjection m_UboViewProjection = {};
 
 		Device* m_Device = nullptr;
-		Swapchain* m_Swapchain = nullptr;
+		std::unique_ptr<Swapchain> m_Swapchain = nullptr;
 
 		VkSampler m_TextureSampler = VK_NULL_HANDLE;
 
@@ -68,11 +68,11 @@ namespace vge
 		// TODO: create separate structure for subpass data (images, view, memory, format).
 
 		std::vector<VmaImage> m_ColorBufferImages = {};
-		std::vector <VkImageView> m_ColorBufferImageViews = {};
+		std::vector<VkImageView> m_ColorBufferImageViews = {};
 		VkFormat m_ColorFormat = VK_FORMAT_UNDEFINED;
 
-		std::vector <VmaImage> m_DepthBufferImages = {};
-		std::vector <VkImageView> m_DepthBufferImageViews = {};
+		std::vector<VmaImage> m_DepthBufferImages = {};
+		std::vector<VkImageView> m_DepthBufferImageViews = {};
 		VkFormat m_DepthFormat = VK_FORMAT_UNDEFINED;
 
 		VkDescriptorPool m_UniformDescriptorPool = VK_NULL_HANDLE;	// uniform data

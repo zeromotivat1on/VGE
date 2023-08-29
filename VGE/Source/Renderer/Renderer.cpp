@@ -157,13 +157,11 @@ void vge::Renderer::Destroy()
 	vkDestroyRenderPass(m_Device->GetHandle(), m_RenderPass, nullptr);
 
 	m_Swapchain->Destroy();
-	delete m_Swapchain;
-	m_Swapchain = nullptr;
 }
 
 void vge::Renderer::CreateSwapchain()
 {
-	m_Swapchain = new Swapchain(*m_Device);
+	m_Swapchain = std::make_unique<Swapchain>(*m_Device);
 	m_Swapchain->Initialize();
 }
 
@@ -730,7 +728,7 @@ void vge::Renderer::RecordCommandBuffers(uint32 ImageIndex)
 	vkCmdBeginRenderPass(cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 	{
-		vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_FirstPipeline.GetHandle());
+		m_FirstPipeline.Bind(cmdBuffer);
 
 		for (size_t ModelIndex = 0; ModelIndex < m_Models.size(); ++ModelIndex)
 		{
@@ -768,7 +766,7 @@ void vge::Renderer::RecordCommandBuffers(uint32 ImageIndex)
 
 		vkCmdNextSubpass(cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
 
-		vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_SecondPipeline.GetHandle());
+		m_SecondPipeline.Bind(cmdBuffer);
 
 		vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_SecondPipeline.GetLayout(),
 			0, 1, &m_InputDescriptorSets[ImageIndex], 0, nullptr);

@@ -35,6 +35,8 @@ namespace vge
 
 		inline VkPipeline GetHandle() const { return m_Handle; }
 		inline VkPipelineLayout GetLayout() const { return m_Layout; }
+		
+		inline void Bind(VkCommandBuffer cmdBuffer, VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS) { vkCmdBindPipeline(cmdBuffer, bindPoint, m_Handle); }
 
 	private:
 		VkPipeline m_Handle = VK_NULL_HANDLE;
