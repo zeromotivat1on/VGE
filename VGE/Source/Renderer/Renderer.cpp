@@ -157,6 +157,8 @@ void vge::Renderer::Destroy()
 	vkDestroyRenderPass(m_Device->GetHandle(), m_RenderPass, nullptr);
 
 	m_Swapchain->Destroy();
+	delete m_Swapchain;
+	m_Swapchain = nullptr;
 }
 
 void vge::Renderer::CreateSwapchain()
