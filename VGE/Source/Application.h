@@ -24,7 +24,9 @@ namespace vge
 	{
 	public:
 		Application(const ApplicationSpecs& specs);
+		NOT_COPYABLE(Application);
 
+	public:
 		void Initialize();
 		void Close();
 

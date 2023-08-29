@@ -16,6 +16,7 @@ namespace vge
 	public:
 		Swapchain() = default;
 		Swapchain(Device& device);
+		NOT_COPYABLE(Swapchain);
 
 	public:
 		void Initialize();

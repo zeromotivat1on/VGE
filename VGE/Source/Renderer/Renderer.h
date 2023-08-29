@@ -28,8 +28,10 @@ namespace vge
 	{
 	public:
 		Renderer(Device* device);
+		NOT_COPYABLE(Renderer);
 		~Renderer() = default;
 
+	public:
 		void Initialize();
 		void Draw();
 		void Destroy();

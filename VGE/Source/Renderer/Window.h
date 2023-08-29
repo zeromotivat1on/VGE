@@ -10,7 +10,9 @@ namespace vge
 	{
 	public:
 		Window(const char* name, const int32 width, const int32 height);
+		NOT_COPYABLE(Window);
 
+	public:
 		void Initialize();
 		void Destroy();
 
