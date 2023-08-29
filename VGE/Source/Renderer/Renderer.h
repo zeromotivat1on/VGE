@@ -9,6 +9,7 @@ namespace vge
 {
 	class Window;
 	class Device;
+	class Swapchain;
 
 	inline class Renderer* GRenderer = nullptr;
 	
@@ -52,10 +53,7 @@ namespace vge
 		UboViewProjection m_UboViewProjection = {};
 
 		Device* m_Device = nullptr;
-
-		VkSwapchainKHR m_Swapchain = VK_NULL_HANDLE;
-		VkFormat m_SwapchainImageFormat = {};
-		VkExtent2D m_SwapchainExtent = {};
+		Swapchain* m_Swapchain = nullptr;
 
 		VkSampler m_TextureSampler = VK_NULL_HANDLE;
 
@@ -63,8 +61,6 @@ namespace vge
 		std::vector<VkSemaphore> m_RenderFinishedSemas = {};
 		std::vector<VkFence> m_DrawFences = {};
 
-		std::vector<SwapchainImage> m_SwapchainImages = {};
-		std::vector<VkFramebuffer> m_SwapchainFramebuffers = {};
 		std::vector<VkCommandBuffer> m_CommandBuffers = {};
 
 		// TODO: create separate structure for subpass data (images, view, memory, format).
@@ -103,10 +99,6 @@ namespace vge
 
 		Pipeline m_FirstPipeline = {};
 		Pipeline m_SecondPipeline = {};
-		//VkPipelineLayout m_GfxPipelineLayout = VK_NULL_HANDLE;
-
-		/*VkPipeline m_SecondPipeline = VK_NULL_HANDLE;
-		VkPipelineLayout m_SecondPipelineLayout = VK_NULL_HANDLE;*/
 
 	private:
 		void CreateSwapchain();

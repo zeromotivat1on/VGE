@@ -56,20 +56,11 @@ namespace vge
 			return description;
 		}
 	};
-
-	struct SwapchainImage
-	{
-		VkImage Image = VK_NULL_HANDLE;
-		VkImageView View = VK_NULL_HANDLE;
-	};
 	
 	const char* GpuTypeToString(VkPhysicalDeviceType gpuType);
 
 	uint32 FindMemoryTypeIndex(VkPhysicalDevice gpu, uint32 allowedTypes, VkMemoryPropertyFlags flags);
 
-	VkSurfaceFormatKHR GetBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats);
-	VkPresentModeKHR GetBestPresentMode(const std::vector<VkPresentModeKHR>& modes);
-	VkExtent2D GetBestSwapchainExtent(VkSurfaceCapabilitiesKHR surfaceCapabilities);
 	VkFormat GetBestImageFormat(const std::vector<VkFormat>& formats, VkImageTiling tiling, VkFormatFeatureFlags features);
 
 	void CreateImage(VmaAllocator allocator, VkExtent2D extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VmaMemoryUsage memAllocUsage, VmaImage* outImage);

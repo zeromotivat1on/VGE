@@ -43,19 +43,20 @@ namespace vge
 		void Destroy();
 
 		inline VkCommandPool GetCommandPool() const { return m_CommandPool; }
-		inline VkDevice GetDevice() const { return m_Device; }
+		inline VkDevice GetHandle() const { return m_Handle; }
+		inline VkPhysicalDevice GetGpu() const { return m_Gpu; }
 		inline VkSurfaceKHR GetSurface() const { return m_Surface; }
 		inline VmaAllocator GetAllocator() const { return m_Allocator; }
 		inline VkQueue GetGfxQueue() const { return m_GfxQueue; }
 		inline VkQueue GetPresentQueue() const { return m_PresentQueue; }
 		inline QueueFamilyIndices GetQueueIndices() const { return m_QueueIndices; }
-		inline SwapchainSupportDetails GetSwapchainDetails() const { return m_SwapchainSupportDetails; }
+		inline SwapchainSupportDetails GetSwapchainSupportDetails() const { return m_SwapchainSupportDetails; }
 
 	private:
 		Window* m_Window = nullptr;
 		VkInstance m_Instance = VK_NULL_HANDLE;
 		VkPhysicalDevice m_Gpu = VK_NULL_HANDLE;
-		VkDevice m_Device = VK_NULL_HANDLE;
+		VkDevice m_Handle = VK_NULL_HANDLE;
 		VkSurfaceKHR m_Surface = VK_NULL_HANDLE;
 		VmaAllocator m_Allocator = VK_NULL_HANDLE;
 		VkCommandPool m_CommandPool = VK_NULL_HANDLE;

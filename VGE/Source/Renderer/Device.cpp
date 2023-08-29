@@ -178,7 +178,7 @@ static vge::QueueFamilyIndices GetQueueFamilies(VkPhysicalDevice gpu, VkSurfaceK
 	return indices;
 }
 
-static vge::SwapchainSupportDetails GetSwapchainSupportDetails(VkPhysicalDevice gpu, VkSurfaceKHR surface)
+static vge::SwapchainSupportDetails GetSwapchainSupportDetailsInternal(VkPhysicalDevice gpu, VkSurfaceKHR surface)
 {
 	vge::SwapchainSupportDetails details;
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(gpu, surface, &details.SurfaceCapabilities);
@@ -248,7 +248,7 @@ static bool SuitableGpu(VkPhysicalDevice gpu, VkSurfaceKHR surface)
 	std::vector<const char*> deviceExtensions;
 	deviceExtensions.assign(vge::GDeviceExtensions, vge::GDeviceExtensions + C_ARRAY_NUM(vge::GDeviceExtensions));
 
-	vge::SwapchainSupportDetails swapchainDetails = GetSwapchainSupportDetails(gpu, surface);
+	vge::SwapchainSupportDetails swapchainDetails = GetSwapchainSupportDetailsInternal(gpu, surface);
 
 	return indices.IsValid() && SupportDeviceExtensions(gpu, deviceExtensions) && swapchainDetails.IsValid() && gpuFeatures.samplerAnisotropy;
 }
@@ -288,14 +288,14 @@ void vge::Device::Initialize()
 
 void vge::Device::Destroy()
 {
-	vkDeviceWaitIdle(m_Device);
+	vkDeviceWaitIdle(m_Handle);
 
-	vkDestroyCommandPool(m_Device, m_CommandPool, nullptr);
+	vkDestroyCommandPool(m_Handle, m_CommandPool, nullptr);
 	
 	vmaDestroyAllocator(m_Allocator);
 	VulkanContext::Allocator = VK_NULL_HANDLE;
 
-	vkDestroyDevice(m_Device, nullptr);
+	vkDestroyDevice(m_Handle, nullptr);
 	VulkanContext::Device = VK_NULL_HANDLE;
 
 	vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
@@ -360,7 +360,7 @@ void vge::Device::CreateInstance()
 		createInfo.ppEnabledLayerNames = nullptr;
 	}
 
-	VK_ENSURE_MSG(vkCreateInstance(&createInfo, nullptr, &m_Instance), "Failed to create Vulkan instance.");
+	VK_ENSURE(vkCreateInstance(&createInfo, nullptr, &m_Instance));
 	VulkanContext::Instance = m_Instance;
 }
 
@@ -396,7 +396,7 @@ void vge::Device::FindGpu()
 			m_Gpu = gpu;
 			VulkanContext::Gpu = m_Gpu;
 			m_QueueIndices = GetQueueFamilies(m_Gpu, m_Surface);
-			m_SwapchainSupportDetails = GetSwapchainSupportDetails(m_Gpu, m_Surface);
+			m_SwapchainSupportDetails = GetSwapchainSupportDetailsInternal(m_Gpu, m_Surface);
 
 			VkPhysicalDeviceProperties gpuProps;
 			vkGetPhysicalDeviceProperties(m_Gpu, &gpuProps);
@@ -454,16 +454,16 @@ void vge::Device::CreateDevice()
 		LOG(Log, "Device extensions enabled: %s", extensionsString.c_str());
 	}
 
-	VK_ENSURE_MSG(vkCreateDevice(m_Gpu, &deviceCreateInfo, nullptr, &m_Device), "Failed to create Vulkan device.");
-	VulkanContext::Device = m_Device;
+	VK_ENSURE(vkCreateDevice(m_Gpu, &deviceCreateInfo, nullptr, &m_Handle));
+	VulkanContext::Device = m_Handle;
 }
 
 void vge::Device::FindQueues()
 {
-	vkGetDeviceQueue(m_Device, m_QueueIndices.GraphicsFamily, 0, &m_GfxQueue);
+	vkGetDeviceQueue(m_Handle, m_QueueIndices.GraphicsFamily, 0, &m_GfxQueue);
 	VulkanContext::GfxQueue = m_GfxQueue;
 
-	vkGetDeviceQueue(m_Device, m_QueueIndices.PresentFamily, 0, &m_PresentQueue);
+	vkGetDeviceQueue(m_Handle, m_QueueIndices.PresentFamily, 0, &m_PresentQueue);
 	VulkanContext::PresentQueue = m_PresentQueue;
 }
 
@@ -472,9 +472,9 @@ void vge::Device::CreateCustomAllocator()
 	VmaAllocatorCreateInfo vmaAllocatorCreateInfo = {};
 	vmaAllocatorCreateInfo.instance = m_Instance;
 	vmaAllocatorCreateInfo.physicalDevice = m_Gpu;
-	vmaAllocatorCreateInfo.device = m_Device;
+	vmaAllocatorCreateInfo.device = m_Handle;
 
-	VK_ENSURE_MSG(vmaCreateAllocator(&vmaAllocatorCreateInfo, &m_Allocator), "Failed to create custom allocator.");
+	VK_ENSURE(vmaCreateAllocator(&vmaAllocatorCreateInfo, &m_Allocator));
 	VulkanContext::Allocator = m_Allocator;
 }
 
@@ -485,5 +485,5 @@ void vge::Device::CreateCommandPool()
 	cmdPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT; // enable cmd buffers reset (re-record)
 	cmdPoolCreateInfo.queueFamilyIndex = m_QueueIndices.GraphicsFamily;
 
-	VK_ENSURE_MSG(vkCreateCommandPool(m_Device, &cmdPoolCreateInfo, nullptr, &m_CommandPool), "Failed to create graphics command pool.");
+	VK_ENSURE(vkCreateCommandPool(m_Handle, &cmdPoolCreateInfo, nullptr, &m_CommandPool));
 }

@@ -43,61 +43,6 @@ uint32 vge::FindMemoryTypeIndex(VkPhysicalDevice gpu, uint32 allowedTypes, VkMem
 	return 0;
 }
 
-VkSurfaceFormatKHR vge::GetBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats)
-{
-	static constexpr VkSurfaceFormatKHR defaultFormat = { VK_FORMAT_R8G8B8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
-
-	if (formats.size() == 1 && formats[0].format == VK_FORMAT_UNDEFINED)
-	{
-		LOG(Warning, "Given format is undefined, returning default surface format.");
-		return defaultFormat;
-	}
-
-	for (const VkSurfaceFormatKHR& format : formats)
-	{
-		if ((format.format == VK_FORMAT_R8G8B8A8_UNORM || format.format == VK_FORMAT_B8G8R8A8_UNORM) &&
-			format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
-		{
-			return format;
-		}
-	}
-
-	return formats[0];
-}
-
-VkPresentModeKHR vge::GetBestPresentMode(const std::vector<VkPresentModeKHR>& modes)
-{
-	static constexpr VkPresentModeKHR desiredMode = VK_PRESENT_MODE_MAILBOX_KHR;
-	static constexpr VkPresentModeKHR defaultMode = VK_PRESENT_MODE_FIFO_KHR;
-
-	for (const VkPresentModeKHR& mode : modes)
-	{
-		if (mode == desiredMode)
-		{
-			return desiredMode;
-		}
-	}
-
-	return defaultMode;
-}
-
-VkExtent2D vge::GetBestSwapchainExtent(VkSurfaceCapabilitiesKHR surfaceCapabilities)
-{
-	if (surfaceCapabilities.currentExtent.width != UINT32_MAX)
-	{
-		return surfaceCapabilities.currentExtent;
-	}
-
-	int32 width, height;
-	GWindow->GetFramebufferSize(width, height);
-
-	VkExtent2D newExtent = {};
-	newExtent.width = std::clamp(static_cast<uint32>(width), surfaceCapabilities.minImageExtent.width, surfaceCapabilities.maxImageExtent.width);
-	newExtent.height = std::clamp(static_cast<uint32>(height), surfaceCapabilities.minImageExtent.height, surfaceCapabilities.maxImageExtent.height);
-
-	return newExtent;
-}
-
 VkFormat vge::GetBestImageFormat(const std::vector<VkFormat>& formats, VkImageTiling tiling, VkFormatFeatureFlags features)
 {
 	for (const VkFormat& format : formats)

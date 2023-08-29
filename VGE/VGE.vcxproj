@@ -163,6 +163,7 @@
     <ClCompile Include="Source\Renderer\VulkanUtils.cpp" />
     <ClCompile Include="Source\Renderer\Window.cpp" />
     <ClCompile Include="Source\Renderer\Texture.cpp" />
+    <ClCompile Include="Source\Renderer\Swapchain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Renderer\Pipeline.h" />
@@ -185,6 +186,7 @@
     <ClInclude Include="Source\Renderer\VulkanUtils.h" />
     <ClInclude Include="Source\Renderer\Window.h" />
     <ClInclude Include="Source\Renderer\Texture.h" />
+    <ClInclude Include="Source\Renderer\Swapchain.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="compile_shaders.bat" />

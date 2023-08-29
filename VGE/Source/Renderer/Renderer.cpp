@@ -1,6 +1,7 @@
 #include "Renderer.h"
 #include "Application.h"
 #include "Device.h"
+#include "Swapchain.h"
 #include "File.h"
 #include "Buffer.h"
 #include "Shader.h"
@@ -48,7 +49,7 @@ void vge::Renderer::Initialize()
 	// Default texture (plain white square 64x64).
 	CreateTexture("Textures/plain.png");
 
-	const float aspectRatio = static_cast<float>(m_SwapchainExtent.width) / static_cast<float>(m_SwapchainExtent.width);
+	const float aspectRatio = static_cast<float>(m_Swapchain->GetExtentWidth()) / static_cast<float>(m_Swapchain->GetExtentHeight());
 	m_UboViewProjection.Projection = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 10000.0f);
 	m_UboViewProjection.View = glm::lookAt(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
@@ -57,15 +58,14 @@ void vge::Renderer::Initialize()
 
 void vge::Renderer::Draw()
 {
-	VkFence& drawFence = m_DrawFences[GRenderFrame];
-	VkSemaphore& imageAvailableSemaphore = m_ImageAvailableSemas[GRenderFrame];
-	VkSemaphore& renderFinishedSemaphore = m_RenderFinishedSemas[GRenderFrame];
+	const VkFence& drawFence = m_DrawFences[GRenderFrame];
+	const VkSemaphore& imageAvailableSemaphore = m_ImageAvailableSemas[GRenderFrame];
+	const VkSemaphore& renderFinishedSemaphore = m_RenderFinishedSemas[GRenderFrame];
 
-	vkWaitForFences(m_Device->GetDevice(), 1, &drawFence, VK_TRUE, UINT64_MAX);	// wait till open
-	vkResetFences(m_Device->GetDevice(), 1, &drawFence);						// close after enter
+	vkWaitForFences(m_Device->GetHandle(), 1, &drawFence, VK_TRUE, UINT64_MAX);	// wait till open
+	vkResetFences(m_Device->GetHandle(), 1, &drawFence);						// close after enter
 
-	uint32 AcquiredImageIndex = 0;
-	vkAcquireNextImageKHR(m_Device->GetDevice(), m_Swapchain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &AcquiredImageIndex);
+	const uint32 AcquiredImageIndex = m_Swapchain->AcquireNextImage(imageAvailableSemaphore);
 
 	RecordCommandBuffers(AcquiredImageIndex);
 	UpdateUniformBuffers(AcquiredImageIndex);
@@ -85,31 +85,32 @@ void vge::Renderer::Draw()
 	submitInfo.pSignalSemaphores = &renderFinishedSemaphore;
 
 	// Open fence after successful render.
-	VK_ENSURE_MSG(vkQueueSubmit(m_Device->GetGfxQueue(), 1, &submitInfo, drawFence), "Failed to submit info to graphics queue.");
+	VK_ENSURE(vkQueueSubmit(m_Device->GetGfxQueue(), 1, &submitInfo, drawFence));
 
+	VkSwapchainKHR swapchain = m_Swapchain->GetHandle();
 	VkPresentInfoKHR presentInfo = {};
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 	presentInfo.waitSemaphoreCount = 1;
 	presentInfo.pWaitSemaphores = &renderFinishedSemaphore;
 	presentInfo.swapchainCount = 1;
-	presentInfo.pSwapchains = &m_Swapchain;
+	presentInfo.pSwapchains = &swapchain;
 	presentInfo.pImageIndices = &AcquiredImageIndex;
 
-	VK_ENSURE_MSG(vkQueuePresentKHR(m_Device->GetPresentQueue(), &presentInfo), "Failed to present info to present queue.");
+	VK_ENSURE(vkQueuePresentKHR(m_Device->GetPresentQueue(), &presentInfo));
 
 	IncrementRenderFrame();
 }
 
 void vge::Renderer::Destroy()
 {
-	vkDeviceWaitIdle(m_Device->GetDevice());
+	vkDeviceWaitIdle(m_Device->GetHandle());
 
 	for (size_t i = 0; i < m_Models.size(); ++i)
 	{
 		m_Models[i].Destroy();
 	}
 
-	vkDestroySampler(m_Device->GetDevice(), m_TextureSampler, nullptr);
+	vkDestroySampler(m_Device->GetHandle(), m_TextureSampler, nullptr);
 
 	for (size_t i = 0; i < m_Textures.size(); ++i)
 	{
@@ -118,25 +119,25 @@ void vge::Renderer::Destroy()
 
 	//_aligned_free(m_ModelTransferSpace);
 
-	for (size_t i = 0; i < m_SwapchainImages.size(); ++i)
+	for (size_t i = 0; i < m_Swapchain->GetImageCount(); ++i)
 	{
-		vkDestroyImageView(m_Device->GetDevice(), m_ColorBufferImageViews[i], nullptr);
+		vkDestroyImageView(m_Device->GetHandle(), m_ColorBufferImageViews[i], nullptr);
 		m_ColorBufferImages[i].Destroy();
 
-		vkDestroyImageView(m_Device->GetDevice(), m_DepthBufferImageViews[i], nullptr);
+		vkDestroyImageView(m_Device->GetHandle(), m_DepthBufferImageViews[i], nullptr);
 		m_DepthBufferImages[i].Destroy();
 	}
 
-	vkDestroyDescriptorPool(m_Device->GetDevice(), m_InputDescriptorPool, nullptr);
-	vkDestroyDescriptorSetLayout(m_Device->GetDevice(), m_InputDescriptorSetLayout, nullptr);
+	vkDestroyDescriptorPool(m_Device->GetHandle(), m_InputDescriptorPool, nullptr);
+	vkDestroyDescriptorSetLayout(m_Device->GetHandle(), m_InputDescriptorSetLayout, nullptr);
 
-	vkDestroyDescriptorPool(m_Device->GetDevice(), m_SamplerDescriptorPool, nullptr);
-	vkDestroyDescriptorSetLayout(m_Device->GetDevice(), m_SamplerDescriptorSetLayout, nullptr);
+	vkDestroyDescriptorPool(m_Device->GetHandle(), m_SamplerDescriptorPool, nullptr);
+	vkDestroyDescriptorSetLayout(m_Device->GetHandle(), m_SamplerDescriptorSetLayout, nullptr);
 
-	vkDestroyDescriptorPool(m_Device->GetDevice(), m_UniformDescriptorPool, nullptr);
-	vkDestroyDescriptorSetLayout(m_Device->GetDevice(), m_UniformDescriptorSetLayout, nullptr);
+	vkDestroyDescriptorPool(m_Device->GetHandle(), m_UniformDescriptorPool, nullptr);
+	vkDestroyDescriptorSetLayout(m_Device->GetHandle(), m_UniformDescriptorSetLayout, nullptr);
 
-	for (size_t i = 0; i < m_SwapchainImages.size(); ++i)
+	for (size_t i = 0; i < m_Swapchain->GetImageCount(); ++i)
 	{
 		m_VpUniformBuffers[i].Destroy();
 		//vkDestroyBuffer(m_Device, m_ModelDynamicUniformBuffers[i], nullptr);
@@ -145,98 +146,23 @@ void vge::Renderer::Destroy()
 
 	for (int32 i = 0; i < GMaxDrawFrames; ++i)
 	{
-		vkDestroyFence(m_Device->GetDevice(), m_DrawFences[i], nullptr);
-		vkDestroySemaphore(m_Device->GetDevice(), m_RenderFinishedSemas[i], nullptr);
-		vkDestroySemaphore(m_Device->GetDevice(), m_ImageAvailableSemas[i], nullptr);
-	}
-
-	for (auto framebuffer : m_SwapchainFramebuffers)
-	{
-		vkDestroyFramebuffer(m_Device->GetDevice(), framebuffer, nullptr);
+		vkDestroyFence(m_Device->GetHandle(), m_DrawFences[i], nullptr);
+		vkDestroySemaphore(m_Device->GetHandle(), m_RenderFinishedSemas[i], nullptr);
+		vkDestroySemaphore(m_Device->GetHandle(), m_ImageAvailableSemas[i], nullptr);
 	}
 
 	m_SecondPipeline.Destroy();
 	m_FirstPipeline.Destroy();
 
-	vkDestroyRenderPass(m_Device->GetDevice(), m_RenderPass, nullptr);
+	vkDestroyRenderPass(m_Device->GetHandle(), m_RenderPass, nullptr);
 
-	for (auto swapchainImage : m_SwapchainImages)
-	{
-		vkDestroyImageView(m_Device->GetDevice(), swapchainImage.View, nullptr);
-	}
-
-	vkDestroySwapchainKHR(m_Device->GetDevice(), m_Swapchain, nullptr);
+	m_Swapchain->Destroy();
 }
 
 void vge::Renderer::CreateSwapchain()
 {
-	SwapchainSupportDetails swapchainDetails = m_Device->GetSwapchainDetails();
-	QueueFamilyIndices queueIndices = m_Device->GetQueueIndices();
-
-	VkSurfaceFormatKHR surfaceFormat = GetBestSurfaceFormat(swapchainDetails.SurfaceFormats);
-	VkPresentModeKHR presentMode = GetBestPresentMode(swapchainDetails.PresentModes);
-	VkExtent2D extent = GetBestSwapchainExtent(swapchainDetails.SurfaceCapabilities);
-
-	uint32 imageCount = swapchainDetails.SurfaceCapabilities.minImageCount + 1;
-	if (swapchainDetails.SurfaceCapabilities.maxImageCount > 0 && swapchainDetails.SurfaceCapabilities.maxImageCount < imageCount)
-	{
-		imageCount = swapchainDetails.SurfaceCapabilities.maxImageCount;
-	}
-
-	VkSwapchainCreateInfoKHR swapchainCreateInfo = {};
-	swapchainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-	swapchainCreateInfo.surface = m_Device->GetSurface();
-	swapchainCreateInfo.imageFormat = surfaceFormat.format;
-	swapchainCreateInfo.imageColorSpace = surfaceFormat.colorSpace;
-	swapchainCreateInfo.presentMode = presentMode;
-	swapchainCreateInfo.imageExtent = extent;
-	swapchainCreateInfo.minImageCount = imageCount;
-	swapchainCreateInfo.imageArrayLayers = 1;
-	swapchainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-	swapchainCreateInfo.preTransform = swapchainDetails.SurfaceCapabilities.currentTransform;
-	swapchainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-	swapchainCreateInfo.clipped = VK_TRUE;
-	
-	if (queueIndices.GraphicsFamily != queueIndices.PresentFamily)
-	{
-		const uint32 queueFamilyIndices[] = 
-		{ 
-			static_cast<uint32>(queueIndices.GraphicsFamily),
-			static_cast<uint32>(queueIndices.PresentFamily)
-		};
-
-		swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-		swapchainCreateInfo.queueFamilyIndexCount = 2;
-		swapchainCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
-	}
-	else 
-	{
-		swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		swapchainCreateInfo.queueFamilyIndexCount = 0;
-		swapchainCreateInfo.pQueueFamilyIndices = nullptr;
-	}
-
-	swapchainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
-
-	VK_ENSURE_MSG(vkCreateSwapchainKHR(m_Device->GetDevice(), &swapchainCreateInfo, nullptr, &m_Swapchain), "Failed to create swapchain.");
-
-	m_SwapchainImageFormat = surfaceFormat.format;
-	m_SwapchainExtent = extent;
-
-	uint32 swapchainImageCount = 0;
-	vkGetSwapchainImagesKHR(m_Device->GetDevice(), m_Swapchain, &swapchainImageCount, nullptr);
-
-	std::vector<VkImage> images(swapchainImageCount);
-	vkGetSwapchainImagesKHR(m_Device->GetDevice(), m_Swapchain, &swapchainImageCount, images.data());
-
-	for (const auto& image : images)
-	{
-		SwapchainImage swapchainImage = {};
-		swapchainImage.Image = image;
-		CreateImageView(image, m_SwapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, swapchainImage.View);
-
-		m_SwapchainImages.push_back(swapchainImage);
-	}
+	m_Swapchain = new Swapchain(*m_Device);
+	m_Swapchain->Initialize();
 }
 
 void vge::Renderer::CreateColorBufferImages()
@@ -246,12 +172,12 @@ void vge::Renderer::CreateColorBufferImages()
 	const std::vector<VkFormat> formats = { VK_FORMAT_R8G8B8A8_UNORM };
 	m_ColorFormat = GetBestImageFormat(formats, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-	m_ColorBufferImages.resize(m_SwapchainImages.size());
-	m_ColorBufferImageViews.resize(m_SwapchainImages.size());
+	m_ColorBufferImages.resize(m_Swapchain->GetImageCount());
+	m_ColorBufferImageViews.resize(m_Swapchain->GetImageCount());
 
-	for (size_t i = 0; i < m_SwapchainImages.size(); ++i)
+	for (size_t i = 0; i < m_Swapchain->GetImageCount(); ++i)
 	{
-		CreateImage(m_Device->GetAllocator(), m_SwapchainExtent, m_ColorFormat, VK_IMAGE_TILING_OPTIMAL, usage, VMA_MEMORY_USAGE_GPU_ONLY, &m_ColorBufferImages[i]);
+		CreateImage(m_Device->GetAllocator(), m_Swapchain->GetExtent(), m_ColorFormat, VK_IMAGE_TILING_OPTIMAL, usage, VMA_MEMORY_USAGE_GPU_ONLY, &m_ColorBufferImages[i]);
 		CreateImageView(m_ColorBufferImages[i].Handle, m_ColorFormat, VK_IMAGE_ASPECT_COLOR_BIT, m_ColorBufferImageViews[i]);
 	}
 }
@@ -263,12 +189,12 @@ void vge::Renderer::CreateDepthBufferImages()
 	const std::vector<VkFormat> formats = { VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT };
 	m_DepthFormat = GetBestImageFormat(formats, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
-	m_DepthBufferImages.resize(m_SwapchainImages.size());
-	m_DepthBufferImageViews.resize(m_SwapchainImages.size());
+	m_DepthBufferImages.resize(m_Swapchain->GetImageCount());
+	m_DepthBufferImageViews.resize(m_Swapchain->GetImageCount());
 
-	for (size_t i = 0; i < m_SwapchainImages.size(); ++i)
+	for (size_t i = 0; i < m_Swapchain->GetImageCount(); ++i)
 	{
-		CreateImage(m_Device->GetAllocator(), m_SwapchainExtent, m_DepthFormat, VK_IMAGE_TILING_OPTIMAL, usage, VMA_MEMORY_USAGE_GPU_ONLY, &m_DepthBufferImages[i]);
+		CreateImage(m_Device->GetAllocator(), m_Swapchain->GetExtent(), m_DepthFormat, VK_IMAGE_TILING_OPTIMAL, usage, VMA_MEMORY_USAGE_GPU_ONLY, &m_DepthBufferImages[i]);
 		CreateImageView(m_DepthBufferImages[i].Handle, m_DepthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, m_DepthBufferImageViews[i]);
 	}
 }
@@ -322,7 +248,7 @@ void vge::Renderer::CreateRenderPass()
 	// Will use depth and color attachments from previous 1 subpass as inputs.
 
 	VkAttachmentDescription swapchainColorAttachment = {};
-	swapchainColorAttachment.format = m_SwapchainImageFormat;
+	swapchainColorAttachment.format = m_Swapchain->GetImageFormat();
 	swapchainColorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 	swapchainColorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	// Here we want to store attachment after render pass as we want to present an image to the screen.
@@ -398,7 +324,7 @@ void vge::Renderer::CreateRenderPass()
 	renderPassCreateInfo.dependencyCount = static_cast<uint32>(subpassDependencies.size());
 	renderPassCreateInfo.pDependencies = subpassDependencies.data();
 
-	VK_ENSURE_MSG(vkCreateRenderPass(m_Device->GetDevice(), &renderPassCreateInfo, nullptr, &m_RenderPass), "Failed to create render pass.");
+	VK_ENSURE(vkCreateRenderPass(m_Device->GetHandle(), &renderPassCreateInfo, nullptr, &m_RenderPass));
 }
 
 void vge::Renderer::CreateDescriptorSetLayouts()
@@ -425,7 +351,7 @@ void vge::Renderer::CreateDescriptorSetLayouts()
 		uniformLayoutCreateInfo.bindingCount = static_cast<uint32>(uniformLayoutBindings.size());
 		uniformLayoutCreateInfo.pBindings = uniformLayoutBindings.data();
 
-		VK_ENSURE_MSG(vkCreateDescriptorSetLayout(m_Device->GetDevice(), &uniformLayoutCreateInfo, nullptr, &m_UniformDescriptorSetLayout), "Failed to create uniform descriptor set layout.");
+		VK_ENSURE(vkCreateDescriptorSetLayout(m_Device->GetHandle(), &uniformLayoutCreateInfo, nullptr, &m_UniformDescriptorSetLayout));
 	}
 
 	{
@@ -443,7 +369,7 @@ void vge::Renderer::CreateDescriptorSetLayouts()
 		samplerLayoutCreateInfo.bindingCount = static_cast<uint32>(samplerLayoutBindings.size());
 		samplerLayoutCreateInfo.pBindings = samplerLayoutBindings.data();
 
-		VK_ENSURE_MSG(vkCreateDescriptorSetLayout(m_Device->GetDevice(), &samplerLayoutCreateInfo, nullptr, &m_SamplerDescriptorSetLayout), "Failed to create sampler descriptor set layout.");
+		VK_ENSURE(vkCreateDescriptorSetLayout(m_Device->GetHandle(), &samplerLayoutCreateInfo, nullptr, &m_SamplerDescriptorSetLayout));
 	}
 
 	{
@@ -466,7 +392,7 @@ void vge::Renderer::CreateDescriptorSetLayouts()
 		inputLayoutCreateInfo.bindingCount = static_cast<uint32>(inputLayoutBindings.size());
 		inputLayoutCreateInfo.pBindings = inputLayoutBindings.data();
 
-		VK_ENSURE_MSG(vkCreateDescriptorSetLayout(m_Device->GetDevice(), &inputLayoutCreateInfo, nullptr, &m_InputDescriptorSetLayout), "Failed to create input descriptor set layout.");
+		VK_ENSURE(vkCreateDescriptorSetLayout(m_Device->GetHandle(), &inputLayoutCreateInfo, nullptr, &m_InputDescriptorSetLayout));
 	}
 }
 
@@ -493,7 +419,7 @@ void vge::Renderer::CreatePipelines()
 		pipelineLayoutCreateInfo.pPushConstantRanges = &m_PushConstantRange;
 
 		VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
-		VK_ENSURE(vkCreatePipelineLayout(m_Device->GetDevice(), &pipelineLayoutCreateInfo, nullptr, &pipelineLayout));
+		VK_ENSURE(vkCreatePipelineLayout(m_Device->GetHandle(), &pipelineLayoutCreateInfo, nullptr, &pipelineLayout));
 
 		// As this pipeline is used for rendering actual data, we need vertex input.
 		const VertexInputDescription vertexDescription = Vertex::GetDescription();
@@ -504,7 +430,7 @@ void vge::Renderer::CreatePipelines()
 		vertexInputCreateInfo.vertexAttributeDescriptionCount = static_cast<uint32>(vertexDescription.Attributes.size());
 		vertexInputCreateInfo.pVertexAttributeDescriptions = vertexDescription.Attributes.data();
 
-		PipelineCreateInfo pipelineCreateInfo = Pipeline::DefaultCreateInfo(m_SwapchainExtent);
+		PipelineCreateInfo pipelineCreateInfo = Pipeline::DefaultCreateInfo(m_Swapchain->GetExtent());
 		pipelineCreateInfo.RenderPass = m_RenderPass;
 		pipelineCreateInfo.VertexInfo = vertexInputCreateInfo;
 		pipelineCreateInfo.PipelineLayout = pipelineLayout;
@@ -523,10 +449,10 @@ void vge::Renderer::CreatePipelines()
 		pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
 
 		VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
-		VK_ENSURE(vkCreatePipelineLayout(m_Device->GetDevice(), &pipelineLayoutCreateInfo, nullptr, &pipelineLayout));
+		VK_ENSURE(vkCreatePipelineLayout(m_Device->GetHandle(), &pipelineLayoutCreateInfo, nullptr, &pipelineLayout));
 
 		// This pipeline just presents data on screen, so we don't need any vertex input here.
-		PipelineCreateInfo pipelineCreateInfo = Pipeline::DefaultCreateInfo(m_SwapchainExtent);
+		PipelineCreateInfo pipelineCreateInfo = Pipeline::DefaultCreateInfo(m_Swapchain->GetExtent());
 		pipelineCreateInfo.RenderPass = m_RenderPass;
 		pipelineCreateInfo.PipelineLayout = pipelineLayout;
 		pipelineCreateInfo.SubpassIndex = 1;
@@ -538,28 +464,20 @@ void vge::Renderer::CreatePipelines()
 
 void vge::Renderer::CreateFramebuffers()
 {
-	m_SwapchainFramebuffers.resize(m_SwapchainImages.size());
-
-	for (size_t i = 0; i < m_SwapchainFramebuffers.size(); ++i)
+	for (size_t i = 0; i < m_Swapchain->GetImageCount(); ++i)
 	{
-		std::array<VkImageView, 3> attachments = { m_SwapchainImages[i].View, m_ColorBufferImageViews[i], m_DepthBufferImageViews[i] };
+		std::array<VkImageView, 3> attachments = {};
+		attachments[0] = m_Swapchain->GetImage(i)->View;
+		attachments[1] = m_ColorBufferImageViews[i];
+		attachments[2] = m_DepthBufferImageViews[i];
 
-		VkFramebufferCreateInfo framebufferCreateInfo = {};
-		framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		framebufferCreateInfo.renderPass = m_RenderPass;
-		framebufferCreateInfo.attachmentCount = static_cast<uint32>(attachments.size());
-		framebufferCreateInfo.pAttachments = attachments.data();
-		framebufferCreateInfo.width = m_SwapchainExtent.width;
-		framebufferCreateInfo.height = m_SwapchainExtent.height;
-		framebufferCreateInfo.layers = 1;
-
-		VK_ENSURE_MSG(vkCreateFramebuffer(m_Device->GetDevice(), &framebufferCreateInfo, nullptr, &m_SwapchainFramebuffers[i]), "Failed to create framebuffer.");
+		m_Swapchain->CreateFramebuffer(m_RenderPass, static_cast<uint32>(attachments.size()), attachments.data());
 	}
 }
 
 void vge::Renderer::CreateCommandBuffers()
 {
-	m_CommandBuffers.resize(m_SwapchainFramebuffers.size());
+	m_CommandBuffers.resize(m_Swapchain->GetFramebufferCount());
 
 	VkCommandBufferAllocateInfo cmdBufferAllocInfo = {};
 	cmdBufferAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -567,7 +485,7 @@ void vge::Renderer::CreateCommandBuffers()
 	cmdBufferAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	cmdBufferAllocInfo.commandBufferCount = static_cast<uint32>(m_CommandBuffers.size());
 
-	VK_ENSURE_MSG(vkAllocateCommandBuffers(m_Device->GetDevice(), &cmdBufferAllocInfo, m_CommandBuffers.data()), "Failed to allocate command buffers.");
+	VK_ENSURE(vkAllocateCommandBuffers(m_Device->GetHandle(), &cmdBufferAllocInfo, m_CommandBuffers.data()));
 }
 
 void vge::Renderer::CreateTextureSampler()
@@ -590,7 +508,7 @@ void vge::Renderer::CreateTextureSampler()
 	samplerCreateInfo.anisotropyEnable = VK_TRUE;						// generally, if enabled, handle texture stretching at strange angles
 	samplerCreateInfo.maxAnisotropy = 16;
 
-	VK_ENSURE_MSG(vkCreateSampler(m_Device->GetDevice(), &samplerCreateInfo, nullptr, &m_TextureSampler), "Failed to create texture sampler.");
+	VK_ENSURE(vkCreateSampler(m_Device->GetHandle(), &samplerCreateInfo, nullptr, &m_TextureSampler));
 }
 
 //void vge::Renderer::AllocateDynamicBufferTransferSpace()
@@ -605,16 +523,16 @@ void vge::Renderer::CreateUniformBuffers()
 	constexpr VkDeviceSize vpBufferSize = sizeof(UboViewProjection);
 	//const VkDeviceSize modelBufferSize = m_ModelUniformAlignment * GMaxSceneObjects;
 
-	m_VpUniformBuffers.resize(m_SwapchainImages.size());
+	m_VpUniformBuffers.resize(m_Swapchain->GetImageCount());
 
-	//m_ModelDynamicUniformBuffers.resize(m_SwapchainImages.size());
-	//m_ModelDynamicUniformBuffersMemory.resize(m_SwapchainImages.size());
+	//m_ModelDynamicUniformBuffers.resize(m_Swapchain->GetImageCount());
+	//m_ModelDynamicUniformBuffersMemory.resize(m_Swapchain->GetImageCount());
 
 	constexpr VkBufferUsageFlags usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 	constexpr VkMemoryPropertyFlags props = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 	constexpr VmaMemoryUsage memUsage = VMA_MEMORY_USAGE_CPU_ONLY;
 
-	for (size_t i = 0; i < m_SwapchainImages.size(); ++i)
+	for (size_t i = 0; i < m_Swapchain->GetImageCount(); ++i)
 	{
 		CreateBuffer(m_Device->GetAllocator(), vpBufferSize, usage, memUsage, m_VpUniformBuffers[i]);
 		//CreateBuffer(m_Gpu, m_Device, modelBufferSize, usage, props, m_ModelDynamicUniformBuffers[i], m_ModelDynamicUniformBuffersMemory[i]);
@@ -636,11 +554,11 @@ void vge::Renderer::CreateDescriptorPools()
 
 		VkDescriptorPoolCreateInfo uniformPoolCreateInfo = {};
 		uniformPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		uniformPoolCreateInfo.maxSets = static_cast<uint32>(m_SwapchainImages.size());
+		uniformPoolCreateInfo.maxSets = static_cast<uint32>(m_Swapchain->GetImageCount());
 		uniformPoolCreateInfo.poolSizeCount = static_cast<uint32>(uniformPoolSizes.size());
 		uniformPoolCreateInfo.pPoolSizes = uniformPoolSizes.data();
 
-		VK_ENSURE_MSG(vkCreateDescriptorPool(m_Device->GetDevice(), &uniformPoolCreateInfo, nullptr, &m_UniformDescriptorPool), "Failed to create uniform descriptor pool.");
+		VK_ENSURE(vkCreateDescriptorPool(m_Device->GetHandle(), &uniformPoolCreateInfo, nullptr, &m_UniformDescriptorPool));
 	}
 
 	{
@@ -656,7 +574,7 @@ void vge::Renderer::CreateDescriptorPools()
 		samplerPoolCreateInfo.poolSizeCount = static_cast<uint32>(samplerPoolSizes.size());
 		samplerPoolCreateInfo.pPoolSizes = samplerPoolSizes.data();
 
-		VK_ENSURE_MSG(vkCreateDescriptorPool(m_Device->GetDevice(), &samplerPoolCreateInfo, nullptr, &m_SamplerDescriptorPool), "Failed to create sampler descriptor pool.");
+		VK_ENSURE(vkCreateDescriptorPool(m_Device->GetHandle(), &samplerPoolCreateInfo, nullptr, &m_SamplerDescriptorPool));
 	}
 
 	{
@@ -672,30 +590,30 @@ void vge::Renderer::CreateDescriptorPools()
 
 		VkDescriptorPoolCreateInfo inputPoolCreateInfo = {};
 		inputPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		inputPoolCreateInfo.maxSets = static_cast<uint32>(m_SwapchainImages.size());
+		inputPoolCreateInfo.maxSets = static_cast<uint32>(m_Swapchain->GetImageCount());
 		inputPoolCreateInfo.poolSizeCount = static_cast<uint32>(inputPoolSizes.size());
 		inputPoolCreateInfo.pPoolSizes = inputPoolSizes.data();
 
-		VK_ENSURE_MSG(vkCreateDescriptorPool(m_Device->GetDevice(), &inputPoolCreateInfo, nullptr, &m_InputDescriptorPool), "Failed to create input descriptor pool.");
+		VK_ENSURE(vkCreateDescriptorPool(m_Device->GetHandle(), &inputPoolCreateInfo, nullptr, &m_InputDescriptorPool));
 	}
 }
 
 void vge::Renderer::CreateDescriptorSets()
 {
 	{
-		m_UniformDescriptorSets.resize(m_SwapchainImages.size());
+		m_UniformDescriptorSets.resize(m_Swapchain->GetImageCount());
 
-		std::vector<VkDescriptorSetLayout> setLayouts(m_SwapchainImages.size(), m_UniformDescriptorSetLayout);
+		std::vector<VkDescriptorSetLayout> setLayouts(m_Swapchain->GetImageCount(), m_UniformDescriptorSetLayout);
 
 		VkDescriptorSetAllocateInfo setAllocInfo = {};
 		setAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		setAllocInfo.descriptorPool = m_UniformDescriptorPool;
-		setAllocInfo.descriptorSetCount = static_cast<uint32>(m_SwapchainImages.size());
+		setAllocInfo.descriptorSetCount = static_cast<uint32>(m_Swapchain->GetImageCount());
 		setAllocInfo.pSetLayouts = setLayouts.data(); // 1 to 1 relationship with layout and set
 
-		VK_ENSURE_MSG(vkAllocateDescriptorSets(m_Device->GetDevice(), &setAllocInfo, m_UniformDescriptorSets.data()), "Failed to allocate uniform descriptor sets.");
+		VK_ENSURE(vkAllocateDescriptorSets(m_Device->GetHandle(), &setAllocInfo, m_UniformDescriptorSets.data()));
 
-		for (size_t i = 0; i < m_SwapchainImages.size(); ++i)
+		for (size_t i = 0; i < m_Swapchain->GetImageCount(); ++i)
 		{
 			VkDescriptorBufferInfo vpDescriptorBufferInfo = {};
 			vpDescriptorBufferInfo.buffer = m_VpUniformBuffers[i].Handle;
@@ -727,24 +645,24 @@ void vge::Renderer::CreateDescriptorSets()
 
 			const std::array<VkWriteDescriptorSet, 1> setWrites = { vpSetWrite, /*modelSetWrite*/ };
 
-			vkUpdateDescriptorSets(m_Device->GetDevice(), static_cast<uint32>(setWrites.size()), setWrites.data(), 0, nullptr);
+			vkUpdateDescriptorSets(m_Device->GetHandle(), static_cast<uint32>(setWrites.size()), setWrites.data(), 0, nullptr);
 		}
 	}
 
 	{
-		m_InputDescriptorSets.resize(m_SwapchainImages.size());
+		m_InputDescriptorSets.resize(m_Swapchain->GetImageCount());
 
-		std::vector<VkDescriptorSetLayout> setLayouts(m_SwapchainImages.size(), m_InputDescriptorSetLayout);
+		std::vector<VkDescriptorSetLayout> setLayouts(m_Swapchain->GetImageCount(), m_InputDescriptorSetLayout);
 
 		VkDescriptorSetAllocateInfo setAllocInfo = {};
 		setAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		setAllocInfo.descriptorPool = m_InputDescriptorPool;
-		setAllocInfo.descriptorSetCount = static_cast<uint32>(m_SwapchainImages.size());
+		setAllocInfo.descriptorSetCount = static_cast<uint32>(m_Swapchain->GetImageCount());
 		setAllocInfo.pSetLayouts = setLayouts.data();
 
-		VK_ENSURE_MSG(vkAllocateDescriptorSets(m_Device->GetDevice(), &setAllocInfo, m_InputDescriptorSets.data()), "Failed to allocate input descriptor sets.");
+		VK_ENSURE(vkAllocateDescriptorSets(m_Device->GetHandle(), &setAllocInfo, m_InputDescriptorSets.data()));
 
-		for (size_t i = 0; i < m_SwapchainImages.size(); ++i)
+		for (size_t i = 0; i < m_Swapchain->GetImageCount(); ++i)
 		{
 			VkDescriptorImageInfo colorInputDescriptorImageInfo = {};
 			colorInputDescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -776,15 +694,15 @@ void vge::Renderer::CreateDescriptorSets()
 
 			const std::array<VkWriteDescriptorSet, 2> setWrites = { colorSetWrite, depthSetWrite };
 
-			vkUpdateDescriptorSets(m_Device->GetDevice(), static_cast<uint32>(setWrites.size()), setWrites.data(), 0, nullptr);
+			vkUpdateDescriptorSets(m_Device->GetHandle(), static_cast<uint32>(setWrites.size()), setWrites.data(), 0, nullptr);
 		}
 	}
 }
 
 void vge::Renderer::RecordCommandBuffers(uint32 ImageIndex)
 {
-	VkCommandBuffer& currentCmdBuffer = m_CommandBuffers[ImageIndex];
-	VkFramebuffer& currentFramebuffer = m_SwapchainFramebuffers[ImageIndex];
+	const VkCommandBuffer& cmdBuffer = m_CommandBuffers[ImageIndex];
+	const VkFramebuffer& framebuffer = m_Swapchain->GetFramebuffer(ImageIndex);
 
 	VkCommandBufferBeginInfo cmdBufferBeginInfo = {};
 	cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -800,24 +718,24 @@ void vge::Renderer::RecordCommandBuffers(uint32 ImageIndex)
 	renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	renderPassBeginInfo.renderPass = m_RenderPass;
 	renderPassBeginInfo.renderArea.offset = { 0, 0 };
-	renderPassBeginInfo.renderArea.extent = m_SwapchainExtent;
+	renderPassBeginInfo.renderArea.extent = m_Swapchain->GetExtent();
 	renderPassBeginInfo.clearValueCount = static_cast<uint32>(clearValues.size());
 	renderPassBeginInfo.pClearValues = clearValues.data();
-	renderPassBeginInfo.framebuffer = currentFramebuffer;
+	renderPassBeginInfo.framebuffer = framebuffer;
 
-	VK_ENSURE_MSG(vkBeginCommandBuffer(currentCmdBuffer, &cmdBufferBeginInfo), "Failed to begin command buffer record.");
+	VK_ENSURE(vkBeginCommandBuffer(cmdBuffer, &cmdBufferBeginInfo));
 
-	vkCmdBeginRenderPass(currentCmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	vkCmdBeginRenderPass(cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 	{
-		vkCmdBindPipeline(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_FirstPipeline.GetHandle());
+		vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_FirstPipeline.GetHandle());
 
 		for (size_t ModelIndex = 0; ModelIndex < m_Models.size(); ++ModelIndex)
 		{
 			Model& model = m_Models[ModelIndex];
 
 			const ModelData& modelData = model.GetModelData();
-			vkCmdPushConstants(currentCmdBuffer, m_FirstPipeline.GetLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ModelData), &modelData);
+			vkCmdPushConstants(cmdBuffer, m_FirstPipeline.GetLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ModelData), &modelData);
 
 			for (size_t MeshIndex = 0; MeshIndex < model.GetMeshCount(); ++MeshIndex)
 			{
@@ -832,33 +750,33 @@ void vge::Renderer::RecordCommandBuffers(uint32 ImageIndex)
 
 				VkBuffer vertexBuffers[] = { mesh->GetVertexBuffer().Get().Handle };
 				VkDeviceSize offsets[] = { 0 };
-				vkCmdBindVertexBuffers(currentCmdBuffer, 0, 1, vertexBuffers, offsets);
+				vkCmdBindVertexBuffers(cmdBuffer, 0, 1, vertexBuffers, offsets);
 
-				vkCmdBindIndexBuffer(currentCmdBuffer, mesh->GetIndexBuffer().Get().Handle, 0, VK_INDEX_TYPE_UINT32);
+				vkCmdBindIndexBuffer(cmdBuffer, mesh->GetIndexBuffer().Get().Handle, 0, VK_INDEX_TYPE_UINT32);
 
 				//const uint32 dynamicOffset = static_cast<uint32>(m_ModelUniformAlignment * MeshIndex);
-				vkCmdBindDescriptorSets(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_FirstPipeline.GetLayout(),
+				vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_FirstPipeline.GetLayout(),
 					0, static_cast<uint32>(currentDescriptorSets.size()), currentDescriptorSets.data(), 0, nullptr);
 
-				vkCmdDrawIndexed(currentCmdBuffer, static_cast<uint32>(mesh->GetIndexCount()), 1, 0, 0, 0);
+				vkCmdDrawIndexed(cmdBuffer, static_cast<uint32>(mesh->GetIndexCount()), 1, 0, 0, 0);
 			}
 		}
 
 		// Start 2 subpass.
 
-		vkCmdNextSubpass(currentCmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+		vkCmdNextSubpass(cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
 
-		vkCmdBindPipeline(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_SecondPipeline.GetHandle());
+		vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_SecondPipeline.GetHandle());
 
-		vkCmdBindDescriptorSets(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_SecondPipeline.GetLayout(),
+		vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_SecondPipeline.GetLayout(),
 			0, 1, &m_InputDescriptorSets[ImageIndex], 0, nullptr);
 
-		vkCmdDraw(currentCmdBuffer, 3, 1, 0, 0); // fill screen with triangle
+		vkCmdDraw(cmdBuffer, 3, 1, 0, 0); // fill screen with one big triangle to draw on
 	}
 
-	vkCmdEndRenderPass(currentCmdBuffer);
+	vkCmdEndRenderPass(cmdBuffer);
 
-	VK_ENSURE_MSG(vkEndCommandBuffer(currentCmdBuffer), "Failed to end command buffer record.");
+	VK_ENSURE(vkEndCommandBuffer(cmdBuffer));
 }
 
 void vge::Renderer::CreateSyncObjects()
@@ -876,9 +794,9 @@ void vge::Renderer::CreateSyncObjects()
 
 	for (int32 i = 0; i < GMaxDrawFrames; ++i)
 	{
-		VK_ENSURE_MSG(vkCreateSemaphore(m_Device->GetDevice(), &semaphoreCreateInfo, nullptr, &m_ImageAvailableSemas[i]), "Failed to create image available semaphore.");
-		VK_ENSURE_MSG(vkCreateSemaphore(m_Device->GetDevice(), &semaphoreCreateInfo, nullptr, &m_RenderFinishedSemas[i]), "Failed to create render finished semaphore.");
-		VK_ENSURE_MSG(vkCreateFence(m_Device->GetDevice(), &fenceCreateInfo, nullptr, &m_DrawFences[i]), "Failed to create fence.");
+		VK_ENSURE(vkCreateSemaphore(m_Device->GetHandle(), &semaphoreCreateInfo, nullptr, &m_ImageAvailableSemas[i]));
+		VK_ENSURE(vkCreateSemaphore(m_Device->GetHandle(), &semaphoreCreateInfo, nullptr, &m_RenderFinishedSemas[i]));
+		VK_ENSURE(vkCreateFence(m_Device->GetHandle(), &fenceCreateInfo, nullptr, &m_DrawFences[i]));
 	}
 }
 
