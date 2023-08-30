@@ -51,6 +51,8 @@ namespace vge
 		inline VkQueue GetPresentQueue() const { return m_PresentQueue; }
 		inline QueueFamilyIndices GetQueueIndices() const { return m_QueueIndices; }
 		inline SwapchainSupportDetails GetSwapchainSupportDetails() const { return m_SwapchainSupportDetails; }
+		
+		inline void WaitIdle() const { vkDeviceWaitIdle(m_Handle); }
 
 	private:
 		Window* m_Window = nullptr;

@@ -288,7 +288,7 @@ void vge::Device::Initialize()
 
 void vge::Device::Destroy()
 {
-	vkDeviceWaitIdle(m_Handle);
+	WaitIdle();
 
 	vkDestroyCommandPool(m_Handle, m_CommandPool, nullptr);
 	

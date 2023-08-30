@@ -103,7 +103,7 @@ void vge::Renderer::Draw()
 
 void vge::Renderer::Destroy()
 {
-	vkDeviceWaitIdle(m_Device->GetHandle());
+	m_Device->WaitIdle();
 
 	for (size_t i = 0; i < m_Models.size(); ++i)
 	{
