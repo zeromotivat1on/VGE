@@ -21,7 +21,10 @@ namespace vge
 		inline void GetFramebufferSize(int32& outw, int32& outh) const { glfwGetFramebufferSize(m_Handle, &outw, &outh); }
 		inline void CreateSurface(VkInstance instance, VkSurfaceKHR& outSurface) const { VK_ENSURE(glfwCreateWindowSurface(instance, m_Handle, nullptr, &outSurface)); }
 		inline bool WasResized() const { return m_FramebufferResized; }
-		inline bool ResetResizedFlag() { m_FramebufferResized = false; }
+		inline void ResetResizedFlag() { m_FramebufferResized = false; }
+		inline int32 GetWidth() const { return m_Width; }
+		inline int32 GetHeight() const { return m_Height; }
+		inline VkExtent2D GetExtent() const { return { static_cast<uint32>(m_Width), static_cast<uint32>(m_Height) }; }
 
 		void GetInstanceExtensions(std::vector<const char*>& outExtensions) const;
 		void WaitSizeless() const;

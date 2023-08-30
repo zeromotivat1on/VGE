@@ -38,7 +38,7 @@ void vge::Renderer::Initialize()
 	CreatePushConstantRange();
 	CreatePipelines();
 	CreateFramebuffers();
-	CreateCommandBuffers();
+	AllocateCommandBuffers();
 	CreateTextureSampler();
 	//AllocateDynamicBufferTransferSpace();
 	CreateUniformBuffers();
@@ -65,7 +65,18 @@ void vge::Renderer::Draw()
 	vkWaitForFences(m_Device->GetHandle(), 1, &drawFence, VK_TRUE, UINT64_MAX);	// wait till open
 	vkResetFences(m_Device->GetHandle(), 1, &drawFence);						// close after enter
 
-	const uint32 AcquiredImageIndex = m_Swapchain->AcquireNextImage(imageAvailableSemaphore);
+	uint32 AcquiredImageIndex = 0;
+	VkResult acquireImageResult = m_Swapchain->AcquireNextImage(imageAvailableSemaphore, AcquiredImageIndex);
+
+	if (acquireImageResult == VK_ERROR_OUT_OF_DATE_KHR)
+	{
+		RecreateSwapchain();
+		return;
+	}
+	else
+	{
+		VK_ENSURE(acquireImageResult);
+	}
 
 	RecordCommandBuffers(AcquiredImageIndex);
 	UpdateUniformBuffers(AcquiredImageIndex);
@@ -96,7 +107,17 @@ void vge::Renderer::Draw()
 	presentInfo.pSwapchains = &swapchain;
 	presentInfo.pImageIndices = &AcquiredImageIndex;
 
-	VK_ENSURE(vkQueuePresentKHR(m_Device->GetPresentQueue(), &presentInfo));
+	VkResult queuePresentResult = vkQueuePresentKHR(m_Device->GetPresentQueue(), &presentInfo);
+	if (queuePresentResult == VK_ERROR_OUT_OF_DATE_KHR || queuePresentResult == VK_SUBOPTIMAL_KHR || m_Device->WasWindowResized())
+	{
+		m_Device->ResetWindowResizedFlag();
+		RecreateSwapchain();
+		return;
+	}
+	else
+	{
+		VK_ENSURE(queuePresentResult);
+	}
 
 	IncrementRenderFrame();
 }
@@ -119,14 +140,8 @@ void vge::Renderer::Destroy()
 
 	//_aligned_free(m_ModelTransferSpace);
 
-	for (size_t i = 0; i < m_Swapchain->GetImageCount(); ++i)
-	{
-		vkDestroyImageView(m_Device->GetHandle(), m_ColorBufferImageViews[i], nullptr);
-		m_ColorBufferImages[i].Destroy();
-
-		vkDestroyImageView(m_Device->GetHandle(), m_DepthBufferImageViews[i], nullptr);
-		m_DepthBufferImages[i].Destroy();
-	}
+	DestroyColorBufferImages();
+	DestroyDepthBufferImages();
 
 	vkDestroyDescriptorPool(m_Device->GetHandle(), m_InputDescriptorPool, nullptr);
 	vkDestroyDescriptorSetLayout(m_Device->GetHandle(), m_InputDescriptorSetLayout, nullptr);
@@ -156,13 +171,16 @@ void vge::Renderer::Destroy()
 
 	vkDestroyRenderPass(m_Device->GetHandle(), m_RenderPass, nullptr);
 
-	m_Swapchain->Destroy();
+	m_Swapchain->Destroy(m_SwapchainRecreateInfo.get());
 }
 
 void vge::Renderer::CreateSwapchain()
 {
+	m_SwapchainRecreateInfo = std::make_unique<SwapchainRecreateInfo>();
+	m_SwapchainRecreateInfo->Surface = m_Device->GetInitialSurface();
+
 	m_Swapchain = std::make_unique<Swapchain>(*m_Device);
-	m_Swapchain->Initialize();
+	m_Swapchain->Initialize(m_SwapchainRecreateInfo.get());
 }
 
 void vge::Renderer::CreateColorBufferImages()
@@ -408,8 +426,9 @@ void vge::Renderer::CreatePipelines()
 	// TODO: create convenient abstraction for multiple pipelines creation, e.g map with pipeline and its create data.
 
 	// First pipeline creation. Used to render evrything.
+	// As this pipeline is used for rendering actual data, we need vertex input.
 	{
-		std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = { m_UniformDescriptorSetLayout, m_SamplerDescriptorSetLayout};
+		std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = { m_UniformDescriptorSetLayout, m_SamplerDescriptorSetLayout };
 
 		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
 		pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -421,7 +440,6 @@ void vge::Renderer::CreatePipelines()
 		VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
 		VK_ENSURE(vkCreatePipelineLayout(m_Device->GetHandle(), &pipelineLayoutCreateInfo, nullptr, &pipelineLayout));
 
-		// As this pipeline is used for rendering actual data, we need vertex input.
 		const VertexInputDescription vertexDescription = Vertex::GetDescription();
 		VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo = {};
 		vertexInputCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -430,7 +448,10 @@ void vge::Renderer::CreatePipelines()
 		vertexInputCreateInfo.vertexAttributeDescriptionCount = static_cast<uint32>(vertexDescription.Attributes.size());
 		vertexInputCreateInfo.pVertexAttributeDescriptions = vertexDescription.Attributes.data();
 
-		PipelineCreateInfo pipelineCreateInfo = Pipeline::DefaultCreateInfo(m_Swapchain->GetExtent());
+		PipelineCreateInfo pipelineCreateInfo = {};
+		pipelineCreateInfo.DynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+		Pipeline::DefaultCreateInfo(pipelineCreateInfo);
+
 		pipelineCreateInfo.RenderPass = m_RenderPass;
 		pipelineCreateInfo.VertexInfo = vertexInputCreateInfo;
 		pipelineCreateInfo.PipelineLayout = pipelineLayout;
@@ -440,6 +461,7 @@ void vge::Renderer::CreatePipelines()
 	}
 
 	// Second pipeline creation. Used to present data from previous pipeline.
+	// This pipeline just presents data on screen, so we don't need any vertex input here.
 	{
 		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
 		pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -451,8 +473,10 @@ void vge::Renderer::CreatePipelines()
 		VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
 		VK_ENSURE(vkCreatePipelineLayout(m_Device->GetHandle(), &pipelineLayoutCreateInfo, nullptr, &pipelineLayout));
 
-		// This pipeline just presents data on screen, so we don't need any vertex input here.
-		PipelineCreateInfo pipelineCreateInfo = Pipeline::DefaultCreateInfo(m_Swapchain->GetExtent());
+		PipelineCreateInfo pipelineCreateInfo = {};
+		pipelineCreateInfo.DynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+		Pipeline::DefaultCreateInfo(pipelineCreateInfo);
+
 		pipelineCreateInfo.RenderPass = m_RenderPass;
 		pipelineCreateInfo.PipelineLayout = pipelineLayout;
 		pipelineCreateInfo.SubpassIndex = 1;
@@ -475,7 +499,7 @@ void vge::Renderer::CreateFramebuffers()
 	}
 }
 
-void vge::Renderer::CreateCommandBuffers()
+void vge::Renderer::AllocateCommandBuffers()
 {
 	m_CommandBuffers.resize(m_Swapchain->GetFramebufferCount());
 
@@ -601,101 +625,13 @@ void vge::Renderer::CreateDescriptorPools()
 void vge::Renderer::CreateDescriptorSets()
 {
 	{
-		m_UniformDescriptorSets.resize(m_Swapchain->GetImageCount());
-
-		std::vector<VkDescriptorSetLayout> setLayouts(m_Swapchain->GetImageCount(), m_UniformDescriptorSetLayout);
-
-		VkDescriptorSetAllocateInfo setAllocInfo = {};
-		setAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		setAllocInfo.descriptorPool = m_UniformDescriptorPool;
-		setAllocInfo.descriptorSetCount = static_cast<uint32>(m_Swapchain->GetImageCount());
-		setAllocInfo.pSetLayouts = setLayouts.data(); // 1 to 1 relationship with layout and set
-
-		VK_ENSURE(vkAllocateDescriptorSets(m_Device->GetHandle(), &setAllocInfo, m_UniformDescriptorSets.data()));
-
-		for (size_t i = 0; i < m_Swapchain->GetImageCount(); ++i)
-		{
-			VkDescriptorBufferInfo vpDescriptorBufferInfo = {};
-			vpDescriptorBufferInfo.buffer = m_VpUniformBuffers[i].Handle;
-			vpDescriptorBufferInfo.offset = 0;
-			vpDescriptorBufferInfo.range = sizeof(UboViewProjection);
-
-			VkWriteDescriptorSet vpSetWrite = {};
-			vpSetWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			vpSetWrite.dstSet = m_UniformDescriptorSets[i];
-			vpSetWrite.dstBinding = 0;
-			vpSetWrite.dstArrayElement = 0;
-			vpSetWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			vpSetWrite.descriptorCount = 1;
-			vpSetWrite.pBufferInfo = &vpDescriptorBufferInfo;
-
-			//VkDescriptorBufferInfo modelDescriptorBufferInfo = {};
-			//modelDescriptorBufferInfo.buffer = m_ModelDynamicUniformBuffers[i];
-			//modelDescriptorBufferInfo.offset = 0;
-			//modelDescriptorBufferInfo.range = m_ModelUniformAlignment;
-
-			//VkWriteDescriptorSet modelSetWrite = {};
-			//modelSetWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			//modelSetWrite.dstSet = m_DescriptorSets[i];
-			//modelSetWrite.dstBinding = 1;
-			//modelSetWrite.dstArrayElement = 0;
-			//modelSetWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-			//modelSetWrite.descriptorCount = 1;
-			//modelSetWrite.pBufferInfo = &modelDescriptorBufferInfo;
-
-			const std::array<VkWriteDescriptorSet, 1> setWrites = { vpSetWrite, /*modelSetWrite*/ };
-
-			vkUpdateDescriptorSets(m_Device->GetHandle(), static_cast<uint32>(setWrites.size()), setWrites.data(), 0, nullptr);
-		}
+		AllocateUniformDescriptorSet();
+		UpdateUniformDescriptorSet();
 	}
 
 	{
-		m_InputDescriptorSets.resize(m_Swapchain->GetImageCount());
-
-		std::vector<VkDescriptorSetLayout> setLayouts(m_Swapchain->GetImageCount(), m_InputDescriptorSetLayout);
-
-		VkDescriptorSetAllocateInfo setAllocInfo = {};
-		setAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		setAllocInfo.descriptorPool = m_InputDescriptorPool;
-		setAllocInfo.descriptorSetCount = static_cast<uint32>(m_Swapchain->GetImageCount());
-		setAllocInfo.pSetLayouts = setLayouts.data();
-
-		VK_ENSURE(vkAllocateDescriptorSets(m_Device->GetHandle(), &setAllocInfo, m_InputDescriptorSets.data()));
-
-		for (size_t i = 0; i < m_Swapchain->GetImageCount(); ++i)
-		{
-			VkDescriptorImageInfo colorInputDescriptorImageInfo = {};
-			colorInputDescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			colorInputDescriptorImageInfo.imageView = m_ColorBufferImageViews[i];
-			colorInputDescriptorImageInfo.sampler = VK_NULL_HANDLE;
-
-			VkWriteDescriptorSet colorSetWrite = {};
-			colorSetWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			colorSetWrite.dstSet = m_InputDescriptorSets[i];
-			colorSetWrite.dstBinding = 0;
-			colorSetWrite.dstArrayElement = 0;
-			colorSetWrite.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-			colorSetWrite.descriptorCount = 1;
-			colorSetWrite.pImageInfo = &colorInputDescriptorImageInfo;
-
-			VkDescriptorImageInfo depthInputDescriptorImageInfo = {};
-			depthInputDescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			depthInputDescriptorImageInfo.imageView = m_DepthBufferImageViews[i];
-			depthInputDescriptorImageInfo.sampler = VK_NULL_HANDLE;
-
-			VkWriteDescriptorSet depthSetWrite = {};
-			depthSetWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			depthSetWrite.dstSet = m_InputDescriptorSets[i];
-			depthSetWrite.dstBinding = 1;
-			depthSetWrite.dstArrayElement = 0;
-			depthSetWrite.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-			depthSetWrite.descriptorCount = 1;
-			depthSetWrite.pImageInfo = &depthInputDescriptorImageInfo;
-
-			const std::array<VkWriteDescriptorSet, 2> setWrites = { colorSetWrite, depthSetWrite };
-
-			vkUpdateDescriptorSets(m_Device->GetHandle(), static_cast<uint32>(setWrites.size()), setWrites.data(), 0, nullptr);
-		}
+		AllocateInputDescriptorSet();
+		UpdateInputDescriptorSet();
 	}
 }
 
@@ -728,6 +664,20 @@ void vge::Renderer::RecordCommandBuffers(uint32 ImageIndex)
 	vkCmdBeginRenderPass(cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 	{
+		VkViewport viewport = {};
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = static_cast<float>(m_Swapchain->GetExtentWidth());
+		viewport.height = static_cast<float>(m_Swapchain->GetExtentHeight());
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
+
+		VkRect2D scissor = {};
+		scissor.offset = { 0, 0 };
+		scissor.extent = m_Swapchain->GetExtent();
+		vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
+
 		m_FirstPipeline.Bind(cmdBuffer);
 
 		for (Model& model : m_Models)
@@ -744,7 +694,7 @@ void vge::Renderer::RecordCommandBuffers(uint32 ImageIndex)
 					continue;
 				}
 
-				const std::array<VkDescriptorSet, 2> currentDescriptorSets = { m_UniformDescriptorSets[ImageIndex], m_Textures[mesh->GetTextureId()].GetDescriptor()};
+				const std::array<VkDescriptorSet, 2> currentDescriptorSets = { m_UniformDescriptorSets[ImageIndex], m_Textures[mesh->GetTextureId()].GetDescriptor() };
 
 				VkBuffer vertexBuffers[] = { mesh->GetVertexBuffer().Get().Handle };
 				VkDeviceSize offsets[] = { 0 };
@@ -798,6 +748,112 @@ void vge::Renderer::CreateSyncObjects()
 	}
 }
 
+void vge::Renderer::AllocateUniformDescriptorSet()
+{
+	m_UniformDescriptorSets.resize(m_Swapchain->GetImageCount());
+
+	std::vector<VkDescriptorSetLayout> setLayouts(m_Swapchain->GetImageCount(), m_UniformDescriptorSetLayout);
+
+	VkDescriptorSetAllocateInfo setAllocInfo = {};
+	setAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	setAllocInfo.descriptorPool = m_UniformDescriptorPool;
+	setAllocInfo.descriptorSetCount = static_cast<uint32>(m_Swapchain->GetImageCount());
+	setAllocInfo.pSetLayouts = setLayouts.data(); // 1 to 1 relationship with layout and set
+
+	VK_ENSURE(vkAllocateDescriptorSets(m_Device->GetHandle(), &setAllocInfo, m_UniformDescriptorSets.data()));
+}
+
+void vge::Renderer::AllocateInputDescriptorSet()
+{
+	m_InputDescriptorSets.resize(m_Swapchain->GetImageCount());
+
+	std::vector<VkDescriptorSetLayout> setLayouts(m_Swapchain->GetImageCount(), m_InputDescriptorSetLayout);
+
+	VkDescriptorSetAllocateInfo setAllocInfo = {};
+	setAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	setAllocInfo.descriptorPool = m_InputDescriptorPool;
+	setAllocInfo.descriptorSetCount = static_cast<uint32>(m_Swapchain->GetImageCount());
+	setAllocInfo.pSetLayouts = setLayouts.data();
+
+	VK_ENSURE(vkAllocateDescriptorSets(m_Device->GetHandle(), &setAllocInfo, m_InputDescriptorSets.data()));
+}
+
+void vge::Renderer::UpdateUniformDescriptorSet()
+{
+	for (size_t i = 0; i < m_Swapchain->GetImageCount(); ++i)
+	{
+		VkDescriptorBufferInfo vpDescriptorBufferInfo = {};
+		vpDescriptorBufferInfo.buffer = m_VpUniformBuffers[i].Handle;
+		vpDescriptorBufferInfo.offset = 0;
+		vpDescriptorBufferInfo.range = sizeof(UboViewProjection);
+
+		VkWriteDescriptorSet vpSetWrite = {};
+		vpSetWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		vpSetWrite.dstSet = m_UniformDescriptorSets[i];
+		vpSetWrite.dstBinding = 0;
+		vpSetWrite.dstArrayElement = 0;
+		vpSetWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		vpSetWrite.descriptorCount = 1;
+		vpSetWrite.pBufferInfo = &vpDescriptorBufferInfo;
+
+		//VkDescriptorBufferInfo modelDescriptorBufferInfo = {};
+		//modelDescriptorBufferInfo.buffer = m_ModelDynamicUniformBuffers[i];
+		//modelDescriptorBufferInfo.offset = 0;
+		//modelDescriptorBufferInfo.range = m_ModelUniformAlignment;
+
+		//VkWriteDescriptorSet modelSetWrite = {};
+		//modelSetWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		//modelSetWrite.dstSet = m_DescriptorSets[i];
+		//modelSetWrite.dstBinding = 1;
+		//modelSetWrite.dstArrayElement = 0;
+		//modelSetWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+		//modelSetWrite.descriptorCount = 1;
+		//modelSetWrite.pBufferInfo = &modelDescriptorBufferInfo;
+
+		const std::array<VkWriteDescriptorSet, 1> setWrites = { vpSetWrite, /*modelSetWrite*/ };
+
+		vkUpdateDescriptorSets(m_Device->GetHandle(), static_cast<uint32>(setWrites.size()), setWrites.data(), 0, nullptr);
+	}
+}
+
+void vge::Renderer::UpdateInputDescriptorSet()
+{
+	for (size_t i = 0; i < m_Swapchain->GetImageCount(); ++i)
+	{
+		VkDescriptorImageInfo colorInputDescriptorImageInfo = {};
+		colorInputDescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		colorInputDescriptorImageInfo.imageView = m_ColorBufferImageViews[i];
+		colorInputDescriptorImageInfo.sampler = VK_NULL_HANDLE;
+
+		VkWriteDescriptorSet colorSetWrite = {};
+		colorSetWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		colorSetWrite.dstSet = m_InputDescriptorSets[i];
+		colorSetWrite.dstBinding = 0;
+		colorSetWrite.dstArrayElement = 0;
+		colorSetWrite.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+		colorSetWrite.descriptorCount = 1;
+		colorSetWrite.pImageInfo = &colorInputDescriptorImageInfo;
+
+		VkDescriptorImageInfo depthInputDescriptorImageInfo = {};
+		depthInputDescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		depthInputDescriptorImageInfo.imageView = m_DepthBufferImageViews[i];
+		depthInputDescriptorImageInfo.sampler = VK_NULL_HANDLE;
+
+		VkWriteDescriptorSet depthSetWrite = {};
+		depthSetWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		depthSetWrite.dstSet = m_InputDescriptorSets[i];
+		depthSetWrite.dstBinding = 1;
+		depthSetWrite.dstArrayElement = 0;
+		depthSetWrite.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+		depthSetWrite.descriptorCount = 1;
+		depthSetWrite.pImageInfo = &depthInputDescriptorImageInfo;
+
+		const std::array<VkWriteDescriptorSet, 2> setWrites = { colorSetWrite, depthSetWrite };
+
+		vkUpdateDescriptorSets(m_Device->GetHandle(), static_cast<uint32>(setWrites.size()), setWrites.data(), 0, nullptr);
+	}
+}
+
 void vge::Renderer::UpdateUniformBuffers(uint32 ImageIndex)
 {
 	void* data;
@@ -819,7 +875,52 @@ void vge::Renderer::UpdateUniformBuffers(uint32 ImageIndex)
 
 void vge::Renderer::RecreateSwapchain()
 {
-	
+	m_Device->WaitWindowSizeless();
+	m_Device->WaitIdle();
+
+	// Destruction.
+	DestroyColorBufferImages();
+	DestroyDepthBufferImages();
+	m_Swapchain->Destroy(m_SwapchainRecreateInfo.get());
+	m_Swapchain.reset(new Swapchain(*m_Device));
+
+	// Creation.
+	m_Swapchain->Initialize(m_SwapchainRecreateInfo.get());
+	CreateColorBufferImages();
+	CreateDepthBufferImages();
+	CreateFramebuffers();
+
+	if (m_Swapchain->GetFramebufferCount() != m_CommandBuffers.size())
+	{
+		FreeCommandBuffers();
+		AllocateCommandBuffers();
+	}
+
+	UpdateInputDescriptorSet();
+}
+
+void vge::Renderer::FreeCommandBuffers()
+{
+	vkFreeCommandBuffers(m_Device->GetHandle(), m_Device->GetCommandPool(), static_cast<uint32>(m_CommandBuffers.size()), m_CommandBuffers.data());
+	m_CommandBuffers.clear();
+}
+
+void vge::Renderer::DestroyColorBufferImages()
+{
+	for (size_t i = 0; i < m_Swapchain->GetImageCount(); ++i)
+	{
+		vkDestroyImageView(m_Device->GetHandle(), m_ColorBufferImageViews[i], nullptr);
+		m_ColorBufferImages[i].Destroy();
+	}
+}
+
+void vge::Renderer::DestroyDepthBufferImages()
+{
+	for (size_t i = 0; i < m_Swapchain->GetImageCount(); ++i)
+	{
+		vkDestroyImageView(m_Device->GetHandle(), m_DepthBufferImageViews[i], nullptr);
+		m_DepthBufferImages[i].Destroy();
+	}
 }
 
 int32 vge::Renderer::CreateTexture(const char* filename)

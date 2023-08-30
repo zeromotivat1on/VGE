@@ -6,8 +6,9 @@ namespace vge
 {
 	struct PipelineCreateInfo
 	{
-		VkViewport Viewport = {};
-		VkRect2D Scissor = {};
+		NOT_COPYABLE(PipelineCreateInfo);
+
+		VkPipelineViewportStateCreateInfo ViewportInfo = {};
 		VkPipelineVertexInputStateCreateInfo VertexInfo = {};
 		VkPipelineInputAssemblyStateCreateInfo InputAssemblyInfo = {};
 		VkPipelineRasterizationStateCreateInfo RasterizationInfo = {};
@@ -15,6 +16,8 @@ namespace vge
 		VkPipelineColorBlendAttachmentState ColorBlendAttachment = {};
 		VkPipelineColorBlendStateCreateInfo ColorBlendInfo = {};
 		VkPipelineDepthStencilStateCreateInfo DepthStencilInfo = {};
+		std::vector<VkDynamicState> DynamicStates = {};
+		VkPipelineDynamicStateCreateInfo DynamicStateInfo = {};
 		VkPipelineLayout PipelineLayout = VK_NULL_HANDLE;
 		VkRenderPass RenderPass = VK_NULL_HANDLE;
 		int32 SubpassIndex = INDEX_NONE;
@@ -23,7 +26,7 @@ namespace vge
 	class Pipeline
 	{
 	public:
-		static PipelineCreateInfo DefaultCreateInfo(VkExtent2D extent);
+		static void DefaultCreateInfo(PipelineCreateInfo& createInfo);
 
 	public:
 		Pipeline() = default;

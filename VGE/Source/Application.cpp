@@ -46,6 +46,11 @@ void vge::Application::Initialize()
 	GRenderer->Initialize();
 }
 
+void vge::Application::Run()
+{
+	EngineLoop::Start();
+}
+
 void vge::Application::Close()
 {
 	DestroyRenderer();
@@ -67,13 +72,9 @@ int32 vge::Main(int argc, const char** argv)
 	specs.Window.Width = 800;
 	specs.Window.Height = 600;
 
-	CreateApplication(specs);
-	ENSURE(GApplication);
-
+	ENSURE(CreateApplication(specs));
 	GApplication->Initialize();
-
-	EngineLoop::Start();
-
+	GApplication->Run();
 	ENSURE(DestroyApplication());
 
 	return EXIT_SUCCESS;

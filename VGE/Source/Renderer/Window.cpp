@@ -40,6 +40,8 @@ void vge::Window::FramebufferResizeCallback(GLFWwindow* windowRaw, int32 width, 
 	window->m_FramebufferResized = true;
 	window->m_Width = width;
 	window->m_Height = height;
+
+	LOG(Log, "Dimensions: %dx%d", width, height);
 }
 
 vge::Window::Window(const char* name, const int32 width, const int32 height)
@@ -55,6 +57,8 @@ void vge::Window::Initialize()
 	m_Handle = glfwCreateWindow(m_Width, m_Height, m_Name, nullptr, nullptr);
 	glfwSetWindowUserPointer(m_Handle, this);
 	glfwSetFramebufferSizeCallback(m_Handle, Window::FramebufferResizeCallback);
+
+	LOG(Log, "Dimensions: %dx%d", m_Width, m_Height);
 }
 
 void vge::Window::Destroy()

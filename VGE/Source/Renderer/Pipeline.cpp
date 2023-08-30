@@ -4,7 +4,7 @@
 #include "VulkanUtils.h"
 #include "VulkanContext.h"
 
-vge::PipelineCreateInfo vge::Pipeline::DefaultCreateInfo(VkExtent2D extent)
+void vge::Pipeline::DefaultCreateInfo(PipelineCreateInfo& createInfo)
 {
 #pragma region DynamicStateExample
 	{
@@ -19,27 +19,21 @@ vge::PipelineCreateInfo vge::Pipeline::DefaultCreateInfo(VkExtent2D extent)
 	}
 #pragma endregion DynamicStateExample
 
-	PipelineCreateInfo createInfo = {};
-
-	createInfo.InputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-	createInfo.InputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-	createInfo.InputAssemblyInfo.primitiveRestartEnable = VK_FALSE;
-
-	createInfo.Viewport.x = 0.0f;
-	createInfo.Viewport.y = 0.0f;
-	createInfo.Viewport.width = static_cast<float>(extent.width);
-	createInfo.Viewport.height = static_cast<float>(extent.height);
-	createInfo.Viewport.minDepth = 0.0f;
-	createInfo.Viewport.maxDepth = 1.0f;
-
-	createInfo.Scissor.offset = { 0, 0 };
-	createInfo.Scissor.extent = extent;
+	createInfo.ViewportInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+	createInfo.ViewportInfo.viewportCount = 1;
+	createInfo.ViewportInfo.pViewports = nullptr;
+	createInfo.ViewportInfo.scissorCount = 1;
+	createInfo.ViewportInfo.pScissors = nullptr;
 
 	createInfo.VertexInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 	createInfo.VertexInfo.vertexBindingDescriptionCount = 0;
 	createInfo.VertexInfo.pVertexBindingDescriptions = nullptr;
 	createInfo.VertexInfo.vertexAttributeDescriptionCount = 0;
 	createInfo.VertexInfo.pVertexAttributeDescriptions = nullptr;
+
+	createInfo.InputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+	createInfo.InputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	createInfo.InputAssemblyInfo.primitiveRestartEnable = VK_FALSE;
 
 	createInfo.RasterizationInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 	createInfo.RasterizationInfo.depthClampEnable = VK_FALSE;
@@ -75,7 +69,9 @@ vge::PipelineCreateInfo vge::Pipeline::DefaultCreateInfo(VkExtent2D extent)
 	createInfo.DepthStencilInfo.depthBoundsTestEnable = VK_FALSE;	// enable check between min and max given depth values
 	createInfo.DepthStencilInfo.stencilTestEnable = VK_FALSE;
 
-	return createInfo;
+	createInfo.DynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+	createInfo.DynamicStateInfo.dynamicStateCount = static_cast<uint32>(createInfo.DynamicStates.size());
+	createInfo.DynamicStateInfo.pDynamicStates = createInfo.DynamicStates.data();
 }
 
 void vge::Pipeline::Initialize(const char* vertexShader, const char* fragmentShader, const PipelineCreateInfo& data)
@@ -103,21 +99,14 @@ void vge::Pipeline::Initialize(const char* vertexShader, const char* fragmentSha
 	shaderStages[1].module = m_FragmentShaderModule;
 	shaderStages[1].pName = "main";
 
-	VkPipelineViewportStateCreateInfo viewportInfo = {};
-	viewportInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-	viewportInfo.viewportCount = 1;
-	viewportInfo.pViewports = &data.Viewport;
-	viewportInfo.scissorCount = 1;
-	viewportInfo.pScissors = &data.Scissor;
-
 	VkGraphicsPipelineCreateInfo pipelineCreateInfo = {};
 	pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 	pipelineCreateInfo.stageCount = static_cast<uint32>(shaderStages.size());
 	pipelineCreateInfo.pStages = shaderStages.data();
 	pipelineCreateInfo.pVertexInputState = &data.VertexInfo;
 	pipelineCreateInfo.pInputAssemblyState = &data.InputAssemblyInfo;
-	pipelineCreateInfo.pViewportState = &viewportInfo;
-	pipelineCreateInfo.pDynamicState = nullptr;
+	pipelineCreateInfo.pViewportState = &data.ViewportInfo;
+	pipelineCreateInfo.pDynamicState = &data.DynamicStateInfo;
 	pipelineCreateInfo.pRasterizationState = &data.RasterizationInfo;
 	pipelineCreateInfo.pMultisampleState = &data.MultisampleInfo;
 	pipelineCreateInfo.pColorBlendState = &data.ColorBlendInfo;

@@ -28,6 +28,7 @@ namespace vge
 
 	public:
 		void Initialize();
+		void Run();
 		void Close();
 
 		bool ShouldClose() const;

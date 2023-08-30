@@ -18,7 +18,7 @@ void vge::EngineLoop::Start()
 
 	while (!GApplication->ShouldClose())
 	{
-		SCOPE_TIMER("Tick");
+		//SCOPE_TIMER("Tick");
 
 		GWindow->PollEvents();
 
@@ -52,4 +52,5 @@ void vge::EngineLoop::Start()
 	LOG(Log, "Engine loop stats:");
 	LOG(Log, " Duration: %.2fs", loopDurationTime);
 	LOG(Log, " Iterations: %d", GAppFrame);
+	LOG(Log, " Average FPS: %.2f", static_cast<float>(GAppFrame) / loopDurationTime);
 }

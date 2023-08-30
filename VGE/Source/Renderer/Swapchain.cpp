@@ -61,9 +61,19 @@ static VkExtent2D GetBestSwapchainExtent(VkSurfaceCapabilitiesKHR surfaceCapabil
 
 vge::Swapchain::Swapchain(Device& device) : m_Device(device) {}
 
-void vge::Swapchain::Initialize()
+void vge::Swapchain::Initialize(SwapchainRecreateInfo* recreateInfo /*= nullptr*/)
 {
-	SwapchainSupportDetails swapchainDetails = m_Device.GetSwapchainSupportDetails();
+	if (recreateInfo && recreateInfo->IsValid())
+	{
+		m_Surface = recreateInfo->Surface;
+		recreateInfo->Surface = VK_NULL_HANDLE;
+	}
+	else
+	{
+		m_Device.CreateWindowSurface(m_Surface);
+	}
+
+	SwapchainSupportDetails swapchainDetails = GetSupportDetails();
 	QueueFamilyIndices queueIndices = m_Device.GetQueueIndices();
 
 	VkSurfaceFormatKHR surfaceFormat = GetBestSurfaceFormat(swapchainDetails.SurfaceFormats);
@@ -78,7 +88,7 @@ void vge::Swapchain::Initialize()
 
 	VkSwapchainCreateInfoKHR swapchainCreateInfo = {};
 	swapchainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-	swapchainCreateInfo.surface = m_Device.GetSurface();
+	swapchainCreateInfo.surface = m_Surface;
 	swapchainCreateInfo.imageFormat = surfaceFormat.format;
 	swapchainCreateInfo.imageColorSpace = surfaceFormat.colorSpace;
 	swapchainCreateInfo.presentMode = presentMode;
@@ -109,12 +119,29 @@ void vge::Swapchain::Initialize()
 		swapchainCreateInfo.pQueueFamilyIndices = nullptr;
 	}
 
-	swapchainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
+	swapchainCreateInfo.oldSwapchain = recreateInfo->Swapchain;
 
 	VK_ENSURE(vkCreateSwapchainKHR(m_Device.GetHandle(), &swapchainCreateInfo, nullptr, &m_Handle));
 
+	if (recreateInfo)
+	{
+		if (recreateInfo->Swapchain != VK_NULL_HANDLE)
+		{
+			vkDestroySwapchainKHR(m_Device.GetHandle(), recreateInfo->Swapchain, nullptr);
+			recreateInfo->Swapchain = VK_NULL_HANDLE;
+		}
+
+		if (recreateInfo->Surface != VK_NULL_HANDLE)
+		{
+			vkDestroySurfaceKHR(m_Device.GetInstance(), recreateInfo->Surface, nullptr);
+			recreateInfo->Surface = VK_NULL_HANDLE;
+		}
+	}
+
 	m_ImageFormat = surfaceFormat.format;
 	m_Extent = extent;
+
+	LOG(Log, "Dimensions: %dx%d", m_Extent.width, m_Extent.height);
 
 	uint32 swapchainImageCount = 0;
 	vkGetSwapchainImagesKHR(m_Device.GetHandle(), m_Handle, &swapchainImageCount, nullptr);
@@ -132,7 +159,7 @@ void vge::Swapchain::Initialize()
 	}
 }
 
-void vge::Swapchain::Destroy()
+void vge::Swapchain::Destroy(SwapchainRecreateInfo* recreateInfo /*= nullptr*/)
 {
 	for (VkFramebuffer& framebuffer : m_Framebuffers)
 	{
@@ -144,7 +171,16 @@ void vge::Swapchain::Destroy()
 		vkDestroyImageView(m_Device.GetHandle(), swapchainImage.View, nullptr);
 	}
 
-	vkDestroySwapchainKHR(m_Device.GetHandle(), m_Handle, nullptr);
+	if (recreateInfo && recreateInfo->IsValid())
+	{
+		recreateInfo->Swapchain = m_Handle;
+		recreateInfo->Surface = m_Surface;
+	}
+	else
+	{
+		vkDestroySwapchainKHR(m_Device.GetHandle(), m_Handle, nullptr);
+		vkDestroySurfaceKHR(m_Device.GetInstance(), m_Surface, nullptr);
+	}
 }
 
 void vge::Swapchain::CreateFramebuffer(VkRenderPass renderPass, uint32 attachmentCount, const VkImageView* attachments)

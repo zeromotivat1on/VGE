@@ -10,6 +10,7 @@ namespace vge
 	class Window;
 	class Device;
 	class Swapchain;
+	struct SwapchainRecreateInfo;
 
 	inline class Renderer* GRenderer = nullptr;
 	
@@ -56,6 +57,7 @@ namespace vge
 
 		Device* m_Device = nullptr;
 		std::unique_ptr<Swapchain> m_Swapchain = nullptr;
+		std::unique_ptr<SwapchainRecreateInfo> m_SwapchainRecreateInfo = nullptr;
 
 		VkSampler m_TextureSampler = VK_NULL_HANDLE;
 
@@ -111,7 +113,7 @@ namespace vge
 		void CreatePushConstantRange();
 		void CreatePipelines();
 		void CreateFramebuffers();
-		void CreateCommandBuffers();
+		void AllocateCommandBuffers();
 		void CreateTextureSampler();
 		//void AllocateDynamicBufferTransferSpace();
 		void CreateUniformBuffers();
@@ -119,10 +121,19 @@ namespace vge
 		void CreateDescriptorSets();
 		void CreateSyncObjects();
 
+		void AllocateUniformDescriptorSet();
+		void AllocateInputDescriptorSet();
+		void UpdateUniformDescriptorSet();
+		void UpdateInputDescriptorSet();
+
 		void RecordCommandBuffers(uint32 ImageIndex);
 		void UpdateUniformBuffers(uint32 ImageIndex);
 
 		void RecreateSwapchain();
+
+		void FreeCommandBuffers();
+		void DestroyColorBufferImages();
+		void DestroyDepthBufferImages();
 	};
 
 	Renderer* CreateRenderer(Device* device);

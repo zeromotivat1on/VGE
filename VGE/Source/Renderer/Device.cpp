@@ -1,5 +1,4 @@
 #include "Device.h"
-#include "Window.h"
 #include "Application.h"
 #include "VulkanUtils.h"
 #include "VulkanGlobals.h"
@@ -278,7 +277,7 @@ void vge::Device::Initialize()
 {
 	CreateInstance();
 	SetupDebugMessenger();
-	CreateSurface();
+	CreateInitialSurface();
 	FindGpu();
 	CreateDevice();
 	FindQueues();
@@ -298,8 +297,6 @@ void vge::Device::Destroy()
 	vkDestroyDevice(m_Handle, nullptr);
 	VulkanContext::Device = VK_NULL_HANDLE;
 
-	vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
-
 	if (GEnableValidationLayers)
 	{
 		DestroyDebugUtilsMessengerEXT(m_Instance, m_DebugMessenger, nullptr);
@@ -307,6 +304,16 @@ void vge::Device::Destroy()
 
 	vkDestroyInstance(m_Instance, nullptr);
 	VulkanContext::Instance = VK_NULL_HANDLE;
+}
+
+vge::SwapchainSupportDetails vge::Device::GetSwapchainSupportDetails(VkSurfaceKHR surface) const
+{
+	if (surface == VK_NULL_HANDLE)
+	{
+		surface = m_InitialSurface;
+	}
+
+	return GetSwapchainSupportDetailsInternal(m_Gpu, surface);
 }
 
 void vge::Device::CreateInstance()
@@ -374,9 +381,9 @@ void vge::Device::SetupDebugMessenger()
 	VK_ENSURE_MSG(CreateDebugUtilsMessengerEXT(m_Instance, &createInfo, nullptr, &m_DebugMessenger), "Failed to set up debug messenger.");
 }
 
-void vge::Device::CreateSurface()
+void vge::Device::CreateInitialSurface()
 {
-	m_Window->CreateSurface(m_Instance, m_Surface);
+	CreateWindowSurface(m_InitialSurface);
 }
 
 void vge::Device::FindGpu()
@@ -391,12 +398,11 @@ void vge::Device::FindGpu()
 
 	for (const VkPhysicalDevice& gpu : availableGpus)
 	{
-		if (SuitableGpu(gpu, m_Surface))
+		if (SuitableGpu(gpu, m_InitialSurface))
 		{
 			m_Gpu = gpu;
 			VulkanContext::Gpu = m_Gpu;
-			m_QueueIndices = GetQueueFamilies(m_Gpu, m_Surface);
-			m_SwapchainSupportDetails = GetSwapchainSupportDetailsInternal(m_Gpu, m_Surface);
+			m_QueueIndices = GetQueueFamilies(m_Gpu, m_InitialSurface);
 
 			VkPhysicalDeviceProperties gpuProps;
 			vkGetPhysicalDeviceProperties(m_Gpu, &gpuProps);
