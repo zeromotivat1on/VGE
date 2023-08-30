@@ -2,23 +2,9 @@
 #include "File.h"
 #include "Shader.h"
 #include "VulkanUtils.h"
-#include "VulkanContext.h"
 
 void vge::Pipeline::DefaultCreateInfo(PipelineCreateInfo& createInfo)
 {
-#pragma region DynamicStateExample
-	{
-		std::vector<VkDynamicState> dynamicStates;
-		dynamicStates.push_back(VK_DYNAMIC_STATE_VIEWPORT); // can be set from vkCmdSetViewport(cmdBuffer, pos, amount, newViewport)
-		dynamicStates.push_back(VK_DYNAMIC_STATE_SCISSOR);	// can be set from vkCmdSetScissor(cmdBuffer, pos, amount, newScissor)
-
-		VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {};
-		dynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-		dynamicStateCreateInfo.dynamicStateCount = static_cast<uint32>(dynamicStates.size());
-		dynamicStateCreateInfo.pDynamicStates = dynamicStates.data();
-	}
-#pragma endregion DynamicStateExample
-
 	createInfo.ViewportInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 	createInfo.ViewportInfo.viewportCount = 1;
 	createInfo.ViewportInfo.pViewports = nullptr;
@@ -74,6 +60,8 @@ void vge::Pipeline::DefaultCreateInfo(PipelineCreateInfo& createInfo)
 	createInfo.DynamicStateInfo.pDynamicStates = createInfo.DynamicStates.data();
 }
 
+vge::Pipeline::Pipeline(Device& device) : m_Device(device) {}
+
 void vge::Pipeline::Initialize(const char* vertexShader, const char* fragmentShader, const PipelineCreateInfo& data)
 {
 	ENSURE(data.PipelineLayout != VK_NULL_HANDLE);
@@ -86,8 +74,8 @@ void vge::Pipeline::Initialize(const char* vertexShader, const char* fragmentSha
 	std::vector<char> vertexShaderCode = file::ReadShader(vertexShader);
 	std::vector<char> fragmentShaderCode = file::ReadShader(fragmentShader);
 
-	m_VertexShaderModule = CreateShaderModule(VulkanContext::Device, vertexShaderCode);
-	m_FragmentShaderModule = CreateShaderModule(VulkanContext::Device, fragmentShaderCode);
+	m_VertexShaderModule = CreateShaderModule(m_Device.GetHandle(), vertexShaderCode);
+	m_FragmentShaderModule = CreateShaderModule(m_Device.GetHandle(), fragmentShaderCode);
 
 	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages = {};
 	shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -117,13 +105,13 @@ void vge::Pipeline::Initialize(const char* vertexShader, const char* fragmentSha
 	pipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
 	pipelineCreateInfo.basePipelineIndex = INDEX_NONE;
 
-	VK_ENSURE(vkCreateGraphicsPipelines(VulkanContext::Device, nullptr, 1, &pipelineCreateInfo, nullptr, &m_Handle));
+	VK_ENSURE(vkCreateGraphicsPipelines(m_Device.GetHandle(), nullptr, 1, &pipelineCreateInfo, nullptr, &m_Handle));
 }
 
 void vge::Pipeline::Destroy()
 {
-	vkDestroyShaderModule(VulkanContext::Device, m_FragmentShaderModule, nullptr);
-	vkDestroyShaderModule(VulkanContext::Device, m_VertexShaderModule, nullptr);
-	vkDestroyPipeline(VulkanContext::Device, m_Handle, nullptr);
-	vkDestroyPipelineLayout(VulkanContext::Device, m_Layout, nullptr);
+	vkDestroyShaderModule(m_Device.GetHandle(), m_FragmentShaderModule, nullptr);
+	vkDestroyShaderModule(m_Device.GetHandle(), m_VertexShaderModule, nullptr);
+	vkDestroyPipeline(m_Device.GetHandle(), m_Handle, nullptr);
+	vkDestroyPipelineLayout(m_Device.GetHandle(), m_Layout, nullptr);
 }

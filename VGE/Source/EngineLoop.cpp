@@ -18,7 +18,7 @@ void vge::EngineLoop::Start()
 
 	while (!GApplication->ShouldClose())
 	{
-		//SCOPE_TIMER("Tick");
+		SCOPE_TIMER("Tick");
 
 		GWindow->PollEvents();
 

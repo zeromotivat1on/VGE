@@ -5,16 +5,23 @@
 
 namespace vge
 {
+	class Device;
+
 	struct ModelData
 	{
 		glm::mat4 ModelMatrix = glm::mat4(1.0f);
+	};
+
+	struct MeshCreateInfo
+	{
+		const Device* Device = nullptr;
 	};
 
 	class Mesh
 	{
 	public:
 		Mesh() = default;
-		Mesh(VkQueue transferQueue, VkCommandPool transferCmdPool, const std::vector<Vertex>& vertices, const std::vector<uint32>& indices, int32 TextureId);
+		Mesh(const Device* device, const std::vector<Vertex>& vertices, const std::vector<uint32>& indices, int32 TextureId);
 
 		inline int32 GetTextureId() const { return m_TextureId; }
 		inline size_t GetIndexCount() const { return m_IndexCount; }

@@ -4,11 +4,13 @@
 
 namespace vge
 {
+	class Device;
+
 	struct ModelCreateInfo
 	{
 		int32 Id = INDEX_NONE;
 		const char* Filename = nullptr;
-		VkCommandPool CmdPool = VK_NULL_HANDLE;
+		const Device* Device = nullptr;
 	};
 
 	class Model
@@ -34,13 +36,14 @@ namespace vge
 
 	private:
 		// Recursively load all meshes starting from a given node as root.
-		void LoadNode(VkQueue transferQueue, VkCommandPool transferCmdPool, const aiScene* scene, const aiNode* node, const std::vector<int32>& materialToTextureId);
-		void LoadMesh(VkQueue transferQueue, VkCommandPool transferCmdPool, const aiScene* scene, const aiMesh* mesh, const std::vector<int32>& materialToTextureId);
+		void LoadNode(const Device*, const aiScene* scene, const aiNode* node, const std::vector<int32>& materialToTextureId);
+		void LoadMesh(const Device*, const aiScene* scene, const aiMesh* mesh, const std::vector<int32>& materialToTextureId);
 
 	private:
 		int32 m_Id = INDEX_NONE;
 		ModelData m_ModelData = {};
 		const char* m_Filename = nullptr;
+		const Device* m_Device = nullptr;
 		std::vector<Mesh> m_Meshes = {};
 	};
 }

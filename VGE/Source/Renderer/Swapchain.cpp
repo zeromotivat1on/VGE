@@ -153,7 +153,7 @@ void vge::Swapchain::Initialize(SwapchainRecreateInfo* recreateInfo /*= nullptr*
 	{
 		SwapchainImage swapchainImage = {};
 		swapchainImage.Handle = image;
-		CreateImageView(image, m_ImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, swapchainImage.View);
+		CreateImageView(m_Device.GetHandle(), image, m_ImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, swapchainImage.View);
 
 		m_Images.push_back(swapchainImage);
 	}

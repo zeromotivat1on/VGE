@@ -1,5 +1,4 @@
 ﻿#include "VulkanUtils.h"
-#include "VulkanContext.h"
 #include "Renderer.h"
 #include "Texture.h"
 #include "Window.h"
@@ -43,12 +42,12 @@ uint32 vge::FindMemoryTypeIndex(VkPhysicalDevice gpu, uint32 allowedTypes, VkMem
 	return 0;
 }
 
-VkFormat vge::GetBestImageFormat(const std::vector<VkFormat>& formats, VkImageTiling tiling, VkFormatFeatureFlags features)
+VkFormat vge::GetBestImageFormat(VkPhysicalDevice gpu, const std::vector<VkFormat>& formats, VkImageTiling tiling, VkFormatFeatureFlags features)
 {
 	for (const VkFormat& format : formats)
 	{
 		VkFormatProperties formatProps;
-		vkGetPhysicalDeviceFormatProperties(VulkanContext::Gpu, format, &formatProps);
+		vkGetPhysicalDeviceFormatProperties(gpu, format, &formatProps);
 
 		if (tiling == VK_IMAGE_TILING_LINEAR && (formatProps.linearTilingFeatures & features) == features)
 		{
@@ -64,68 +63,68 @@ VkFormat vge::GetBestImageFormat(const std::vector<VkFormat>& formats, VkImageTi
 	return VK_FORMAT_UNDEFINED;
 }
 
-void vge::CreateImage(VmaAllocator allocator, VkExtent2D extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VmaMemoryUsage memAllocUsage, VmaImage* outImage)
-{
-	if (!outImage)
-	{
-		LOG(Warning, "Given out image parameter is null.");
-		return;
-	}
+//void vge::CreateImage(VmaAllocator allocator, VkExtent2D extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VmaMemoryUsage memAllocUsage, Image* outImage)
+//{
+//	if (!outImage)
+//	{
+//		LOG(Warning, "Given out image parameter is null.");
+//		return;
+//	}
+//
+//	VkImageCreateInfo imageCreateInfo = {};
+//	imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+//	imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+//	imageCreateInfo.extent.width = extent.width;
+//	imageCreateInfo.extent.height = extent.height;
+//	imageCreateInfo.extent.depth = 1;
+//	imageCreateInfo.mipLevels = 1;
+//	imageCreateInfo.arrayLayers = 1;
+//	imageCreateInfo.format = format;
+//	imageCreateInfo.tiling = tiling;
+//	imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; // dont care
+//	imageCreateInfo.usage = usage;
+//	imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+//	imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE; // whether can be shared between queues
+//
+//	VmaAllocationCreateInfo vmaAllocCreateInfo = {};
+//	vmaAllocCreateInfo.usage = memAllocUsage;
+//
+//	VK_ENSURE(vmaCreateImage(allocator, &imageCreateInfo, &vmaAllocCreateInfo, &outImage->Handle, &outImage->Allocation, &outImage->AllocInfo));
+//}
 
-	VkImageCreateInfo imageCreateInfo = {};
-	imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-	imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-	imageCreateInfo.extent.width = extent.width;
-	imageCreateInfo.extent.height = extent.height;
-	imageCreateInfo.extent.depth = 1;
-	imageCreateInfo.mipLevels = 1;
-	imageCreateInfo.arrayLayers = 1;
-	imageCreateInfo.format = format;
-	imageCreateInfo.tiling = tiling;
-	imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; // dont care
-	imageCreateInfo.usage = usage;
-	imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-	imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE; // whether can be shared between queues
+//void vge::CreateImage(VkExtent2D extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags memProps, VkImage& outImage, VkDeviceMemory& outImageMemory)
+//{
+//	VkImageCreateInfo imageCreateInfo = {};
+//	imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+//	imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+//	imageCreateInfo.extent.width = extent.width;
+//	imageCreateInfo.extent.height = extent.height;
+//	imageCreateInfo.extent.depth = 1;
+//	imageCreateInfo.mipLevels = 1;
+//	imageCreateInfo.arrayLayers = 1;
+//	imageCreateInfo.format = format;
+//	imageCreateInfo.tiling = tiling;
+//	imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; // dont care
+//	imageCreateInfo.usage = usage;
+//	imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+//	imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE; // whether can be shared between queues
+//
+//	VK_ENSURE_MSG(vkCreateImage(VulkanContext::Device, &imageCreateInfo, nullptr, &outImage), "Failed to create image.");
+//
+//	VkMemoryRequirements memRequriements = {};
+//	vkGetImageMemoryRequirements(VulkanContext::Device, outImage, &memRequriements);
+//
+//	VkMemoryAllocateInfo imageMemoryAllocInfo = {};
+//	imageMemoryAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+//	imageMemoryAllocInfo.allocationSize = memRequriements.size;
+//	imageMemoryAllocInfo.memoryTypeIndex = FindMemoryTypeIndex(VulkanContext::Gpu, memRequriements.memoryTypeBits, memProps);
+//
+//	VK_ENSURE_MSG(vkAllocateMemory(VulkanContext::Device, &imageMemoryAllocInfo, nullptr, &outImageMemory), "Failed to allocate image memory.");
+//
+//	vkBindImageMemory(VulkanContext::Device, outImage, outImageMemory, 0);
+//}
 
-	VmaAllocationCreateInfo vmaAllocCreateInfo = {};
-	vmaAllocCreateInfo.usage = memAllocUsage;
-
-	VK_ENSURE(vmaCreateImage(allocator, &imageCreateInfo, &vmaAllocCreateInfo, &outImage->Handle, &outImage->Allocation, &outImage->AllocInfo));
-}
-
-void vge::CreateImage(VkExtent2D extent, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags memProps, VkImage& outImage, VkDeviceMemory& outImageMemory)
-{
-	VkImageCreateInfo imageCreateInfo = {};
-	imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-	imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-	imageCreateInfo.extent.width = extent.width;
-	imageCreateInfo.extent.height = extent.height;
-	imageCreateInfo.extent.depth = 1;
-	imageCreateInfo.mipLevels = 1;
-	imageCreateInfo.arrayLayers = 1;
-	imageCreateInfo.format = format;
-	imageCreateInfo.tiling = tiling;
-	imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; // dont care
-	imageCreateInfo.usage = usage;
-	imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-	imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE; // whether can be shared between queues
-
-	VK_ENSURE_MSG(vkCreateImage(VulkanContext::Device, &imageCreateInfo, nullptr, &outImage), "Failed to create image.");
-
-	VkMemoryRequirements memRequriements = {};
-	vkGetImageMemoryRequirements(VulkanContext::Device, outImage, &memRequriements);
-
-	VkMemoryAllocateInfo imageMemoryAllocInfo = {};
-	imageMemoryAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	imageMemoryAllocInfo.allocationSize = memRequriements.size;
-	imageMemoryAllocInfo.memoryTypeIndex = FindMemoryTypeIndex(VulkanContext::Gpu, memRequriements.memoryTypeBits, memProps);
-
-	VK_ENSURE_MSG(vkAllocateMemory(VulkanContext::Device, &imageMemoryAllocInfo, nullptr, &outImageMemory), "Failed to allocate image memory.");
-
-	vkBindImageMemory(VulkanContext::Device, outImage, outImageMemory, 0);
-}
-
-void vge::CreateImageView(VkImage image, VkFormat format, VkImageAspectFlagBits aspectFlags, VkImageView& outImageView)
+void vge::CreateImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlagBits aspectFlags, VkImageView& outImageView)
 {
 	VkImageViewCreateInfo createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -142,55 +141,55 @@ void vge::CreateImageView(VkImage image, VkFormat format, VkImageAspectFlagBits 
 	createInfo.subresourceRange.baseArrayLayer = 0;
 	createInfo.subresourceRange.layerCount = 1;
 
-	VK_ENSURE_MSG(vkCreateImageView(VulkanContext::Device, &createInfo, nullptr, &outImageView), "Failed to create image view.");
+	VK_ENSURE_MSG(vkCreateImageView(device, &createInfo, nullptr, &outImageView), "Failed to create image view.");
 }
 
-void vge::CreateTextureImage(VmaAllocator allocator, VkQueue transferQueue, VkCommandPool transferCmdPool, const char* filename, VmaImage* outImage)
-{
-	if (!outImage)
-	{
-		LOG(Warning, "Given out image parameter is null.");
-		return;
-	}
+//void vge::CreateTextureImage(VmaAllocator allocator, VkQueue transferQueue, VkCommandPool transferCmdPool, const char* filename, Image* outImage)
+//{
+//	if (!outImage)
+//	{
+//		LOG(Warning, "Given out image parameter is null.");
+//		return;
+//	}
+//
+//	int32 width = 0, height = 0;
+//	VkDeviceSize textureSize = 0;
+//	stbi_uc* textureData = file::LoadTexture(filename, width, height, textureSize);
+//
+//	ScopeStageBuffer textureStageBuffer(textureSize);
+//
+//	void* data;
+//	vmaMapMemory(allocator, textureStageBuffer.Get().Allocation, &data);
+//	memcpy(data, textureData, static_cast<size_t>(textureSize));
+//	vmaUnmapMemory(allocator, textureStageBuffer.Get().Allocation);
+//
+//	file::FreeTexture(textureData);
+//
+//	const VkExtent2D textureExtent = { static_cast<uint32>(width), static_cast<uint32>(height) };
+//	const VkFormat textureFormat = VK_FORMAT_R8G8B8A8_UNORM;
+//	const VkImageTiling textureTiling = VK_IMAGE_TILING_OPTIMAL;
+//	const VkImageUsageFlags textureUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+//	const VmaMemoryUsage textureMemUsage = VMA_MEMORY_USAGE_GPU_ONLY;
+//	CreateImage(allocator, textureExtent, textureFormat, textureTiling, textureUsage, textureMemUsage, outImage);
+//	
+//	// Transition image to be destination for copy operation.
+//	{
+//		const VkImageLayout oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+//		const VkImageLayout newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+//		TransitionImageLayout(transferQueue, transferCmdPool, outImage->Handle, oldLayout, newLayout);
+//	}
+//
+//	CopyImageBuffer(transferQueue, transferCmdPool, textureStageBuffer.Get().Handle, outImage->Handle, textureExtent);
+//
+//	// Transition image to be shader readable for shade usage.
+//	{
+//		const VkImageLayout oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+//		const VkImageLayout newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+//		TransitionImageLayout(transferQueue, transferCmdPool, outImage->Handle, oldLayout, newLayout);
+//	}
+//}
 
-	int32 width = 0, height = 0;
-	VkDeviceSize textureSize = 0;
-	stbi_uc* textureData = file::LoadTexture(filename, width, height, textureSize);
-
-	ScopeStageBuffer textureStageBuffer(textureSize);
-
-	void* data;
-	vmaMapMemory(VulkanContext::Allocator, textureStageBuffer.Get().Allocation, &data);
-	memcpy(data, textureData, static_cast<size_t>(textureSize));
-	vmaUnmapMemory(VulkanContext::Allocator, textureStageBuffer.Get().Allocation);
-
-	file::FreeTexture(textureData);
-
-	const VkExtent2D textureExtent = { static_cast<uint32>(width), static_cast<uint32>(height) };
-	const VkFormat textureFormat = VK_FORMAT_R8G8B8A8_UNORM;
-	const VkImageTiling textureTiling = VK_IMAGE_TILING_OPTIMAL;
-	const VkImageUsageFlags textureUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-	const VmaMemoryUsage textureMemUsage = VMA_MEMORY_USAGE_GPU_ONLY;
-	CreateImage(allocator, textureExtent, textureFormat, textureTiling, textureUsage, textureMemUsage, outImage);
-	
-	// Transition image to be destination for copy operation.
-	{
-		const VkImageLayout oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		const VkImageLayout newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		TransitionImageLayout(transferQueue, transferCmdPool, outImage->Handle, oldLayout, newLayout);
-	}
-
-	CopyImageBuffer(transferQueue, transferCmdPool, textureStageBuffer.Get().Handle, outImage->Handle, textureExtent);
-
-	// Transition image to be shader readable for shade usage.
-	{
-		const VkImageLayout oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		const VkImageLayout newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		TransitionImageLayout(transferQueue, transferCmdPool, outImage->Handle, oldLayout, newLayout);
-	}
-}
-
-void vge::CreateTextureDescriptorSet(VkSampler sampler, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descrptorSetLayout, VkImageView textureImageView, VkDescriptorSet& outTextureDescriptorSet)
+void vge::CreateTextureDescriptorSet(VkDevice device, VkSampler sampler, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descrptorSetLayout, VkImageView textureImageView, VkDescriptorSet& outTextureDescriptorSet)
 {
 	VkDescriptorSetAllocateInfo descriptorSetAllocInfo = {};
 	descriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -198,7 +197,7 @@ void vge::CreateTextureDescriptorSet(VkSampler sampler, VkDescriptorPool descrip
 	descriptorSetAllocInfo.descriptorSetCount = 1;
 	descriptorSetAllocInfo.pSetLayouts = &descrptorSetLayout;
 
-	VK_ENSURE_MSG(vkAllocateDescriptorSets(VulkanContext::Device, &descriptorSetAllocInfo, &outTextureDescriptorSet), "Failed to allocate texture descriptor set.");
+	VK_ENSURE_MSG(vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &outTextureDescriptorSet), "Failed to allocate texture descriptor set.");
 
 	VkDescriptorImageInfo descriptorImageInfo = {};
 	descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -214,58 +213,7 @@ void vge::CreateTextureDescriptorSet(VkSampler sampler, VkDescriptorPool descrip
 	descriptorSetWrite.descriptorCount = 1;
 	descriptorSetWrite.pImageInfo = &descriptorImageInfo;
 
-	vkUpdateDescriptorSets(VulkanContext::Device, 1, &descriptorSetWrite, 0, nullptr);
-}
-
-void vge::TransitionImageLayout(VkQueue queue, VkCommandPool cmdPool, VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout)
-{
-	ScopeCmdBuffer cmdBuffer(cmdPool, queue);
-
-	VkImageMemoryBarrier imageMemoryBarrier = {};
-	imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	imageMemoryBarrier.oldLayout = oldLayout;
-	imageMemoryBarrier.newLayout = newLayout;
-	imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;			// do not transfer to other queue
-	imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;			// do not transfer to other queue
-	imageMemoryBarrier.image = image;
-	imageMemoryBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	imageMemoryBarrier.subresourceRange.baseMipLevel = 0;
-	imageMemoryBarrier.subresourceRange.levelCount = 1;
-	imageMemoryBarrier.subresourceRange.baseArrayLayer = 0;
-	imageMemoryBarrier.subresourceRange.layerCount = 1;
-
-	VkPipelineStageFlags srcStageFlags = VK_PIPELINE_STAGE_NONE;
-	VkPipelineStageFlags dstStageFlags = VK_PIPELINE_STAGE_NONE;
-
-	// If transtion from new image to image ready to receive data ...
-	if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
-	{
-		// Memory access stage must start after ...
-		imageMemoryBarrier.srcAccessMask = 0;										// basically any memory access stage
-		// ... but must end before ...
-		imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-		srcStageFlags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-		dstStageFlags = VK_PIPELINE_STAGE_TRANSFER_BIT;
-	}
-	// If transition from transfer destination to shader readable ...
-	else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-	{
-		imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-		imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-		srcStageFlags = VK_PIPELINE_STAGE_TRANSFER_BIT;
-		dstStageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-	}
-
-	vkCmdPipelineBarrier(
-		cmdBuffer.GetHandle(),			// command buffer
-		srcStageFlags, dstStageFlags,	// pipeline stages (match to src/dst Access Masks from barrier)
-		0,								// dependency flags
-		0, nullptr,						// memory barrier
-		0, nullptr,						// buffer memory barrier
-		1, &imageMemoryBarrier			// image memory barrier
-	);
+	vkUpdateDescriptorSets(device, 1, &descriptorSetWrite, 0, nullptr);
 }
 
 void vge::GetTexturesFromMaterials(const aiScene* scene, std::vector<const char*>& outTextures)

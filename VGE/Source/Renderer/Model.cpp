@@ -16,15 +16,16 @@ vge::Model vge::Model::Create(const ModelCreateInfo& data)
 	Model model = {};
 	model.m_Id = data.Id;
 	model.m_Filename = data.Filename;
+	model.m_Device = data.Device;
 
-	model.LoadNode(VulkanContext::GfxQueue, data.CmdPool, scene, scene->mRootNode, textureToDescriptorSet);
+	model.LoadNode(data.Device, scene, scene->mRootNode, textureToDescriptorSet);
 
 	LOG(Log, "New - ID: %d, name: %s", model.GetId(), model.GetFilename());
 
 	return model;
 }
 
-void vge::Model::LoadNode(VkQueue transferQueue, VkCommandPool transferCmdPool, const aiScene* scene, const aiNode* node, const std::vector<int32>& materialToTextureId)
+void vge::Model::LoadNode(const Device* device, const aiScene* scene, const aiNode* node, const std::vector<int32>& materialToTextureId)
 {
 	if (!node)
 	{
@@ -34,16 +35,16 @@ void vge::Model::LoadNode(VkQueue transferQueue, VkCommandPool transferCmdPool, 
 
 	for (uint32 i = 0; i < node->mNumMeshes; ++i)
 	{
-		LoadMesh(transferQueue, transferCmdPool, scene, scene->mMeshes[node->mMeshes[i]], materialToTextureId);
+		LoadMesh(device, scene, scene->mMeshes[node->mMeshes[i]], materialToTextureId);
 	}
 
 	for (uint32 i = 0; i < node->mNumChildren; ++i)
 	{
-		LoadNode(transferQueue, transferCmdPool, scene, node->mChildren[i], materialToTextureId);
+		LoadNode(device, scene, node->mChildren[i], materialToTextureId);
 	}
 }
 
-void vge::Model::LoadMesh(VkQueue transferQueue, VkCommandPool transferCmdPool, const aiScene* scene, const aiMesh* mesh, const std::vector<int32>& materialToTextureId)
+void vge::Model::LoadMesh(const Device* device, const aiScene* scene, const aiMesh* mesh, const std::vector<int32>& materialToTextureId)
 {
 	static constexpr glm::vec3 DontCareColor = glm::vec3(0.0f);
 
@@ -79,7 +80,7 @@ void vge::Model::LoadMesh(VkQueue transferQueue, VkCommandPool transferCmdPool, 
 		}
 	}
 
-	m_Meshes.emplace_back(transferQueue, transferCmdPool, vertices, indices, materialToTextureId[mesh->mMaterialIndex]);
+	m_Meshes.emplace_back(device, vertices, indices, materialToTextureId[mesh->mMaterialIndex]);
 }
 
 void vge::Model::Destroy()

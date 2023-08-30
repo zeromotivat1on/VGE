@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common.h"
+#include "Device.h"
 
 namespace vge
 {
@@ -30,6 +31,7 @@ namespace vge
 
 	public:
 		Pipeline() = default;
+		Pipeline(Device& device);
 		NOT_COPYABLE(Pipeline);
 
 	public:
@@ -42,6 +44,7 @@ namespace vge
 		inline void Bind(VkCommandBuffer cmdBuffer, VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS) { vkCmdBindPipeline(cmdBuffer, bindPoint, m_Handle); }
 
 	private:
+		Device& m_Device;
 		VkPipeline m_Handle = VK_NULL_HANDLE;
 		VkPipelineLayout m_Layout = VK_NULL_HANDLE;
 		VkShaderModule m_VertexShaderModule = VK_NULL_HANDLE;

@@ -5,28 +5,53 @@
 
 namespace vge
 {
-	struct VmaBuffer
+	class Device;
+
+	struct BufferCreateInfo
 	{
+		const Device* Device = nullptr;
+		VkDeviceSize Size = 0;
+		VkBufferUsageFlags Usage = 0;
+		VmaMemoryUsage MemAllocUsage = VmaMemoryUsage::VMA_MEMORY_USAGE_UNKNOWN;
+	};
+
+	struct BufferCopyInfo
+	{
+		const Device* Device = nullptr;
+		VkBuffer Source = VK_NULL_HANDLE;
+		VkBuffer Destination = VK_NULL_HANDLE;
+		VkDeviceSize Size = 0;
+	};
+
+	struct Buffer
+	{
+	public:
+		static Buffer Create(const BufferCreateInfo& data);
+		static void Copy(const BufferCopyInfo& data);
+
+	public:
+		Buffer() = default;
+		void Destroy();
+
+		void TransferToGpuMemory(const void* src, size_t size) const;
+
+	public:
 		VkBuffer Handle = VK_NULL_HANDLE;
 		VmaAllocation Allocation = VK_NULL_HANDLE;
 		VmaAllocationInfo AllocInfo = {};
 
-		inline void Destroy()
-		{
-			vmaDestroyBuffer(VulkanContext::Allocator, Handle, Allocation);
-			Handle = VK_NULL_HANDLE;
-			Allocation = VK_NULL_HANDLE;
-			memory::memzero(&AllocInfo, sizeof(VmaAllocationInfo));
-		}
+	private:
+		VmaAllocator m_Allocator = VK_NULL_HANDLE;
 	};
 
-	void CreateBuffer(VmaAllocator allocator, VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memAllocUsage, VmaBuffer& outBuffer);
+	//void CreateBuffer(VmaAllocator allocator, VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memAllocUsage, Buffer& outBuffer);
 
 	VkCommandBuffer BeginOneTimeCmdBuffer(VkCommandPool cmdPool);
 	void			EndOneTimeCmdBuffer(VkCommandPool cmdPool, VkQueue queue, VkCommandBuffer cmdBuffer);
 
-	void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags memProps, VkBuffer& outBuffer, VkDeviceMemory& outMemory);
-	void CopyBuffer(VkQueue transferQueue, VkCommandPool transferCmdPool, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+	//void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags memProps, VkBuffer& outBuffer, VkDeviceMemory& outMemory);
+
+	//void CopyBuffer(VkQueue transferQueue, VkCommandPool transferCmdPool, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 	void CopyImageBuffer(VkQueue transferQueue, VkCommandPool transferCmdPool, VkBuffer srcBuffer, VkImage dstImage, VkExtent2D extent);
 
 	// Simple wrapper for BeginOneTimeCmdBuffer (ctor) and EndOneTimeCmdBuffer (dtor) functions.
@@ -56,39 +81,27 @@ namespace vge
 	struct ScopeStageBuffer
 	{
 	public:
-		ScopeStageBuffer(VkDeviceSize size)
-		{
-			CreateBuffer(VulkanContext::Allocator, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, m_AllocatedBuffer);
-		}
+		ScopeStageBuffer(const Device* device, VkDeviceSize size);
+		~ScopeStageBuffer() { m_AllocatedBuffer.Destroy(); }
 
-		~ScopeStageBuffer()
-		{
-			vmaDestroyBuffer(VulkanContext::Allocator, m_AllocatedBuffer.Handle, m_AllocatedBuffer.Allocation);
-		}
-
-		inline VmaBuffer Get() const { return m_AllocatedBuffer; }
+		inline Buffer Get() const { return m_AllocatedBuffer; }
 
 	private:
-		VmaBuffer m_AllocatedBuffer = {};
+		Buffer m_AllocatedBuffer = {};
 	};
 
 	class IndexBuffer
 	{
 	public:
+		static IndexBuffer Create(const Device* device, const std::vector<uint32>& indices);
+
+	public:
 		IndexBuffer() = default;
-		IndexBuffer(VkQueue transferQueue, VkCommandPool transferCmdPool, const std::vector<uint32>& indices);
-
-		inline VmaBuffer Get() const { return m_AllocatedBuffer; }
-
-		inline void Destroy() 
-		{
-			vmaDestroyBuffer(VulkanContext::Allocator, m_AllocatedBuffer.Handle, m_AllocatedBuffer.Allocation);
-			memory::memzero(&m_AllocatedBuffer, sizeof(VmaBuffer));
-
-		}
+		inline void Destroy() { m_AllocatedBuffer.Destroy(); }
+		inline Buffer Get() const { return m_AllocatedBuffer; }
 
 	private:
-		VmaBuffer m_AllocatedBuffer = {};
+		Buffer m_AllocatedBuffer = {};
 	};
 
 	struct VertexInputDescription
@@ -111,18 +124,14 @@ namespace vge
 	class VertexBuffer
 	{
 	public:
+		static VertexBuffer Create(const Device* device, const std::vector<Vertex>& vertices);
+
+	public:
 		VertexBuffer() = default;
-		VertexBuffer(VkQueue transferQueue, VkCommandPool transferCmdPool, const std::vector<Vertex>& vertices);
-
-		inline VmaBuffer Get() const { return m_AllocatedBuffer; }
-
-		inline void Destroy()
-		{
-			vmaDestroyBuffer(VulkanContext::Allocator, m_AllocatedBuffer.Handle, m_AllocatedBuffer.Allocation);
-			memory::memzero(&m_AllocatedBuffer, sizeof(VmaBuffer));
-		}
+		inline void Destroy() { m_AllocatedBuffer.Destroy(); }
+		inline Buffer Get() const { return m_AllocatedBuffer; }
 
 	private:
-		VmaBuffer m_AllocatedBuffer = {};
+		Buffer m_AllocatedBuffer = {};
 	};
 }

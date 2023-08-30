@@ -69,11 +69,11 @@ namespace vge
 
 		// TODO: create separate structure for subpass data (images, view, memory, format).
 
-		std::vector<VmaImage> m_ColorBufferImages = {};
+		std::vector<Image> m_ColorBufferImages = {};
 		std::vector<VkImageView> m_ColorBufferImageViews = {};
 		VkFormat m_ColorFormat = VK_FORMAT_UNDEFINED;
 
-		std::vector<VmaImage> m_DepthBufferImages = {};
+		std::vector<Image> m_DepthBufferImages = {};
 		std::vector<VkImageView> m_DepthBufferImageViews = {};
 		VkFormat m_DepthFormat = VK_FORMAT_UNDEFINED;
 
@@ -90,7 +90,7 @@ namespace vge
 
 		VkPushConstantRange m_PushConstantRange = {};
 
-		std::vector<VmaBuffer> m_VpUniformBuffers = {};
+		std::vector<Buffer> m_VpUniformBuffers = {};
 
 		//std::vector<VkBuffer> m_ModelDynamicUniformBuffers = {};
 		//std::vector<VkDeviceMemory> m_ModelDynamicUniformBuffersMemory = {};
@@ -101,8 +101,8 @@ namespace vge
 
 		VkRenderPass m_RenderPass = VK_NULL_HANDLE;
 
-		Pipeline m_FirstPipeline = {};
-		Pipeline m_SecondPipeline = {};
+		Pipeline m_FirstPipeline;
+		Pipeline m_SecondPipeline;
 
 	private:
 		void CreateSwapchain();

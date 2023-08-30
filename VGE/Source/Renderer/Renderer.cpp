@@ -23,7 +23,8 @@ bool vge::DestroyRenderer()
 	return true;
 }
 
-vge::Renderer::Renderer(Device* device) : m_Device(device)
+vge::Renderer::Renderer(Device* device) 
+	: m_Device(device), m_FirstPipeline(*device), m_SecondPipeline(*device)
 {
 	ENSURE(m_Device);
 }
@@ -185,18 +186,24 @@ void vge::Renderer::CreateSwapchain()
 
 void vge::Renderer::CreateColorBufferImages()
 {
-	static constexpr VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
-
 	const std::vector<VkFormat> formats = { VK_FORMAT_R8G8B8A8_UNORM };
-	m_ColorFormat = GetBestImageFormat(formats, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	m_ColorFormat = GetBestImageFormat(m_Device->GetGpu(), formats, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
 	m_ColorBufferImages.resize(m_Swapchain->GetImageCount());
 	m_ColorBufferImageViews.resize(m_Swapchain->GetImageCount());
 
+	ImageCreateInfo imageCreateInfo = {};
+	imageCreateInfo.Device = m_Device;
+	imageCreateInfo.Extent = m_Swapchain->GetExtent();
+	imageCreateInfo.Format = m_ColorFormat;
+	imageCreateInfo.Tiling = VK_IMAGE_TILING_OPTIMAL;
+	imageCreateInfo.Usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+	imageCreateInfo.MemAllocUsage = VMA_MEMORY_USAGE_GPU_ONLY;
+
 	for (size_t i = 0; i < m_Swapchain->GetImageCount(); ++i)
 	{
-		CreateImage(m_Device->GetAllocator(), m_Swapchain->GetExtent(), m_ColorFormat, VK_IMAGE_TILING_OPTIMAL, usage, VMA_MEMORY_USAGE_GPU_ONLY, &m_ColorBufferImages[i]);
-		CreateImageView(m_ColorBufferImages[i].Handle, m_ColorFormat, VK_IMAGE_ASPECT_COLOR_BIT, m_ColorBufferImageViews[i]);
+		m_ColorBufferImages[i] = Image::Create(imageCreateInfo);
+		CreateImageView(m_Device->GetHandle(), m_ColorBufferImages[i].Handle, m_ColorFormat, VK_IMAGE_ASPECT_COLOR_BIT, m_ColorBufferImageViews[i]);
 	}
 }
 
@@ -205,15 +212,23 @@ void vge::Renderer::CreateDepthBufferImages()
 	static constexpr VkImageUsageFlags usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
 
 	const std::vector<VkFormat> formats = { VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT };
-	m_DepthFormat = GetBestImageFormat(formats, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+	m_DepthFormat = GetBestImageFormat(m_Device->GetGpu(), formats, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
 	m_DepthBufferImages.resize(m_Swapchain->GetImageCount());
 	m_DepthBufferImageViews.resize(m_Swapchain->GetImageCount());
 
+	ImageCreateInfo imageCreateInfo = {};
+	imageCreateInfo.Device = m_Device;
+	imageCreateInfo.Extent = m_Swapchain->GetExtent();
+	imageCreateInfo.Format = m_DepthFormat;
+	imageCreateInfo.Tiling = VK_IMAGE_TILING_OPTIMAL;
+	imageCreateInfo.Usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+	imageCreateInfo.MemAllocUsage = VMA_MEMORY_USAGE_GPU_ONLY;
+
 	for (size_t i = 0; i < m_Swapchain->GetImageCount(); ++i)
 	{
-		CreateImage(m_Device->GetAllocator(), m_Swapchain->GetExtent(), m_DepthFormat, VK_IMAGE_TILING_OPTIMAL, usage, VMA_MEMORY_USAGE_GPU_ONLY, &m_DepthBufferImages[i]);
-		CreateImageView(m_DepthBufferImages[i].Handle, m_DepthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, m_DepthBufferImageViews[i]);
+		m_DepthBufferImages[i] = Image::Create(imageCreateInfo);
+		CreateImageView(m_Device->GetHandle(), m_DepthBufferImages[i].Handle, m_DepthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, m_DepthBufferImageViews[i]);
 	}
 }
 
@@ -552,13 +567,20 @@ void vge::Renderer::CreateUniformBuffers()
 	//m_ModelDynamicUniformBuffers.resize(m_Swapchain->GetImageCount());
 	//m_ModelDynamicUniformBuffersMemory.resize(m_Swapchain->GetImageCount());
 
-	constexpr VkBufferUsageFlags usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-	constexpr VkMemoryPropertyFlags props = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-	constexpr VmaMemoryUsage memUsage = VMA_MEMORY_USAGE_CPU_ONLY;
+	//constexpr VkBufferUsageFlags usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+	//constexpr VkMemoryPropertyFlags props = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+	//constexpr VmaMemoryUsage memUsage = VMA_MEMORY_USAGE_CPU_ONLY;
+
+	BufferCreateInfo buffCreateInfo = {};
+	buffCreateInfo.Device = m_Device;
+	buffCreateInfo.Size = vpBufferSize;
+	buffCreateInfo.Usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+	buffCreateInfo.MemAllocUsage = VMA_MEMORY_USAGE_CPU_ONLY;
 
 	for (size_t i = 0; i < m_Swapchain->GetImageCount(); ++i)
 	{
-		CreateBuffer(m_Device->GetAllocator(), vpBufferSize, usage, memUsage, m_VpUniformBuffers[i]);
+		m_VpUniformBuffers[i] = Buffer::Create(buffCreateInfo);
+		//CreateBuffer(m_Device->GetAllocator(), vpBufferSize, usage, memUsage, m_VpUniformBuffers[i]);
 		//CreateBuffer(m_Gpu, m_Device, modelBufferSize, usage, props, m_ModelDynamicUniformBuffers[i], m_ModelDynamicUniformBuffersMemory[i]);
 	}
 }
@@ -928,7 +950,7 @@ int32 vge::Renderer::CreateTexture(const char* filename)
 	TextureCreateInfo texCreateInfo = {};
 	texCreateInfo.Id = static_cast<int32>(m_Textures.size());
 	texCreateInfo.Filename = filename;
-	texCreateInfo.CmdPool = m_Device->GetCommandPool();
+	texCreateInfo.Device = m_Device;
 	texCreateInfo.Sampler = m_TextureSampler;
 	texCreateInfo.DescriptorPool = m_SamplerDescriptorPool;
 	texCreateInfo.DescriptorLayout = m_SamplerDescriptorSetLayout;
@@ -944,7 +966,7 @@ int32 vge::Renderer::CreateModel(const char* filename)
 	ModelCreateInfo modelCreateInfo = {};
 	modelCreateInfo.Id = static_cast<int32>(m_Models.size());
 	modelCreateInfo.Filename = filename;
-	modelCreateInfo.CmdPool = m_Device->GetCommandPool();
+	modelCreateInfo.Device = m_Device;
 
 	Model model = Model::Create(modelCreateInfo);
 	m_Models.push_back(model);
