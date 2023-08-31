@@ -9,7 +9,7 @@ namespace vge
 
 	struct ModelData
 	{
-		glm::mat4 ModelMatrix = glm::mat4(1.0f);
+		alignas(16) glm::mat4 ModelMatrix = glm::mat4(1.0f);
 	};
 
 	struct MeshCreateInfo

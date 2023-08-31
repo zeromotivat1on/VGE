@@ -1,4 +1,5 @@
 #include "Window.h"
+#include "Renderer.h"
 
 vge::Window* vge::CreateWindow(const char* name, const int32 width, const int32 height)
 {
@@ -42,6 +43,13 @@ void vge::Window::FramebufferResizeCallback(GLFWwindow* windowRaw, int32 width, 
 	window->m_Height = height;
 
 	LOG(Log, "Dimensions: %dx%d", width, height);
+
+	// Preserve actual image resize as well.
+	if (GRenderer)
+	{
+		GRenderer->RecreateSwapchain();
+		GRenderer->Draw();
+	}
 }
 
 vge::Window::Window(const char* name, const int32 width, const int32 height)

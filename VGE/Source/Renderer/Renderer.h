@@ -41,6 +41,8 @@ namespace vge
 		int32 CreateTexture(const char* filename);
 		int32 CreateModel(const char* filename);
 
+		void RecreateSwapchain();
+
 		inline void UpdateModelMatrix(int32 modelIndex, glm::mat4 model) 
 		{
 			if (modelIndex < m_Models.size()) 
@@ -128,8 +130,6 @@ namespace vge
 
 		void RecordCommandBuffers(uint32 ImageIndex);
 		void UpdateUniformBuffers(uint32 ImageIndex);
-
-		void RecreateSwapchain();
 
 		void FreeCommandBuffers();
 		void DestroyColorBufferImages();

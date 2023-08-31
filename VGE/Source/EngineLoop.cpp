@@ -6,13 +6,21 @@
 
 static inline void IncrementAppFrame() { ++vge::GAppFrame; }
 
+float vge::EngineLoop::StartTime = 0.0f;
+float vge::EngineLoop::LastTime = 0.0f;
+float vge::EngineLoop::DeltaTime = 0.0f;
+
+void vge::EngineLoop::UpdateTime(const float nowTime)
+{
+	DeltaTime = nowTime - LastTime;
+	LastTime = nowTime;
+}
+
 void vge::EngineLoop::Start()
 {
-	const float loopStartTime = static_cast<float>(glfwGetTime());
+	StartTime = static_cast<float>(glfwGetTime());
 
 	float angle = 0.0f;
-	float deltaTime = 0.0f;
-	float lastTime = 0.0f;
 
 	const int32 firstModelID = GRenderer->CreateModel("Models/cottage/Cottage_FREE.obj");
 
@@ -20,13 +28,11 @@ void vge::EngineLoop::Start()
 	{
 		SCOPE_TIMER("Tick");
 
+		UpdateTime(static_cast<float>(glfwGetTime()));
+
 		GWindow->PollEvents();
 
-		const float now = static_cast<float>(glfwGetTime());
-		deltaTime = now - lastTime;
-		lastTime = now;
-
-		angle += 30.0f * deltaTime;
+		angle += 30.0f * DeltaTime;
 
 		if (angle > 360.0f)
 		{
@@ -48,7 +54,7 @@ void vge::EngineLoop::Start()
 		IncrementAppFrame();
 	}
 
-	const float loopDurationTime = lastTime - loopStartTime;
+	const float loopDurationTime = LastTime - StartTime;
 	LOG(Log, "Engine loop stats:");
 	LOG(Log, " Duration: %.2fs", loopDurationTime);
 	LOG(Log, " Iterations: %d", GAppFrame);
