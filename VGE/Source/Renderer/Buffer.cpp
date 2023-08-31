@@ -49,20 +49,6 @@ void vge::Buffer::TransferToGpuMemory(const void* src, size_t size) const
 	vmaUnmapMemory(m_Allocator, Allocation);
 }
 
-//void vge::CreateBuffer(VmaAllocator allocator, VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memAllocUsage, Buffer& outBuffer)
-//{
-//	VkBufferCreateInfo bufferCreateInfo = {};
-//	bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-//	bufferCreateInfo.size = size;
-//	bufferCreateInfo.usage = usage;
-//	bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-//
-//	VmaAllocationCreateInfo vmaAllocCreateInfo = {};
-//	vmaAllocCreateInfo.usage = memAllocUsage;
-//
-//	VK_ENSURE(vmaCreateBuffer(allocator, &bufferCreateInfo, &vmaAllocCreateInfo, &outBuffer.Handle, &outBuffer.Allocation, &outBuffer.AllocInfo));
-//}
-
 VkCommandBuffer vge::BeginOneTimeCmdBuffer(VkCommandPool cmdPool)
 {
 	VkCommandBuffer cmdBuffer = VK_NULL_HANDLE;
@@ -102,49 +88,6 @@ void vge::EndOneTimeCmdBuffer(VkCommandPool cmdPool, VkQueue queue, VkCommandBuf
 
 	vkFreeCommandBuffers(VulkanContext::Device, cmdPool, 1, &cmdBuffer);
 }
-
-//void vge::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags memProps, VkBuffer& outBuffer, VkDeviceMemory& outMemory)
-//{
-//	VkBufferCreateInfo bufferCreateInfo = {};
-//	bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-//	bufferCreateInfo.size = size;
-//	bufferCreateInfo.usage = usage;
-//	bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-//
-//	if (vkCreateBuffer(VulkanContext::Device, &bufferCreateInfo, nullptr, &outBuffer) != VK_SUCCESS)
-//	{
-//		LOG(Error, "Failed to create buffer.");
-//		return;
-//	}
-//
-//	VkMemoryRequirements memoryRequirements = {};
-//	vkGetBufferMemoryRequirements(VulkanContext::Device, outBuffer, &memoryRequirements);
-//
-//	VkMemoryAllocateInfo memoryAllocateInfo = {};
-//	memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-//	memoryAllocateInfo.allocationSize = memoryRequirements.size;
-//	memoryAllocateInfo.memoryTypeIndex = FindMemoryTypeIndex(VulkanContext::Gpu, memoryRequirements.memoryTypeBits, memProps);
-//
-//	if (vkAllocateMemory(VulkanContext::Device, &memoryAllocateInfo, nullptr, &outMemory) != VK_SUCCESS)
-//	{
-//		LOG(Error, "Failed to allocate memory for buffer.");
-//		return;
-//	}
-//
-//	vkBindBufferMemory(VulkanContext::Device, outBuffer, outMemory, 0);
-//}
-//
-//void vge::CopyBuffer(VkQueue transferQueue, VkCommandPool transferCmdPool, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
-//{
-//	ScopeCmdBuffer transferCmdBuffer(transferCmdPool, transferQueue);
-//
-//	VkBufferCopy bufferCopyRegion = {};
-//	bufferCopyRegion.srcOffset = 0;
-//	bufferCopyRegion.dstOffset = 0;
-//	bufferCopyRegion.size = size;
-//
-//	vkCmdCopyBuffer(transferCmdBuffer.GetHandle(), srcBuffer, dstBuffer, 1, &bufferCopyRegion);
-//}
 
 void vge::CopyImageBuffer(VkQueue transferQueue, VkCommandPool transferCmdPool, VkBuffer srcBuffer, VkImage dstImage, VkExtent2D extent)
 {
@@ -214,10 +157,15 @@ vge::VertexInputDescription vge::Vertex::GetDescription()
 
 vge::IndexBuffer vge::IndexBuffer::Create(const Device* device, const std::vector<uint32>& indices)
 {
-	const VkDeviceSize bufferSize = STD_VECTOR_ALLOC_SIZE(indices);
+	return Create(device, indices.size(), indices.data());
+}
+
+vge::IndexBuffer vge::IndexBuffer::Create(const Device* device, size_t indexCount, const uint32* pIndices)
+{
+	const VkDeviceSize bufferSize = sizeof(pIndices[0]) * indexCount;
 
 	ScopeStageBuffer stageBuffer(device, bufferSize);
-	stageBuffer.Get().TransferToGpuMemory(indices.data(), static_cast<size_t>(bufferSize));
+	stageBuffer.Get().TransferToGpuMemory(pIndices, static_cast<size_t>(bufferSize));
 
 	BufferCreateInfo buffCreateInfo = {};
 	buffCreateInfo.Device = device;
@@ -233,34 +181,23 @@ vge::IndexBuffer vge::IndexBuffer::Create(const Device* device, const std::vecto
 	buffCopyInfo.Size = bufferSize;
 	buffCopyInfo.Source = stageBuffer.Get().Handle;
 	buffCopyInfo.Destination = idxBuffer.m_AllocatedBuffer.Handle;
-	
+
 	Buffer::Copy(buffCopyInfo);
 
 	return idxBuffer;
 }
 
-//vge::IndexBuffer::IndexBuffer(VkQueue transferQueue, VkCommandPool transferCmdPool, const std::vector<uint32>& indices)
-//{
-//	const VkDeviceSize bufferSize = STD_VECTOR_ALLOC_SIZE(indices);
-//
-//	ScopeStageBuffer stageBuffer(bufferSize);
-//
-//	void* data;
-//	vmaMapMemory(VulkanContext::Allocator, stageBuffer.Get().Allocation, &data);
-//	memcpy(data, indices.data(), static_cast<size_t>(bufferSize));
-//	vmaUnmapMemory(VulkanContext::Allocator, stageBuffer.Get().Allocation);
-//
-//	CreateBuffer(VulkanContext::Allocator, bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY, m_AllocatedBuffer);
-//
-//	CopyBuffer(transferQueue, transferCmdPool, stageBuffer.Get().Handle, m_AllocatedBuffer.Handle, bufferSize);
-//}
-
 vge::VertexBuffer vge::VertexBuffer::Create(const Device* device, const std::vector<Vertex>& vertices)
 {
-	const VkDeviceSize bufferSize = STD_VECTOR_ALLOC_SIZE(vertices);
+	return Create(device, vertices.size(), vertices.data());
+}
+
+vge::VertexBuffer vge::VertexBuffer::Create(const Device* device, size_t vertexCount, const Vertex* pVertices)
+{
+	const VkDeviceSize bufferSize = sizeof(pVertices[0]) * vertexCount;
 
 	ScopeStageBuffer stageBuffer(device, bufferSize);
-	stageBuffer.Get().TransferToGpuMemory(vertices.data(), static_cast<size_t>(bufferSize));
+	stageBuffer.Get().TransferToGpuMemory(pVertices, static_cast<size_t>(bufferSize));
 
 	BufferCreateInfo buffCreateInfo = {};
 	buffCreateInfo.Device = device;
@@ -281,19 +218,3 @@ vge::VertexBuffer vge::VertexBuffer::Create(const Device* device, const std::vec
 
 	return vertBuffer;
 }
-
-//vge::VertexBuffer::VertexBuffer(VkQueue transferQueue, VkCommandPool transferCmdPool, const std::vector<Vertex>& vertices)
-//{
-//	const VkDeviceSize bufferSize = STD_VECTOR_ALLOC_SIZE(vertices);
-//
-//	ScopeStageBuffer stageBuffer(bufferSize);
-//
-//	void* data;
-//	vmaMapMemory(VulkanContext::Allocator, stageBuffer.Get().Allocation, &data);
-//	memcpy(data, vertices.data(), static_cast<size_t>(bufferSize));
-//	vmaUnmapMemory(VulkanContext::Allocator, stageBuffer.Get().Allocation);
-//
-//	CreateBuffer(VulkanContext::Allocator, bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY, m_AllocatedBuffer);
-//
-//	CopyBuffer(transferQueue, transferCmdPool, stageBuffer.Get().Handle, m_AllocatedBuffer.Handle, bufferSize);
-//}

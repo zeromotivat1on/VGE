@@ -15,13 +15,20 @@ namespace vge
 	struct MeshCreateInfo
 	{
 		const Device* Device = nullptr;
+		size_t VertexCount = 0;
+		const Vertex* Vertices = nullptr;
+		size_t IndexCount = 0;
+		const uint32* Indices = nullptr;
+		int32 TextureId = INDEX_NONE;
 	};
 
 	class Mesh
 	{
 	public:
+		static Mesh Create(const MeshCreateInfo& data);
+
+	public:
 		Mesh() = default;
-		Mesh(const Device* device, const std::vector<Vertex>& vertices, const std::vector<uint32>& indices, int32 TextureId);
 
 		inline int32 GetTextureId() const { return m_TextureId; }
 		inline size_t GetIndexCount() const { return m_IndexCount; }

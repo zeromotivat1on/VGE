@@ -94,6 +94,7 @@ namespace vge
 	{
 	public:
 		static IndexBuffer Create(const Device* device, const std::vector<uint32>& indices);
+		static IndexBuffer Create(const Device* device, size_t indexCount, const uint32* pIndices);
 
 	public:
 		IndexBuffer() = default;
@@ -125,6 +126,7 @@ namespace vge
 	{
 	public:
 		static VertexBuffer Create(const Device* device, const std::vector<Vertex>& vertices);
+		static VertexBuffer Create(const Device* device, size_t vertexCount, const Vertex* pVertices);
 
 	public:
 		VertexBuffer() = default;

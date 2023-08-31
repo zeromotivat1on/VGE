@@ -1,10 +1,15 @@
 #include "Mesh.h"
 
-vge::Mesh::Mesh(const Device* device, const std::vector<Vertex>& vertices, const std::vector<uint32>& indices, int32 TextureId)
-	: m_VertexCount(vertices.size()), m_IndexCount(indices.size()), m_TextureId(TextureId)
+vge::Mesh vge::Mesh::Create(const MeshCreateInfo& data)
 {
-	m_VertexBuffer = VertexBuffer::Create(device, vertices);
-	m_IndexBuffer = IndexBuffer::Create(device, indices);
+	Mesh mesh = {};
+	mesh.m_VertexCount = data.VertexCount;
+	mesh.m_IndexCount = data.IndexCount;
+	mesh.m_TextureId = data.TextureId;
+	mesh.m_VertexBuffer = VertexBuffer::Create(data.Device, data.VertexCount, data.Vertices);
+	mesh.m_IndexBuffer = IndexBuffer::Create(data.Device, data.IndexCount, data.Indices);
+
+	return mesh;
 }
 
 void vge::Mesh::Destroy()

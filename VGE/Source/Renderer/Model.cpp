@@ -80,7 +80,15 @@ void vge::Model::LoadMesh(const Device* device, const aiScene* scene, const aiMe
 		}
 	}
 
-	m_Meshes.emplace_back(device, vertices, indices, materialToTextureId[mesh->mMaterialIndex]);
+	MeshCreateInfo meshCreateInfo = {};
+	meshCreateInfo.Device = device;
+	meshCreateInfo.VertexCount = vertices.size();
+	meshCreateInfo.Vertices = vertices.data();
+	meshCreateInfo.IndexCount = indices.size();
+	meshCreateInfo.Indices = indices.data();
+	meshCreateInfo.TextureId = materialToTextureId[mesh->mMaterialIndex];
+
+	m_Meshes.emplace_back(Mesh::Create(meshCreateInfo));
 }
 
 void vge::Model::Destroy()
