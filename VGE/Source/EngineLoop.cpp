@@ -1,6 +1,7 @@
 #include "EngineLoop.h"
 #include "Application.h"
 #include "Profiling.h"
+#include "Renderer/RenderCommon.h"
 
 static inline void IncrementAppFrame() { ++vge::GAppFrame; }
 

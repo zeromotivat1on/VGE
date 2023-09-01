@@ -9,25 +9,14 @@
 #include <algorithm>
 #include <unordered_set>
 
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-
-#include <stb_image.h>
-#include <vk_mem_alloc.h>
-
 #include "Types.h"
 #include "Macros.h"
 #include "Memory.h"
 #include "Logging.h"
 #include "Profiling.h"
-#include "Renderer/VulkanGlobals.h"

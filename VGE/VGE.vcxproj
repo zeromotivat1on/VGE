@@ -147,6 +147,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Game\Entity.cpp" />
     <ClCompile Include="Source\Renderer\Image.cpp" />
     <ClCompile Include="Source\Renderer\Pipeline.cpp" />
     <ClCompile Include="Source\Renderer\Device.cpp" />
@@ -169,6 +170,7 @@
     <ClCompile Include="Source\Game\GameLoop.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Game\Entity.h" />
     <ClInclude Include="Source\Renderer\Image.h" />
     <ClInclude Include="Source\Renderer\Pipeline.h" />
     <ClInclude Include="Source\Memory.h" />
@@ -177,6 +179,7 @@
     <ClInclude Include="Source\Renderer\Mesh.h" />
     <ClInclude Include="Source\Profiling.h" />
     <ClInclude Include="Source\Renderer\Buffer.h" />
+    <ClInclude Include="Source\Renderer\RenderCommon.h" />
     <ClInclude Include="Source\Renderer\RenderLoop.h" />
     <ClInclude Include="Source\Renderer\Shader.h" />
     <ClInclude Include="Source\Application.h" />
