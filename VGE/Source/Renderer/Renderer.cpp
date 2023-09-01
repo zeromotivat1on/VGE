@@ -113,7 +113,6 @@ void vge::Renderer::Draw()
 	{
 		m_Device->ResetWindowResizedFlag();
 		RecreateSwapchain();
-		return;
 	}
 	else
 	{
@@ -660,7 +659,6 @@ void vge::Renderer::CreateDescriptorSets()
 void vge::Renderer::RecordCommandBuffers(uint32 ImageIndex)
 {
 	const VkCommandBuffer& cmdBuffer = m_CommandBuffers[ImageIndex];
-	const VkFramebuffer& framebuffer = m_Swapchain->GetFramebuffer(ImageIndex);
 
 	VkCommandBufferBeginInfo cmdBufferBeginInfo = {};
 	cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -679,7 +677,7 @@ void vge::Renderer::RecordCommandBuffers(uint32 ImageIndex)
 	renderPassBeginInfo.renderArea.extent = m_Swapchain->GetExtent();
 	renderPassBeginInfo.clearValueCount = static_cast<uint32>(clearValues.size());
 	renderPassBeginInfo.pClearValues = clearValues.data();
-	renderPassBeginInfo.framebuffer = framebuffer;
+	renderPassBeginInfo.framebuffer = m_Swapchain->GetFramebuffer(ImageIndex);
 
 	VK_ENSURE(vkBeginCommandBuffer(cmdBuffer, &cmdBufferBeginInfo));
 

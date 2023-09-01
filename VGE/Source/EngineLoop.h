@@ -1,17 +1,30 @@
 #pragma once
 
+#include "GameLoop.h"
+#include "Renderer/RenderLoop.h"
+
 namespace vge
 {
 	class EngineLoop
 	{
 	public:
-		static void Start();
+		EngineLoop() = default;
 
-		static void UpdateTime(const float nowTime);
+		void Initialize();
+		void Start();
+		void Tick();
+		void Destroy();
 
 	public:
-		static float StartTime;
-		static float LastTime;
-		static float DeltaTime;
+		float StartTime = 0.0f;
+		float LastTime = 0.0f;
+		float DeltaTime = 0.0f;
+
+	private:
+		void UpdateTime();
+
+	private:
+		GameLoop m_GameLoop = {};
+		RenderLoop m_RenderLoop = {};
 	};
 }

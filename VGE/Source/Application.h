@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common.h"
+#include "EngineLoop.h"
 
 namespace vge 
 {
@@ -35,6 +36,9 @@ namespace vge
 
 	public:
 		const ApplicationSpecs Specs = {};
+
+	private:
+		EngineLoop m_EngineLoop = {};
 	};
 
 	Application* CreateApplication(const ApplicationSpecs& specs);

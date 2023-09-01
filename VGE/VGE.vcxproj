@@ -154,6 +154,7 @@
     <ClCompile Include="Source\Renderer\Model.cpp" />
     <ClCompile Include="Source\Renderer\Buffer.cpp" />
     <ClCompile Include="Source\Renderer\Mesh.cpp" />
+    <ClCompile Include="Source\Renderer\RenderLoop.cpp" />
     <ClCompile Include="Source\Renderer\Shader.cpp" />
     <ClCompile Include="Source\Application.cpp" />
     <ClCompile Include="Source\EngineLoop.cpp" />
@@ -165,6 +166,7 @@
     <ClCompile Include="Source\Renderer\Window.cpp" />
     <ClCompile Include="Source\Renderer\Texture.cpp" />
     <ClCompile Include="Source\Renderer\Swapchain.cpp" />
+    <ClCompile Include="Source\GameLoop.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Renderer\Image.h" />
@@ -175,6 +177,7 @@
     <ClInclude Include="Source\Renderer\Mesh.h" />
     <ClInclude Include="Source\Profiling.h" />
     <ClInclude Include="Source\Renderer\Buffer.h" />
+    <ClInclude Include="Source\Renderer\RenderLoop.h" />
     <ClInclude Include="Source\Renderer\Shader.h" />
     <ClInclude Include="Source\Application.h" />
     <ClInclude Include="Source\Common.h" />
@@ -182,6 +185,7 @@
     <ClInclude Include="Source\File.h" />
     <ClInclude Include="Source\Logging.h" />
     <ClInclude Include="Source\Renderer\Renderer.h" />
+    <ClInclude Include="Source\GameLoop.h" />
     <ClInclude Include="Source\Types.h" />
     <ClInclude Include="Source\Renderer\VulkanContext.h" />
     <ClInclude Include="Source\Renderer\VulkanGlobals.h" />

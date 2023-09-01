@@ -2,7 +2,6 @@
 #define VMA_IMPLEMENTATION
 
 #include "Application.h"
-#include "EngineLoop.h"
 #include "Renderer/Window.h"
 #include "Renderer/Device.h"
 #include "Renderer/Renderer.h"
@@ -32,30 +31,17 @@ void vge::Application::Initialize()
 	ENSURE(system("compile_shaders.bat") >= 0);
 	LOG_RAW("\n----- Shader compilation finished -----\n\n");
 #endif
-
-	CreateWindow(Specs.Window.Name, Specs.Window.Width, Specs.Window.Height);
-	ENSURE(GWindow);
-	GWindow->Initialize();
-
-	CreateDevice(GWindow);
-	ENSURE(GDevice);
-	GDevice->Initialize();
-
-	CreateRenderer(GDevice);
-	ENSURE(GRenderer);
-	GRenderer->Initialize();
 }
 
 void vge::Application::Run()
 {
-	EngineLoop::Start();
+	m_EngineLoop.Initialize();
+	m_EngineLoop.Start();
 }
 
 void vge::Application::Close()
 {
-	DestroyRenderer();
-	DestroyDevice();
-	DestroyWindow();
+	m_EngineLoop.Destroy();
 }
 
 bool vge::Application::ShouldClose() const
