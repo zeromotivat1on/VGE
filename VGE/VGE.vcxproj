@@ -162,11 +162,11 @@
     <ClCompile Include="Source\Macros.h" />
     <ClCompile Include="Source\Main.cpp" />
     <ClCompile Include="Source\Renderer\Renderer.cpp" />
-    <ClCompile Include="Source\Renderer\VulkanUtils.cpp" />
+    <ClCompile Include="Source\Renderer\Utils.cpp" />
     <ClCompile Include="Source\Renderer\Window.cpp" />
     <ClCompile Include="Source\Renderer\Texture.cpp" />
     <ClCompile Include="Source\Renderer\Swapchain.cpp" />
-    <ClCompile Include="Source\GameLoop.cpp" />
+    <ClCompile Include="Source\Game\GameLoop.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Renderer\Image.h" />
@@ -185,11 +185,10 @@
     <ClInclude Include="Source\File.h" />
     <ClInclude Include="Source\Logging.h" />
     <ClInclude Include="Source\Renderer\Renderer.h" />
-    <ClInclude Include="Source\GameLoop.h" />
+    <ClInclude Include="Source\Game\GameLoop.h" />
     <ClInclude Include="Source\Types.h" />
-    <ClInclude Include="Source\Renderer\VulkanContext.h" />
     <ClInclude Include="Source\Renderer\VulkanGlobals.h" />
-    <ClInclude Include="Source\Renderer\VulkanUtils.h" />
+    <ClInclude Include="Source\Renderer\Utils.h" />
     <ClInclude Include="Source\Renderer\Window.h" />
     <ClInclude Include="Source\Renderer\Texture.h" />
     <ClInclude Include="Source\Renderer\Swapchain.h" />

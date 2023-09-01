@@ -1,7 +1,6 @@
 #include "Pipeline.h"
 #include "File.h"
 #include "Shader.h"
-#include "VulkanUtils.h"
 
 void vge::Pipeline::DefaultCreateInfo(PipelineCreateInfo& createInfo)
 {

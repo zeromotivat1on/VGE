@@ -1,7 +1,6 @@
 #pragma once
 
-#include "VulkanUtils.h"
-#include "VulkanContext.h"
+#include "Common.h"
 
 namespace vge
 {
@@ -46,34 +45,25 @@ namespace vge
 
 	//void CreateBuffer(VmaAllocator allocator, VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memAllocUsage, Buffer& outBuffer);
 
-	VkCommandBuffer BeginOneTimeCmdBuffer(VkCommandPool cmdPool);
-	void			EndOneTimeCmdBuffer(VkCommandPool cmdPool, VkQueue queue, VkCommandBuffer cmdBuffer);
+	VkCommandBuffer BeginOneTimeCmdBuffer(const Device* device);
+	void			EndOneTimeCmdBuffer(const Device* device, VkCommandBuffer cmdBuffer);
 
 	//void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags memProps, VkBuffer& outBuffer, VkDeviceMemory& outMemory);
 
 	//void CopyBuffer(VkQueue transferQueue, VkCommandPool transferCmdPool, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
-	void CopyImageBuffer(VkQueue transferQueue, VkCommandPool transferCmdPool, VkBuffer srcBuffer, VkImage dstImage, VkExtent2D extent);
+	void CopyImageBuffer(const Device* device, VkBuffer srcBuffer, VkImage dstImage, VkExtent2D extent);
 
 	// Simple wrapper for BeginOneTimeCmdBuffer (ctor) and EndOneTimeCmdBuffer (dtor) functions.
 	struct ScopeCmdBuffer
 	{
 	public:
-		ScopeCmdBuffer(VkCommandPool cmdPool, VkQueue queue)
-			: m_CmdPool(cmdPool), m_Queue(queue)
-		{
-			m_CmdBuffer = BeginOneTimeCmdBuffer(m_CmdPool);
-		}
+		ScopeCmdBuffer(const Device* device);
+		~ScopeCmdBuffer();
 
-		~ScopeCmdBuffer()
-		{
-			EndOneTimeCmdBuffer(m_CmdPool, m_Queue, m_CmdBuffer);
-		}
-
-		VkCommandBuffer GetHandle() const { return m_CmdBuffer; }
+		VkCommandBuffer Get() const { return m_CmdBuffer; }
 
 	private:
-		VkCommandPool m_CmdPool = VK_NULL_HANDLE;
-		VkQueue m_Queue = VK_NULL_HANDLE;
+		const Device* m_Device = nullptr;
 		VkCommandBuffer m_CmdBuffer = VK_NULL_HANDLE;
 	};
 

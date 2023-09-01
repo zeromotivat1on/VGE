@@ -2,7 +2,7 @@
 #include "Device.h"
 #include "File.h"
 #include "Buffer.h"
-#include "VulkanUtils.h"
+#include "Utils.h"
 
 vge::Texture vge::Texture::Create(const TextureCreateInfo& data)
 {

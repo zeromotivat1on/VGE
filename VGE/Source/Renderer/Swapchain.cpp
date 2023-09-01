@@ -1,6 +1,6 @@
 #include "Swapchain.h"
 #include "Window.h"
-#include "VulkanUtils.h"
+#include "Utils.h"
 
 #pragma region Statics
 static VkSurfaceFormatKHR GetBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats)

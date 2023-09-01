@@ -1,6 +1,6 @@
 #pragma once
 
-#include "GameLoop.h"
+#include "Game/GameLoop.h"
 #include "Renderer/RenderLoop.h"
 
 namespace vge
@@ -12,7 +12,6 @@ namespace vge
 
 		void Initialize();
 		void Start();
-		void Tick();
 		void Destroy();
 
 	public:
@@ -21,6 +20,7 @@ namespace vge
 		float DeltaTime = 0.0f;
 
 	private:
+		void Tick();
 		void UpdateTime();
 
 	private:

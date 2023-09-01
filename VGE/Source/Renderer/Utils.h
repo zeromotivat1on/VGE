@@ -3,9 +3,7 @@
 #include "Common.h"
 
 namespace vge
-{
-	struct Image;
-	
+{	
 	const char* GpuTypeToString(VkPhysicalDeviceType gpuType);
 
 	uint32 FindMemoryTypeIndex(VkPhysicalDevice gpu, uint32 allowedTypes, VkMemoryPropertyFlags flags);

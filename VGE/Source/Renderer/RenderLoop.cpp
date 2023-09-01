@@ -15,7 +15,7 @@ void vge::RenderLoop::Initialize()
 	ENSURE(GDevice);
 	GDevice->Initialize();
 
-	CreateRenderer(GDevice);
+	CreateRenderer(*GDevice);
 	ENSURE(GRenderer);
 	GRenderer->Initialize();
 }

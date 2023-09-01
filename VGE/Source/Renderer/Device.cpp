@@ -1,7 +1,7 @@
 #include "Device.h"
 #include "Application.h"
-#include "VulkanUtils.h"
 #include "VulkanGlobals.h"
+#include "Utils.h"
 
 #pragma region DebugMessengerSetup
 static VKAPI_ATTR VkBool32 VKAPI_CALL VulkanDebugCallback(
@@ -290,12 +290,8 @@ void vge::Device::Destroy()
 	WaitIdle();
 
 	vkDestroyCommandPool(m_Handle, m_CommandPool, nullptr);
-	
 	vmaDestroyAllocator(m_Allocator);
-	VulkanContext::Allocator = VK_NULL_HANDLE;
-
 	vkDestroyDevice(m_Handle, nullptr);
-	VulkanContext::Device = VK_NULL_HANDLE;
 
 	if (GEnableValidationLayers)
 	{
@@ -303,7 +299,6 @@ void vge::Device::Destroy()
 	}
 
 	vkDestroyInstance(m_Instance, nullptr);
-	VulkanContext::Instance = VK_NULL_HANDLE;
 }
 
 vge::SwapchainSupportDetails vge::Device::GetSwapchainSupportDetails(VkSurfaceKHR surface) const
@@ -368,7 +363,6 @@ void vge::Device::CreateInstance()
 	}
 
 	VK_ENSURE(vkCreateInstance(&createInfo, nullptr, &m_Instance));
-	VulkanContext::Instance = m_Instance;
 }
 
 void vge::Device::SetupDebugMessenger()
@@ -401,7 +395,6 @@ void vge::Device::FindGpu()
 		if (SuitableGpu(gpu, m_InitialSurface))
 		{
 			m_Gpu = gpu;
-			VulkanContext::Gpu = m_Gpu;
 			m_QueueIndices = GetQueueFamilies(m_Gpu, m_InitialSurface);
 
 			VkPhysicalDeviceProperties gpuProps;
@@ -461,16 +454,12 @@ void vge::Device::CreateDevice()
 	}
 
 	VK_ENSURE(vkCreateDevice(m_Gpu, &deviceCreateInfo, nullptr, &m_Handle));
-	VulkanContext::Device = m_Handle;
 }
 
 void vge::Device::FindQueues()
 {
 	vkGetDeviceQueue(m_Handle, m_QueueIndices.GraphicsFamily, 0, &m_GfxQueue);
-	VulkanContext::GfxQueue = m_GfxQueue;
-
 	vkGetDeviceQueue(m_Handle, m_QueueIndices.PresentFamily, 0, &m_PresentQueue);
-	VulkanContext::PresentQueue = m_PresentQueue;
 }
 
 void vge::Device::CreateCustomAllocator()
@@ -481,7 +470,6 @@ void vge::Device::CreateCustomAllocator()
 	vmaAllocatorCreateInfo.device = m_Handle;
 
 	VK_ENSURE(vmaCreateAllocator(&vmaAllocatorCreateInfo, &m_Allocator));
-	VulkanContext::Allocator = m_Allocator;
 }
 
 void vge::Device::CreateCommandPool()

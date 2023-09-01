@@ -1,6 +1,7 @@
 #include "Model.h"
 #include "Renderer.h"
 #include "File.h"
+#include "Utils.h"
 
 vge::Model vge::Model::Create(const ModelCreateInfo& data)
 {

@@ -1,9 +1,10 @@
 #pragma once
 
 #include "Common.h"
+#include "Device.h"
+#include "Pipeline.h"
 #include "Model.h"
 #include "Texture.h"
-#include "Pipeline.h"
 
 namespace vge
 {
@@ -28,7 +29,7 @@ namespace vge
 	class Renderer final
 	{
 	public:
-		Renderer(Device* device);
+		Renderer(Device& device);
 		NOT_COPYABLE(Renderer);
 		~Renderer() = default;
 
@@ -57,7 +58,7 @@ namespace vge
 
 		UboViewProjection m_UboViewProjection = {};
 
-		Device* m_Device = nullptr;
+		Device& m_Device;
 		std::unique_ptr<Swapchain> m_Swapchain = nullptr;
 		std::unique_ptr<SwapchainRecreateInfo> m_SwapchainRecreateInfo = nullptr;
 
@@ -136,6 +137,6 @@ namespace vge
 		void DestroyDepthBufferImages();
 	};
 
-	Renderer* CreateRenderer(Device* device);
+	Renderer* CreateRenderer(Device& device);
 	bool DestroyRenderer();
 }

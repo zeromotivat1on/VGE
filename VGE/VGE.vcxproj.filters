@@ -27,7 +27,7 @@
     <ClCompile Include="Source\Macros.h">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Renderer\VulkanUtils.cpp">
+    <ClCompile Include="Source\Renderer\Utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Source\EngineLoop.cpp">
@@ -72,7 +72,7 @@
     <ClCompile Include="Source\Renderer\RenderLoop.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\GameLoop.cpp">
+    <ClCompile Include="Source\Game\GameLoop.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -86,7 +86,7 @@
     <ClInclude Include="Source\Common.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Renderer\VulkanUtils.h">
+    <ClInclude Include="Source\Renderer\Utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\Logging.h">
@@ -122,9 +122,6 @@
     <ClInclude Include="Source\Renderer\Model.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Renderer\VulkanContext.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Renderer\Texture.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -146,7 +143,7 @@
     <ClInclude Include="Source\Renderer\RenderLoop.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\GameLoop.h">
+    <ClInclude Include="Source\Game\GameLoop.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

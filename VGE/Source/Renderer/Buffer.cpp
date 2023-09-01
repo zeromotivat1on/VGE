@@ -22,19 +22,19 @@ vge::Buffer vge::Buffer::Create(const BufferCreateInfo& data)
 
 void vge::Buffer::Copy(const BufferCopyInfo& data)
 {
-	ScopeCmdBuffer transferCmdBuffer(data.Device->GetCommandPool(), data.Device->GetGfxQueue());
+	ScopeCmdBuffer transferCmdBuffer(data.Device);
 
 	VkBufferCopy bufferCopyRegion = {};
 	bufferCopyRegion.srcOffset = 0;
 	bufferCopyRegion.dstOffset = 0;
 	bufferCopyRegion.size = data.Size;
 
-	vkCmdCopyBuffer(transferCmdBuffer.GetHandle(), data.Source, data.Destination, 1, &bufferCopyRegion);
+	vkCmdCopyBuffer(transferCmdBuffer.Get(), data.Source, data.Destination, 1, &bufferCopyRegion);
 }
 
 void vge::Buffer::Destroy()
 {
-	vmaDestroyBuffer(VulkanContext::Allocator, Handle, Allocation);
+	vmaDestroyBuffer(m_Allocator, Handle, Allocation);
 	Handle = VK_NULL_HANDLE;
 	Allocation = VK_NULL_HANDLE;
 	memory::memzero(&AllocInfo, sizeof(VmaAllocationInfo));
@@ -49,17 +49,17 @@ void vge::Buffer::TransferToGpuMemory(const void* src, size_t size) const
 	vmaUnmapMemory(m_Allocator, Allocation);
 }
 
-VkCommandBuffer vge::BeginOneTimeCmdBuffer(VkCommandPool cmdPool)
+VkCommandBuffer vge::BeginOneTimeCmdBuffer(const Device* device)
 {
 	VkCommandBuffer cmdBuffer = VK_NULL_HANDLE;
 
 	VkCommandBufferAllocateInfo cmdBufferAllocInfo = {};
 	cmdBufferAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	cmdBufferAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	cmdBufferAllocInfo.commandPool = cmdPool;
+	cmdBufferAllocInfo.commandPool = device->GetCommandPool();
 	cmdBufferAllocInfo.commandBufferCount = 1;
 
-	if (vkAllocateCommandBuffers(VulkanContext::Device, &cmdBufferAllocInfo, &cmdBuffer) != VK_SUCCESS)
+	if (vkAllocateCommandBuffers(device->GetHandle(), &cmdBufferAllocInfo, &cmdBuffer) != VK_SUCCESS)
 	{
 		LOG(Error, "Failed to allcoate transfer command buffer.");
 		return VK_NULL_HANDLE;
@@ -74,7 +74,7 @@ VkCommandBuffer vge::BeginOneTimeCmdBuffer(VkCommandPool cmdPool)
 	return cmdBuffer;
 }
 
-void vge::EndOneTimeCmdBuffer(VkCommandPool cmdPool, VkQueue queue, VkCommandBuffer cmdBuffer)
+void vge::EndOneTimeCmdBuffer(const Device* device, VkCommandBuffer cmdBuffer)
 {
 	vkEndCommandBuffer(cmdBuffer);
 
@@ -83,15 +83,26 @@ void vge::EndOneTimeCmdBuffer(VkCommandPool cmdPool, VkQueue queue, VkCommandBuf
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &cmdBuffer;
 
-	vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
-	vkQueueWaitIdle(queue); // not good if we have a lot of calls to this
+	vkQueueSubmit(device->GetGfxQueue(), 1, &submitInfo, VK_NULL_HANDLE);
+	vkQueueWaitIdle(device->GetGfxQueue()); // not good if we have a lot of calls to this
 
-	vkFreeCommandBuffers(VulkanContext::Device, cmdPool, 1, &cmdBuffer);
+	vkFreeCommandBuffers(device->GetHandle(), device->GetCommandPool(), 1, &cmdBuffer);
 }
 
-void vge::CopyImageBuffer(VkQueue transferQueue, VkCommandPool transferCmdPool, VkBuffer srcBuffer, VkImage dstImage, VkExtent2D extent)
+vge::ScopeCmdBuffer::ScopeCmdBuffer(const Device* device)
+	: m_Device(device)
 {
-	ScopeCmdBuffer transferCmdBuffer(transferCmdPool, transferQueue);
+	m_CmdBuffer = BeginOneTimeCmdBuffer(device);
+}
+
+vge::ScopeCmdBuffer::~ScopeCmdBuffer()
+{
+	EndOneTimeCmdBuffer(m_Device, m_CmdBuffer);
+}
+
+void vge::CopyImageBuffer(const Device* device, VkBuffer srcBuffer, VkImage dstImage, VkExtent2D extent)
+{
+	ScopeCmdBuffer transferCmdBuffer(device);
 
 	VkBufferImageCopy bufferImageCopyRegion = {};
 	bufferImageCopyRegion.bufferOffset = 0;
@@ -105,7 +116,7 @@ void vge::CopyImageBuffer(VkQueue transferQueue, VkCommandPool transferCmdPool, 
 	bufferImageCopyRegion.imageExtent = { extent.width, extent.height, 1 };
 
 	const VkImageLayout imageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-	vkCmdCopyBufferToImage(transferCmdBuffer.GetHandle(), srcBuffer, dstImage, imageLayout, 1, &bufferImageCopyRegion);
+	vkCmdCopyBufferToImage(transferCmdBuffer.Get(), srcBuffer, dstImage, imageLayout, 1, &bufferImageCopyRegion);
 }
 
 vge::ScopeStageBuffer::ScopeStageBuffer(const Device* device, VkDeviceSize size)

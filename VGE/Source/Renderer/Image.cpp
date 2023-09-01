@@ -15,7 +15,7 @@ namespace
 
 	void TransitionImageLayout(const ImageTransitionInfo& data)
 	{
-		vge::ScopeCmdBuffer cmdBuffer(data.Device->GetCommandPool(), data.Device->GetGfxQueue());
+		vge::ScopeCmdBuffer cmdBuffer(data.Device);
 
 		VkImageMemoryBarrier imageMemoryBarrier = {};
 		imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -55,7 +55,7 @@ namespace
 		}
 
 		vkCmdPipelineBarrier(
-			cmdBuffer.GetHandle(),			// command buffer
+			cmdBuffer.Get(),				// command buffer
 			srcStageFlags, dstStageFlags,	// pipeline stages (match to src/dst Access Masks from barrier)
 			0,								// dependency flags
 			0, nullptr,						// memory barrier
@@ -126,7 +126,7 @@ vge::Image vge::Image::CreateForTexture(const Device* device, const char* filena
 		TransitionImageLayout(transitionInfo);
 	}
 
-	CopyImageBuffer(device->GetGfxQueue(), device->GetCommandPool(), stageBuffer.Get().Handle, image.Handle, textureExtent);
+	CopyImageBuffer(device, stageBuffer.Get().Handle, image.Handle, textureExtent);
 
 	// Transition image to be shader readable for shade usage.
 	{

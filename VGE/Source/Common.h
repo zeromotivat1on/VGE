@@ -31,4 +31,3 @@
 #include "Logging.h"
 #include "Profiling.h"
 #include "Renderer/VulkanGlobals.h"
-#include "Renderer/VulkanContext.h"

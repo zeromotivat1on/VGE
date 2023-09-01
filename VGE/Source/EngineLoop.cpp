@@ -38,8 +38,8 @@ void vge::EngineLoop::Tick()
 
 void vge::EngineLoop::Destroy()
 {
-	m_GameLoop.Destroy();
 	m_RenderLoop.Destroy();
+	m_GameLoop.Destroy();
 }
 
 void vge::EngineLoop::UpdateTime()
