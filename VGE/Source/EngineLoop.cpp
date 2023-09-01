@@ -1,53 +1,51 @@
 #include "EngineLoop.h"
 #include "Application.h"
-#include "Window.h"
-#include "Renderer.h"
 #include "Profiling.h"
+#include "Renderer/RenderCommon.h"
 
-void vge::MainLoop()
+static inline void IncrementAppFrame() { ++vge::GAppFrame; }
+
+void vge::EngineLoop::Initialize()
 {
-	const float loopStartTime = static_cast<float>(glfwGetTime());
+	m_GameLoop.Initialize();
+	m_RenderLoop.Initialize();
+}
 
-	float angle = 0.0f;
-	float deltaTime = 0.0f;
-	float lastTime = 0.0f;
+void vge::EngineLoop::Start()
+{
+	StartTime = static_cast<float>(glfwGetTime());
 
-	const int32 firstModelID = GRenderer->CreateModel("Models/cottage/Cottage_FREE.obj");
-
-	while (!glfwWindowShouldClose(GWindow))
+	while (!GApplication->ShouldClose())
 	{
 		SCOPE_TIMER("Tick");
-
-		glfwPollEvents();
-
-		const float now = static_cast<float>(glfwGetTime());
-		deltaTime = now - lastTime;
-		lastTime = now;
-
-		angle += 30.0f * deltaTime;
-
-		if (angle > 360.0f)
-		{
-			angle -= 360.0f;
-		}
-
-		{
-			glm::mat4 firstModel(1.0f);
-			firstModel = glm::translate(firstModel, glm::vec3(0.0f, 0.0f, -25.0f));
-			//firstModel = glm::rotate(firstModel, glm::radians(30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-			firstModel = glm::rotate(firstModel, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
-			firstModel = glm::scale(firstModel, glm::vec3(1.0f, 1.0f, 1.0f));
-
-			GRenderer->UpdateModelMatrix(firstModelID, firstModel);
-		}
-
-		GRenderer->Draw();
-
+		UpdateTime();
+		Tick();
 		IncrementAppFrame();
 	}
 
-	const float loopDurationTime = lastTime - loopStartTime;
+	const float loopDurationTime = LastTime - StartTime;
 	LOG(Log, "Engine loop stats:");
 	LOG(Log, " Duration: %.2fs", loopDurationTime);
 	LOG(Log, " Iterations: %d", GAppFrame);
+	LOG(Log, " Average FPS: %.2f", static_cast<float>(GAppFrame) / loopDurationTime);
+}
+
+void vge::EngineLoop::Tick()
+{
+	// TODO: make separate threads for game and render.
+	m_GameLoop.Tick(DeltaTime);
+	m_RenderLoop.Tick(DeltaTime);
+}
+
+void vge::EngineLoop::Destroy()
+{
+	m_RenderLoop.Destroy();
+	m_GameLoop.Destroy();
+}
+
+void vge::EngineLoop::UpdateTime()
+{
+	const float nowTime = static_cast<float>(glfwGetTime());
+	DeltaTime = nowTime - LastTime;
+	LastTime = nowTime;
 }

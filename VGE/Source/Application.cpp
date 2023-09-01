@@ -2,9 +2,9 @@
 #define VMA_IMPLEMENTATION
 
 #include "Application.h"
-#include "Window.h"
-#include "Renderer.h"
-#include "EngineLoop.h"
+#include "Renderer/Window.h"
+#include "Renderer/Device.h"
+#include "Renderer/Renderer.h"
 
 vge::Application* vge::CreateApplication(const ApplicationSpecs& specs)
 {
@@ -26,19 +26,27 @@ vge::Application::Application(const ApplicationSpecs& specs) : Specs(specs)
 
 void vge::Application::Initialize()
 {
-	CreateWindow(Specs.Window.Name, Specs.Window.Width, Specs.Window.Height);
-	ENSURE_MSG(GWindow, "Failed to create GLFW window.");
+#if COMPILE_SHADERS_ON_INIT
+	LOG_RAW("\n----- Shader compilation started -----\n");
+	ENSURE(system("compile_shaders.bat") >= 0);
+	LOG_RAW("\n----- Shader compilation finished -----\n\n");
+#endif
+}
 
-	CreateRenderer(vge::GWindow);
-	ENSURE_MSG(GRenderer, "Failed to create renderer.")
-
-	GRenderer->Initialize();
+void vge::Application::Run()
+{
+	m_EngineLoop.Initialize();
+	m_EngineLoop.Start();
 }
 
 void vge::Application::Close()
 {
-	DestroyRenderer();
-	DestroyWindow();
+	m_EngineLoop.Destroy();
+}
+
+bool vge::Application::ShouldClose() const
+{
+	return GWindow->ShouldClose();
 }
 
 int32 vge::Main(int argc, const char** argv)
@@ -50,14 +58,10 @@ int32 vge::Main(int argc, const char** argv)
 	specs.Window.Width = 800;
 	specs.Window.Height = 600;
 
-	CreateApplication(specs);
-	ENSURE_MSG(GApplication, "Failed to create application.");
-
+	ENSURE(CreateApplication(specs));
 	GApplication->Initialize();
-
-	MainLoop();
-
-	DestroyApplication();
+	GApplication->Run();
+	ENSURE(DestroyApplication());
 
 	return EXIT_SUCCESS;
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common.h"
+#include "Renderer/RenderCommon.h"
 
 namespace vge::file
 {

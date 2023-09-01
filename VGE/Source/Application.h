@@ -1,12 +1,13 @@
 #pragma once
 
 #include "Common.h"
+#include "EngineLoop.h"
 
 namespace vge 
 {
 	inline class Application* GApplication = nullptr;
 
-	inline int32 GAppFrame = 0;
+	inline uint64 GAppFrame = 0;
 
 	struct ApplicationSpecs
 	{
@@ -24,18 +25,24 @@ namespace vge
 	{
 	public:
 		Application(const ApplicationSpecs& specs);
+		NOT_COPYABLE(Application);
 
+	public:
 		void Initialize();
+		void Run();
 		void Close();
+
+		bool ShouldClose() const;
 
 	public:
 		const ApplicationSpecs Specs = {};
+
+	private:
+		EngineLoop m_EngineLoop = {};
 	};
 
 	Application* CreateApplication(const ApplicationSpecs& specs);
 	bool DestroyApplication();
 
 	int32 Main(int argc, const char** argv);
-
-	inline void IncrementAppFrame() { ++GAppFrame; }
 }

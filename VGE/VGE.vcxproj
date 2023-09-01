@@ -116,7 +116,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)Vendor;$(ProjectDir)Vendor\glm;$(ProjectDir)Vendor\GLFW\include;$(ProjectDir)Vendor\assimp\include;C:\VulkanSDK\1.3.250.1\Include;C:\VulkanSDK\1.3.243.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Source;$(ProjectDir)Vendor;$(ProjectDir)Vendor\glm;$(ProjectDir)Vendor\GLFW\include;$(ProjectDir)Vendor\assimp\include;C:\VulkanSDK\1.3.250.1\Include;C:\VulkanSDK\1.3.243.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -134,7 +134,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)Vendor;$(ProjectDir)Vendor\glm;$(ProjectDir)Vendor\GLFW\include;$(ProjectDir)Vendor\assimp\include;C:\VulkanSDK\1.3.250.1\Include;C:\VulkanSDK\1.3.243.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Source;$(ProjectDir)Vendor;$(ProjectDir)Vendor\glm;$(ProjectDir)Vendor\GLFW\include;$(ProjectDir)Vendor\assimp\include;C:\VulkanSDK\1.3.250.1\Include;C:\VulkanSDK\1.3.243.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -147,39 +147,54 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Game\Entity.cpp" />
+    <ClCompile Include="Source\Renderer\Image.cpp" />
+    <ClCompile Include="Source\Renderer\Pipeline.cpp" />
+    <ClCompile Include="Source\Renderer\Device.cpp" />
     <ClCompile Include="Source\Logging.cpp" />
-    <ClCompile Include="Source\Model.cpp" />
-    <ClCompile Include="Source\Buffer.cpp" />
-    <ClCompile Include="Source\Mesh.cpp" />
-    <ClCompile Include="Source\Shader.cpp" />
+    <ClCompile Include="Source\Renderer\Model.cpp" />
+    <ClCompile Include="Source\Renderer\Buffer.cpp" />
+    <ClCompile Include="Source\Renderer\Mesh.cpp" />
+    <ClCompile Include="Source\Renderer\RenderLoop.cpp" />
+    <ClCompile Include="Source\Renderer\Shader.cpp" />
     <ClCompile Include="Source\Application.cpp" />
     <ClCompile Include="Source\EngineLoop.cpp" />
     <ClCompile Include="Source\File.cpp" />
     <ClCompile Include="Source\Macros.h" />
     <ClCompile Include="Source\Main.cpp" />
-    <ClCompile Include="Source\Renderer.cpp" />
-    <ClCompile Include="Source\VulkanUtils.cpp" />
-    <ClCompile Include="Source\Window.cpp" />
-    <ClCompile Include="Source\Texture.cpp" />
+    <ClCompile Include="Source\Renderer\Renderer.cpp" />
+    <ClCompile Include="Source\Renderer\Utils.cpp" />
+    <ClCompile Include="Source\Renderer\Window.cpp" />
+    <ClCompile Include="Source\Renderer\Texture.cpp" />
+    <ClCompile Include="Source\Renderer\Swapchain.cpp" />
+    <ClCompile Include="Source\Game\GameLoop.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Source\Model.h" />
-    <ClInclude Include="Source\Mesh.h" />
+    <ClInclude Include="Source\Game\Entity.h" />
+    <ClInclude Include="Source\Renderer\Image.h" />
+    <ClInclude Include="Source\Renderer\Pipeline.h" />
+    <ClInclude Include="Source\Memory.h" />
+    <ClInclude Include="Source\Renderer\Device.h" />
+    <ClInclude Include="Source\Renderer\Model.h" />
+    <ClInclude Include="Source\Renderer\Mesh.h" />
     <ClInclude Include="Source\Profiling.h" />
-    <ClInclude Include="Source\Buffer.h" />
-    <ClInclude Include="Source\Shader.h" />
+    <ClInclude Include="Source\Renderer\Buffer.h" />
+    <ClInclude Include="Source\Renderer\RenderCommon.h" />
+    <ClInclude Include="Source\Renderer\RenderLoop.h" />
+    <ClInclude Include="Source\Renderer\Shader.h" />
     <ClInclude Include="Source\Application.h" />
     <ClInclude Include="Source\Common.h" />
     <ClInclude Include="Source\EngineLoop.h" />
     <ClInclude Include="Source\File.h" />
     <ClInclude Include="Source\Logging.h" />
-    <ClInclude Include="Source\Renderer.h" />
+    <ClInclude Include="Source\Renderer\Renderer.h" />
+    <ClInclude Include="Source\Game\GameLoop.h" />
     <ClInclude Include="Source\Types.h" />
-    <ClInclude Include="Source\VulkanContext.h" />
-    <ClInclude Include="Source\VulkanGlobals.h" />
-    <ClInclude Include="Source\VulkanUtils.h" />
-    <ClInclude Include="Source\Window.h" />
-    <ClInclude Include="Source\Texture.h" />
+    <ClInclude Include="Source\Renderer\VulkanGlobals.h" />
+    <ClInclude Include="Source\Renderer\Utils.h" />
+    <ClInclude Include="Source\Renderer\Window.h" />
+    <ClInclude Include="Source\Renderer\Texture.h" />
+    <ClInclude Include="Source\Renderer\Swapchain.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="compile_shaders.bat" />

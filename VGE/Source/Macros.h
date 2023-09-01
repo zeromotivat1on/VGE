@@ -26,6 +26,14 @@
 #define STRING_INNER(x) #x
 #define STRING(x) STRING_INNER(x)
 
+#define NOT_COPYABLE(userType)																					\
+	userType(const userType&) = delete;																			\
+	userType& operator=(const userType&) = delete;
+
+#define NOT_MOVABLE(userType)																					\
+	userType(userType&&) = delete;																				\
+	userType& operator=(userType&&) = delete;
+
 #define ENSURE(expr)																							\
 if (!(expr))																									\
 {																												\
@@ -37,7 +45,7 @@ if (!(expr))																									\
 if (!(expr))																									\
 {																												\
 	LOG(Error, errMessage);																						\
-	abort();																							\
+	abort();																									\
 }
 
 #if USE_LOGGING
