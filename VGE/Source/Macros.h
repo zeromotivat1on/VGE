@@ -34,6 +34,9 @@
 	userType(userType&&) = delete;																				\
 	userType& operator=(userType&&) = delete;
 
+#define ASSERT(expr) assert(expr);
+#define ASSERT_MSG(expr, msg) assert(expr && msg);
+
 #define ENSURE(expr)																							\
 if (!(expr))																									\
 {																												\

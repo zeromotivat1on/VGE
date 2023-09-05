@@ -41,8 +41,20 @@ namespace vge
 		EngineLoop m_EngineLoop = {};
 	};
 
-	Application* CreateApplication(const ApplicationSpecs& specs);
-	bool DestroyApplication();
+	inline Application* CreateApplication(const ApplicationSpecs& specs)
+	{
+		if (GApplication) return GApplication;
+		return (GApplication = new Application(specs));
+	}
+
+	inline bool DestroyApplication()
+	{
+		if (!GApplication) return false;
+		GApplication->Close();
+		delete GApplication;
+		GApplication = nullptr;
+		return true;
+	}
 
 	int32 Main(int argc, const char** argv);
 }

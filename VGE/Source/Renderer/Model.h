@@ -21,7 +21,6 @@ namespace vge
 	public:
 		Model() = default;
 
-	public:
 		void Destroy();
 
 		inline int32 GetId() const { return m_Id; }

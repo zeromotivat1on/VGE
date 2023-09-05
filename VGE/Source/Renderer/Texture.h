@@ -22,10 +22,9 @@ namespace vge
 	public:
 		static Texture Create(const TextureCreateInfo& data);
 
-	private:
+	public:
 		Texture() = default;
 
-	public:
 		void Destroy();
 
 		inline int32 GetId() const { return m_Id; }

@@ -1,21 +1,6 @@
 #include "Window.h"
 #include "Renderer.h"
 
-vge::Window* vge::CreateWindow(const char* name, const int32 width, const int32 height)
-{
-	if (GWindow) return GWindow;
-	return (GWindow = new Window(name, width, height));
-}
-
-bool vge::DestroyWindow()
-{
-	if (!GWindow) return false;
-	GWindow->Destroy();
-	delete GWindow;
-	GWindow = nullptr;
-	return true;
-}
-
 void vge::Window::GetInstanceExtensions(std::vector<const char*>& outExtensions) const
 {
 	uint32 glfwExtensionCount = 0;

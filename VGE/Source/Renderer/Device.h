@@ -87,6 +87,18 @@ namespace vge
 		void CreateCommandPool();
 	};
 
-	Device* CreateDevice(Window* window);
-	bool DestroyDevice();
+	inline Device* CreateDevice(Window* window)
+	{
+		if (GDevice) return GDevice;
+		return (GDevice = new Device(window));
+	}
+
+	inline bool DestroyDevice()
+	{
+		if (!GDevice) return false;
+		GDevice->Destroy();
+		delete GDevice;
+		GDevice = nullptr;
+		return true;
+	}
 }

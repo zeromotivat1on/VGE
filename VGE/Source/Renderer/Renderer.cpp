@@ -1,27 +1,11 @@
 #include "Renderer.h"
 #include "Application.h"
-#include "Swapchain.h"
 #include "Buffer.h"
 #include "Shader.h"
 #include "Utils.h"
 #include "File.h"
 
 static inline void IncrementRenderFrame() { vge::GRenderFrame = (vge::GRenderFrame + 1) % vge::GMaxDrawFrames; }
-
-vge::Renderer* vge::CreateRenderer(Device& device)
-{
-	if (GRenderer) return GRenderer;
-	return (GRenderer = new Renderer(device));
-}
-
-bool vge::DestroyRenderer()
-{
-	if (!GRenderer) return false;
-	GRenderer->Destroy();
-	delete GRenderer;
-	GRenderer = nullptr;
-	return true;
-}
 
 vge::Renderer::Renderer(Device& device) 
 	: m_Device(device), m_FirstPipeline(device), m_SecondPipeline(device)

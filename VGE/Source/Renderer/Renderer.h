@@ -5,13 +5,12 @@
 #include "Pipeline.h"
 #include "Model.h"
 #include "Texture.h"
+#include "Swapchain.h"
 
 namespace vge
 {
 	class Window;
 	class Device;
-	class Swapchain;
-	struct SwapchainRecreateInfo;
 
 	inline class Renderer* GRenderer = nullptr;
 	
@@ -38,18 +37,16 @@ namespace vge
 		void Draw();
 		void Destroy();
 
-		// TODO: for now 1 game object can have only 1 texture which is cringe.
+		// TODO: 1 mesh can have only 1 texture which is cringe (or not, idk for now).
 		int32 CreateTexture(const char* filename);
 		int32 CreateModel(const char* filename);
 
 		void RecreateSwapchain();
 
-		inline void UpdateModelMatrix(int32 modelIndex, glm::mat4 model) 
+		inline void UpdateModelMatrix(int32 id, glm::mat4 model) 
 		{
-			if (modelIndex < m_Models.size()) 
-			{ 
-				m_Models[modelIndex].SetModelMatrix(model); 
-			}
+			ASSERT(id < m_Models.size()) 
+			m_Models[id].SetModelMatrix(model); 
 		}
 
 	private:
@@ -137,6 +134,19 @@ namespace vge
 		void DestroyDepthBufferImages();
 	};
 
-	Renderer* CreateRenderer(Device& device);
-	bool DestroyRenderer();
+	inline Renderer* CreateRenderer(Device& device)
+	{
+		if (GRenderer) return GRenderer;
+		return (GRenderer = new Renderer(device));
+	}
+
+	inline bool DestroyRenderer()
+	{
+		if (!GRenderer) return false;
+		GRenderer->Destroy();
+		delete GRenderer;
+		GRenderer = nullptr;
+		return true;
+	}
+
 }

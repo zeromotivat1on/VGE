@@ -6,21 +6,6 @@
 #include "Renderer/Device.h"
 #include "Renderer/Renderer.h"
 
-vge::Application* vge::CreateApplication(const ApplicationSpecs& specs)
-{
-	if (GApplication) return GApplication;
-	return (GApplication = new Application(specs));
-}
-
-bool vge::DestroyApplication()
-{
-	if (!GApplication) return false;
-	GApplication->Close();
-	delete GApplication;
-	GApplication = nullptr;
-	return true;
-}
-
 vge::Application::Application(const ApplicationSpecs& specs) : Specs(specs)
 {}
 
@@ -31,11 +16,12 @@ void vge::Application::Initialize()
 	ENSURE(system("compile_shaders.bat") >= 0);
 	LOG_RAW("\n----- Shader compilation finished -----\n\n");
 #endif
+
+	m_EngineLoop.Initialize();
 }
 
 void vge::Application::Run()
 {
-	m_EngineLoop.Initialize();
 	m_EngineLoop.Start();
 }
 

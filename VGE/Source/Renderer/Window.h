@@ -41,6 +41,18 @@ namespace vge
 		bool m_FramebufferResized = false;
 	};
 
-	Window* CreateWindow(const char* name, const int32 width, const int32 height);
-	bool DestroyWindow();
+	inline Window* CreateWindow(const char* name, const int32 width, const int32 height)
+	{
+		if (GWindow) return GWindow;
+		return (GWindow = new Window(name, width, height));
+	}
+
+	inline bool DestroyWindow()
+	{
+		if (!GWindow) return false;
+		GWindow->Destroy();
+		delete GWindow;
+		GWindow = nullptr;
+		return true;
+	}
 }

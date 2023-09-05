@@ -253,21 +253,6 @@ static bool SuitableGpu(VkPhysicalDevice gpu, VkSurfaceKHR surface)
 }
 #pragma endregion Statics
 
-vge::Device* vge::CreateDevice(Window* window)
-{
-	if (GDevice) return GDevice;
-	return (GDevice = new Device(window));
-}
-
-bool vge::DestroyDevice()
-{
-	if (!GDevice) return false;
-	GDevice->Destroy();
-	delete GDevice;
-	GDevice = nullptr;
-	return true;
-}
-
 vge::Device::Device(Window* window) : m_Window(window)
 {
 	ENSURE(m_Window);
