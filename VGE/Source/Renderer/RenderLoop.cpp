@@ -58,5 +58,4 @@ void vge::RenderLoop::Destroy()
 {
 	DestroyRenderer();
 	DestroyDevice();
-	DestroyWindow();
 }

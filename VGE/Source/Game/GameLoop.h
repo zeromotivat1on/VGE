@@ -1,7 +1,5 @@
 #pragma once
 
-#include "ECS/Entity.h"
-
 namespace vge
 {
 	class GameLoop
