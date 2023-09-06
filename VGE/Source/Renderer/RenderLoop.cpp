@@ -51,7 +51,6 @@ void vge::RenderLoop::Initialize()
 void vge::RenderLoop::Tick(float deltaTime)
 {
 	m_RenderSystem->Tick(deltaTime);
-	GRenderer->Draw();
 }
 
 void vge::RenderLoop::Destroy()

@@ -16,7 +16,10 @@ void vge::RenderSystem::Tick(float deltaTime)
 		auto& renderComponent = GCoordinator->GetComponent<RenderComponent>(entity);
 		auto& transformComponent = GCoordinator->GetComponent<TransformComponent>(entity);
 		transformComponent.RotationAngle += (30.0f * deltaTime);
-
+		
+		// TODO: transfer model data update to separate system etc.
 		m_Renderer->UpdateModelMatrix(renderComponent.ModelId, GetTransformMatrix(transformComponent));
 	}
+
+	m_Renderer->Draw();
 }
