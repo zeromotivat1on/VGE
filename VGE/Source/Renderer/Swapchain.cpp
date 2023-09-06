@@ -119,7 +119,14 @@ void vge::Swapchain::Initialize(SwapchainRecreateInfo* recreateInfo /*= nullptr*
 		swapchainCreateInfo.pQueueFamilyIndices = nullptr;
 	}
 
-	swapchainCreateInfo.oldSwapchain = recreateInfo->Swapchain;
+	if (recreateInfo && recreateInfo->Swapchain != VK_NULL_HANDLE)
+	{
+		swapchainCreateInfo.oldSwapchain = recreateInfo->Swapchain;
+	}
+	else 
+	{
+		swapchainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
+	}
 
 	VK_ENSURE(vkCreateSwapchainKHR(m_Device.GetHandle(), &swapchainCreateInfo, nullptr, &m_Handle));
 
