@@ -35,6 +35,7 @@ void vge::EngineLoop::Tick()
 	// TODO: make separate threads for game and render.
 	m_GameLoop.Tick(DeltaTime);
 	m_RenderLoop.Tick(DeltaTime);
+	// TODO: when separate threads are done - implement their sync.
 }
 
 void vge::EngineLoop::Destroy()
