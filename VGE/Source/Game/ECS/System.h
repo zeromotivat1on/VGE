@@ -8,26 +8,22 @@ namespace vge
 	class System
 	{
 	public:
-		inline void Add(Entity entity) { m_Entities.push_back(entity); }
+		inline auto& GetAll() { return m_Entities; }
 
-		inline Entity* Find(Entity entity)
+		inline void Add(Entity entity) { m_Entities.insert(entity); }
+		inline void Append(const std::set<Entity>& entities) { for (const auto& entity : entities) { Add(entity); } }
+
+		inline const Entity* Find(Entity entity)
 		{
 			return algo::Find(m_Entities, entity);
 		}
 
-		inline bool Remove(Entity entity)
+		inline void Remove(Entity entity)
 		{
-			if (Entity* toRemove = Find(entity))
-			{
-				const auto pos = std::cbegin(m_Entities) + std::distance(m_Entities.data(), toRemove);
-				m_Entities.erase(pos);
-				return true;
-			}
-
-			return false;
+			m_Entities.erase(entity);
 		}
 
 	protected:
-		std::vector<Entity> m_Entities;
+		std::set<Entity> m_Entities;
 	};
 }

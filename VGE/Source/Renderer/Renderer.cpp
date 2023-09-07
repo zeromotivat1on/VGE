@@ -8,7 +8,8 @@
 static inline void IncrementRenderFrame() { vge::GRenderFrame = (vge::GRenderFrame + 1) % vge::GMaxDrawFrames; }
 
 vge::Renderer::Renderer(Device& device) 
-	: m_Device(device), m_FirstPipeline(device), m_SecondPipeline(device)
+	: m_Device(device)
+	//, m_FirstPipeline(device), m_SecondPipeline(device)
 {
 }
 
@@ -49,8 +50,8 @@ void vge::Renderer::Draw()
 	vkWaitForFences(m_Device.GetHandle(), 1, &drawFence, VK_TRUE, UINT64_MAX);	// wait till open
 	vkResetFences(m_Device.GetHandle(), 1, &drawFence);						// close after enter
 
-	uint32 AcquiredImageIndex = 0;
-	VkResult acquireImageResult = m_Swapchain->AcquireNextImage(imageAvailableSemaphore, AcquiredImageIndex);
+	VkResult acquireImageResult = m_Swapchain->AcquireNextImage(imageAvailableSemaphore);
+	const uint32 AcquiredImageIndex = m_Swapchain->GetCurrentImageIndex();
 
 	if (acquireImageResult == VK_ERROR_OUT_OF_DATE_KHR)
 	{
@@ -149,12 +150,108 @@ void vge::Renderer::Destroy()
 		vkDestroySemaphore(m_Device.GetHandle(), m_ImageAvailableSemas[i], nullptr);
 	}
 
-	m_SecondPipeline.Destroy();
-	m_FirstPipeline.Destroy();
+	for (Pipeline& pipeline : m_Pipelines)
+	{
+		pipeline.Destroy();
+	}
+	//m_SecondPipeline.Destroy();
+	//m_FirstPipeline.Destroy();
 
 	vkDestroyRenderPass(m_Device.GetHandle(), m_RenderPass, nullptr);
 
 	m_Swapchain->Destroy(m_SwapchainRecreateInfo.get());
+}
+
+VkResult vge::Renderer::BeginFrame()
+{
+	vkWaitForFences(m_Device.GetHandle(), 1, &m_DrawFences[GRenderFrame], VK_TRUE, UINT64_MAX);	// wait till open
+	vkResetFences(m_Device.GetHandle(), 1, &m_DrawFences[GRenderFrame]);						// close after enter
+
+	VkResult acquireImageResult = m_Swapchain->AcquireNextImage(m_ImageAvailableSemas[GRenderFrame]);
+	if (acquireImageResult == VK_ERROR_OUT_OF_DATE_KHR)
+	{
+		RecreateSwapchain();
+	}
+
+	return acquireImageResult;
+}
+
+VkCommandBuffer vge::Renderer::BeginCmdBufferRecord()
+{
+	const uint32 imageIndex = m_Swapchain->GetCurrentImageIndex();
+	const VkCommandBuffer& cmdBuffer = m_CommandBuffers[imageIndex];
+
+	VkCommandBufferBeginInfo cmdBufferBeginInfo = {};
+	cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	// No need in this flag now as we control synchronization by ourselves.
+	// cmdBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+
+	std::array<VkClearValue, 3> clearValues = {};
+	clearValues[0].color = { 0.0f, 0.0f, 0.0f, 1.0f }; // draw black triangle by default, dont care actually
+	clearValues[1].color = { 0.3f, 0.3f, 0.2f, 1.0f };
+	clearValues[2].depthStencil.depth = 1.0f;
+
+	VkRenderPassBeginInfo renderPassBeginInfo = {};
+	renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	renderPassBeginInfo.renderPass = m_RenderPass;
+	renderPassBeginInfo.renderArea.offset = { 0, 0 };
+	renderPassBeginInfo.renderArea.extent = m_Swapchain->GetExtent();
+	renderPassBeginInfo.clearValueCount = static_cast<uint32>(clearValues.size());
+	renderPassBeginInfo.pClearValues = clearValues.data();
+	renderPassBeginInfo.framebuffer = m_Swapchain->GetFramebuffer(imageIndex);
+
+	VK_ENSURE(vkBeginCommandBuffer(cmdBuffer, &cmdBufferBeginInfo));
+	vkCmdBeginRenderPass(cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+	return cmdBuffer;
+}
+
+void vge::Renderer::EndCmdBufferRecord(VkCommandBuffer cmdBuffer)
+{
+	vkCmdEndRenderPass(cmdBuffer);
+	VK_ENSURE(vkEndCommandBuffer(cmdBuffer));
+}
+
+void vge::Renderer::EndFrame()
+{
+	const uint32 imageIndex = m_Swapchain->GetCurrentImageIndex();
+
+	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+
+	VkSubmitInfo submitInfo = {};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.waitSemaphoreCount = 1;
+	submitInfo.pWaitSemaphores = &m_ImageAvailableSemas[GRenderFrame];
+	submitInfo.pWaitDstStageMask = waitStages;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &m_CommandBuffers[imageIndex];
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores = &m_RenderFinishedSemas[GRenderFrame];
+
+	// Open fence after successful render.
+	VK_ENSURE(vkQueueSubmit(m_Device.GetGfxQueue(), 1, &submitInfo, m_DrawFences[GRenderFrame]));
+
+	VkSwapchainKHR swapchain = m_Swapchain->GetHandle();
+	VkPresentInfoKHR presentInfo = {};
+	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+	presentInfo.waitSemaphoreCount = 1;
+	presentInfo.pWaitSemaphores = &m_RenderFinishedSemas[GRenderFrame];
+	presentInfo.swapchainCount = 1;
+	presentInfo.pSwapchains = &swapchain;
+	presentInfo.pImageIndices = &imageIndex;
+
+	VkResult queuePresentResult = vkQueuePresentKHR(m_Device.GetPresentQueue(), &presentInfo);
+	if (queuePresentResult == VK_ERROR_OUT_OF_DATE_KHR || queuePresentResult == VK_SUBOPTIMAL_KHR || m_Device.WasWindowResized())
+	{
+		m_Device.ResetWindowResizedFlag();
+		RecreateSwapchain();
+	}
+	else
+	{
+		VK_ENSURE(queuePresentResult);
+	}
+
+	IncrementRenderFrame();
 }
 
 void vge::Renderer::CreateSwapchain()
@@ -420,6 +517,8 @@ void vge::Renderer::CreatePushConstantRange()
 
 void vge::Renderer::CreatePipelines()
 {
+	m_Pipelines.resize(2, Pipeline(&m_Device));
+
 	// TODO: create convenient abstraction for multiple pipelines creation, e.g map with pipeline and its create data.
 
 	// First pipeline creation. Used to render evrything.
@@ -454,7 +553,7 @@ void vge::Renderer::CreatePipelines()
 		pipelineCreateInfo.PipelineLayout = pipelineLayout;
 		pipelineCreateInfo.SubpassIndex = 0;
 
-		m_FirstPipeline.Initialize("Shaders/Bin/first_vert.spv", "Shaders/Bin/first_frag.spv", pipelineCreateInfo);
+		m_Pipelines[0].Initialize("Shaders/Bin/first_vert.spv", "Shaders/Bin/first_frag.spv", pipelineCreateInfo);
 	}
 
 	// Second pipeline creation. Used to present data from previous pipeline.
@@ -479,7 +578,7 @@ void vge::Renderer::CreatePipelines()
 		pipelineCreateInfo.SubpassIndex = 1;
 		pipelineCreateInfo.DepthStencilInfo.depthWriteEnable = VK_FALSE;
 
-		m_SecondPipeline.Initialize("Shaders/Bin/second_vert.spv", "Shaders/Bin/second_frag.spv", pipelineCreateInfo);
+		m_Pipelines[1].Initialize("Shaders/Bin/second_vert.spv", "Shaders/Bin/second_frag.spv", pipelineCreateInfo);
 	}
 }
 
@@ -681,12 +780,12 @@ void vge::Renderer::RecordCommandBuffers(uint32 ImageIndex)
 		scissor.extent = m_Swapchain->GetExtent();
 		vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
 
-		m_FirstPipeline.Bind(cmdBuffer);
+		m_Pipelines[0].Bind(cmdBuffer);
 
 		for (Model& model : m_Models)
 		{
 			const ModelData& modelData = model.GetModelData();
-			vkCmdPushConstants(cmdBuffer, m_FirstPipeline.GetLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ModelData), &modelData);
+			vkCmdPushConstants(cmdBuffer, m_Pipelines[0].GetLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ModelData), &modelData);
 
 			for (size_t MeshIndex = 0; MeshIndex < model.GetMeshCount(); ++MeshIndex)
 			{
@@ -706,7 +805,7 @@ void vge::Renderer::RecordCommandBuffers(uint32 ImageIndex)
 				vkCmdBindIndexBuffer(cmdBuffer, mesh->GetIndexBuffer().Get().Handle, 0, VK_INDEX_TYPE_UINT32);
 
 				//const uint32 dynamicOffset = static_cast<uint32>(m_ModelUniformAlignment * MeshIndex);
-				vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_FirstPipeline.GetLayout(),
+				vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipelines[0].GetLayout(),
 					0, static_cast<uint32>(currentDescriptorSets.size()), currentDescriptorSets.data(), 0, nullptr);
 
 				vkCmdDrawIndexed(cmdBuffer, static_cast<uint32>(mesh->GetIndexCount()), 1, 0, 0, 0);
@@ -717,9 +816,9 @@ void vge::Renderer::RecordCommandBuffers(uint32 ImageIndex)
 
 		vkCmdNextSubpass(cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
 
-		m_SecondPipeline.Bind(cmdBuffer);
+		m_Pipelines[1].Bind(cmdBuffer);
 
-		vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_SecondPipeline.GetLayout(),
+		vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipelines[1].GetLayout(),
 			0, 1, &m_InputDescriptorSets[ImageIndex], 0, nullptr);
 
 		vkCmdDraw(cmdBuffer, 3, 1, 0, 0); // fill screen with one big triangle to draw on

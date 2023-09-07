@@ -1,6 +1,6 @@
 #pragma once
 
-#include "SystemManager.h"
+#include "System.h"
 
 namespace vge
 {

@@ -2,6 +2,7 @@
 #define VMA_IMPLEMENTATION
 
 #include "Application.h"
+#include "EngineLoop.h"
 #include "Renderer/Window.h"
 #include "Renderer/Device.h"
 #include "Renderer/Renderer.h"
@@ -17,17 +18,19 @@ void vge::Application::Initialize()
 	LOG_RAW("\n----- Shader compilation finished -----\n\n");
 #endif
 
-	m_EngineLoop.Initialize();
+	CreateEngineLoop();
+	ENSURE(GEngineLoop);
+	GEngineLoop->Initialize();
 }
 
 void vge::Application::Run()
 {
-	m_EngineLoop.Start();
+	GEngineLoop->Start();
 }
 
 void vge::Application::Close()
 {
-	m_EngineLoop.Destroy();
+	ENSURE(DestroyEngineLoop());
 }
 
 bool vge::Application::ShouldClose() const

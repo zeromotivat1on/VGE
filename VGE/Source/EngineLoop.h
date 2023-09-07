@@ -5,6 +5,8 @@
 
 namespace vge
 {
+	inline class EngineLoop* GEngineLoop = nullptr;
+
 	class EngineLoop
 	{
 	public:
@@ -13,6 +15,9 @@ namespace vge
 		void Initialize();
 		void Start();
 		void Destroy();
+
+		inline GameLoop& GetGameLoop() { return m_GameLoop; }
+		inline RenderLoop& GetRenderLoop() { return m_RenderLoop; }
 
 	public:
 		float StartTime = 0.0f;
@@ -27,4 +32,19 @@ namespace vge
 		GameLoop m_GameLoop = {};
 		RenderLoop m_RenderLoop = {};
 	};
+
+	inline EngineLoop* CreateEngineLoop()
+	{
+		if (GEngineLoop) return GEngineLoop;
+		return (GEngineLoop = new EngineLoop());
+	}
+
+	inline bool DestroyEngineLoop()
+	{
+		if (!GEngineLoop) return false;
+		GEngineLoop->Destroy();
+		delete GEngineLoop;
+		GEngineLoop = nullptr;
+		return true;
+	}
 }

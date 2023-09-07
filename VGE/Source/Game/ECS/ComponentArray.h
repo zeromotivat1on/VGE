@@ -16,7 +16,7 @@ namespace vge
 	class ComponentArray : public IComponentArray
 	{
 	public:
-		inline void Add(Entity entity, T component)
+		inline void Add(Entity entity, const T& component)
 		{
 			ASSERT(m_EntityToIndex.find(entity) == m_EntityToIndex.end());
 
@@ -32,12 +32,10 @@ namespace vge
 		{
 			ASSERT(m_EntityToIndex.find(entity) != m_EntityToIndex.end());
 
-			// Copy element at end into deleted element's place to maintain density
 			size_t indexOfRemovedEntity = m_EntityToIndex[entity];
 			size_t indexOfLastElement = m_Size - 1;
 			m_Components[indexOfRemovedEntity] = m_Components[indexOfLastElement];
 
-			// Update map to point to moved spot
 			Entity entityOfLastElement = m_IndexToEntity[indexOfLastElement];
 			m_EntityToIndex[entityOfLastElement] = indexOfRemovedEntity;
 			m_IndexToEntity[indexOfRemovedEntity] = entityOfLastElement;
@@ -51,8 +49,6 @@ namespace vge
 		inline T& Get(Entity entity)
 		{
 			ASSERT(m_EntityToIndex.find(entity) != m_EntityToIndex.end());
-
-			// Return a reference to the entity's component
 			return m_Components[m_EntityToIndex[entity]];
 		}
 

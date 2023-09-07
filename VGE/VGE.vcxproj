@@ -147,6 +147,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Game\ECS\GameSystem.cpp" />
+    <ClCompile Include="Source\Game\Camera.cpp" />
+    <ClCompile Include="Source\Game\Components\TransformComponent.cpp" />
     <ClCompile Include="Source\Game\ECS\RenderSystem.cpp" />
     <ClCompile Include="Source\Game\ECS\EntityManager.cpp" />
     <ClCompile Include="Source\Game\ECS\Entity.cpp" />
@@ -172,6 +175,8 @@
     <ClCompile Include="Source\Game\GameLoop.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Game\ECS\GameSystem.h" />
+    <ClInclude Include="Source\Game\Camera.h" />
     <ClInclude Include="Source\Algo.h" />
     <ClInclude Include="Source\Game\ECS\RenderSystem.h" />
     <ClInclude Include="Source\Game\Components\RenderComponent.h" />

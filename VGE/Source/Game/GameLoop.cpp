@@ -16,17 +16,34 @@ void vge::GameLoop::Initialize()
 	ENSURE(GCoordinator);
 	GCoordinator->Initialize();
 
-	GCoordinator->RegisterComponent<RenderComponent>();
-	GCoordinator->RegisterComponent<TransformComponent>();
+	RegisterDefaultComponents();
+	RegisterGameSystem();
 }
 
 void vge::GameLoop::Tick(float deltaTime)
 {
 	GWindow->PollEvents();
+	m_GameSystem->Tick(deltaTime);
 }
 
 void vge::GameLoop::Destroy()
 {
 	DestroyCoordinator();
 	DestroyWindow();
+}
+
+void vge::GameLoop::RegisterDefaultComponents() const
+{
+	GCoordinator->RegisterComponent<TransformComponent>();
+}
+
+void vge::GameLoop::RegisterGameSystem()
+{
+	m_GameSystem = GCoordinator->RegisterSystem<GameSystem>();
+	ENSURE(m_GameSystem);
+	m_GameSystem->Initialize();
+
+	Signature signature;
+	signature.set(GCoordinator->GetComponentType<TransformComponent>());
+	GCoordinator->SetSystemSignature<GameSystem>(signature);
 }

@@ -43,10 +43,18 @@ namespace vge
 		inline const SwapchainImage* GetImage(size_t index) const { return index < GetImageCount() ? &m_Images[index] : nullptr; }
 		inline 		 SwapchainImage* GetImage(size_t index)		  { return index < GetImageCount() ? &m_Images[index] : nullptr; }
 
-		inline VkResult AcquireNextImage(VkSemaphore semaphore, uint32& outImage, uint64 timeout = UINT64_MAX, VkFence fence = VK_NULL_HANDLE)
+		inline uint32 GetCurrentImageIndex() const { return m_CurrentImageIndex; }
+		inline VkResult AcquireNextImage(VkSemaphore semaphore, uint64 timeout = UINT64_MAX, VkFence fence = VK_NULL_HANDLE)
 		{
-			return vkAcquireNextImageKHR(m_Device.GetHandle(), m_Handle, timeout, semaphore, fence, &outImage);
+			return vkAcquireNextImageKHR(m_Device.GetHandle(), m_Handle, timeout, semaphore, fence, &m_CurrentImageIndex);
 		}
+
+		//inline VkResult AcquireNextImage(VkSemaphore semaphore, uint32& outImage, uint64 timeout = UINT64_MAX, VkFence fence = VK_NULL_HANDLE)
+		//{
+		//	VkResult result = vkAcquireNextImageKHR(m_Device.GetHandle(), m_Handle, timeout, semaphore, fence, &outImage);
+		//	m_CurrentImageIndex = outImage;
+		//	return result;
+		//}
 
 		inline SwapchainSupportDetails GetSupportDetails() const { return m_Device.GetSwapchainSupportDetails(m_Surface); }
 
@@ -54,6 +62,7 @@ namespace vge
 
 	private:
 		Device& m_Device;
+		uint32 m_CurrentImageIndex = 0;
 		VkSwapchainKHR m_Handle = VK_NULL_HANDLE;
 		VkSurfaceKHR m_Surface = VK_NULL_HANDLE;
 		VkFormat m_ImageFormat = {};

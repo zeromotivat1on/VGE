@@ -6,19 +6,14 @@ namespace vge
 {
 	struct TransformComponent
 	{
-		glm::vec3 Location;
+		glm::vec3 Translation;
 		glm::vec3 Rotation;
 		glm::vec3 Scale;
-		float RotationAngle; // degrees
 	};
 
-	inline glm::mat4 GetTransformMatrix(const TransformComponent& transformComponent)
-	{
-		glm::mat4 matrix(1.0f);
-		matrix = glm::translate(matrix, transformComponent.Location);
-		matrix = glm::rotate(matrix, glm::radians(transformComponent.RotationAngle), transformComponent.Rotation);
-		matrix = glm::scale(matrix, transformComponent.Scale);
-
-		return matrix;
-	}
+	// Matrix corresponds to Translate * Ry * Rx * Rz * Scale.
+	// Rotations correspond to Tait-bryan angles of Y(1), X(2), Z(3).
+	// https://en.wikipedia.org/wiki/Euler_angles#Rotation_matrix.
+	// Note: custom mode has visually different rotation in case of several rotation axis at a time.
+	glm::mat4 GetMat4(const TransformComponent& transformComponent);
 }

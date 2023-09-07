@@ -44,7 +44,7 @@ namespace vge
 		}
 
 		template<typename T>
-		void AddComponent(Entity entity, T component)
+		void AddComponent(Entity entity, const T& component)
 		{
 			m_ComponentManager->Add<T>(entity, component);
 
@@ -81,12 +81,6 @@ namespace vge
 
 
 	public:
-		//template<typename T>
-		//std::shared_ptr<T> GetSystem()
-		//{
-		//	return m_SystemManager->Get<T>();
-		//}
-
 		template<typename T>
 		std::shared_ptr<T> RegisterSystem()
 		{

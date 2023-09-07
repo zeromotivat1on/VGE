@@ -33,7 +33,7 @@ namespace vge
 		}
 
 		template<typename T>
-		void Add(Entity entity, T component)
+		void Add(Entity entity, const T& component)
 		{
 			GetComponentArray<T>()->Add(entity, component);
 		}

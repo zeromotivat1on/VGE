@@ -1,7 +1,11 @@
 #include "EngineLoop.h"
 #include "Application.h"
+#include "ECS/Coordinator.h"
 #include "Profiling.h"
+#include "Renderer/Renderer.h"
 #include "Renderer/RenderCommon.h"
+#include "Components/RenderComponent.h"
+#include "Components/TransformComponent.h"
 
 static inline void IncrementAppFrame() { ++vge::GAppFrame; }
 
@@ -9,6 +13,27 @@ void vge::EngineLoop::Initialize()
 {
 	m_GameLoop.Initialize();
 	m_RenderLoop.Initialize();
+
+	// Add 1 test entity.
+	const Entity entity = GCoordinator->CreateEntity();
+
+	{
+		m_GameLoop.GetGameSystem()->Add(entity);
+
+		TransformComponent transformComponent = {};
+		transformComponent.Translation = glm::vec3(0.0f, 0.0f, -25.0f);
+		transformComponent.Rotation = glm::vec3(0.0f, 0.0f, 0.0f);
+		transformComponent.Scale = glm::vec3(1.0f, 1.0f, 1.0f);
+		GCoordinator->AddComponent(entity, transformComponent);
+	}
+
+	{
+		m_RenderLoop.GetRenderSystem()->Add(entity);
+
+		RenderComponent renderComponent = {};
+		renderComponent.ModelId = GRenderer->CreateModel("Models/cottage/Cottage_FREE.obj");
+		GCoordinator->AddComponent(entity, renderComponent);
+	}
 }
 
 void vge::EngineLoop::Start()

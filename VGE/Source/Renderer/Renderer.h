@@ -37,11 +37,18 @@ namespace vge
 		void Draw();
 		void Destroy();
 
+		VkResult BeginFrame();
+		VkCommandBuffer BeginCmdBufferRecord();
+		void EndCmdBufferRecord(VkCommandBuffer cmdBuffer);
+		void EndFrame();
+
 		// TODO: 1 mesh can have only 1 texture which is cringe (or not, idk for now).
 		int32 CreateTexture(const char* filename);
 		int32 CreateModel(const char* filename);
 
 		void RecreateSwapchain();
+
+		inline VkExtent2D GetSwapchainExtent() const { return m_Swapchain->GetExtent(); }
 
 		inline void UpdateModelMatrix(int32 id, glm::mat4 model) 
 		{
@@ -101,8 +108,9 @@ namespace vge
 
 		VkRenderPass m_RenderPass = VK_NULL_HANDLE;
 
-		Pipeline m_FirstPipeline;
-		Pipeline m_SecondPipeline;
+		std::vector<Pipeline> m_Pipelines;
+		//Pipeline m_FirstPipeline;
+		//Pipeline m_SecondPipeline;
 
 	private:
 		void CreateSwapchain();

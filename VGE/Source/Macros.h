@@ -8,6 +8,10 @@
 	#define DEBUG 1
 #endif
 
+#ifndef REPLACE_GLM_WITH_CUSTOM_CALCS
+	#define REPLACE_GLM_WITH_CUSTOM_CALCS 0
+#endif
+
 #ifndef COMPILE_SHADERS_ON_INIT
 	#define COMPILE_SHADERS_ON_INIT 1
 #endif

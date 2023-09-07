@@ -59,7 +59,7 @@ void vge::Pipeline::DefaultCreateInfo(PipelineCreateInfo& createInfo)
 	createInfo.DynamicStateInfo.pDynamicStates = createInfo.DynamicStates.data();
 }
 
-vge::Pipeline::Pipeline(Device& device) : m_Device(device) {}
+vge::Pipeline::Pipeline(Device* device) : m_Device(device) { ASSERT(m_Device); }
 
 void vge::Pipeline::Initialize(const char* vertexShader, const char* fragmentShader, const PipelineCreateInfo& data)
 {
@@ -73,8 +73,8 @@ void vge::Pipeline::Initialize(const char* vertexShader, const char* fragmentSha
 	std::vector<char> vertexShaderCode = file::ReadShader(vertexShader);
 	std::vector<char> fragmentShaderCode = file::ReadShader(fragmentShader);
 
-	m_VertexShaderModule = CreateShaderModule(m_Device.GetHandle(), vertexShaderCode);
-	m_FragmentShaderModule = CreateShaderModule(m_Device.GetHandle(), fragmentShaderCode);
+	m_VertexShaderModule = CreateShaderModule(m_Device->GetHandle(), vertexShaderCode);
+	m_FragmentShaderModule = CreateShaderModule(m_Device->GetHandle(), fragmentShaderCode);
 
 	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages = {};
 	shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -104,13 +104,13 @@ void vge::Pipeline::Initialize(const char* vertexShader, const char* fragmentSha
 	pipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
 	pipelineCreateInfo.basePipelineIndex = INDEX_NONE;
 
-	VK_ENSURE(vkCreateGraphicsPipelines(m_Device.GetHandle(), nullptr, 1, &pipelineCreateInfo, nullptr, &m_Handle));
+	VK_ENSURE(vkCreateGraphicsPipelines(m_Device->GetHandle(), nullptr, 1, &pipelineCreateInfo, nullptr, &m_Handle));
 }
 
 void vge::Pipeline::Destroy()
 {
-	vkDestroyShaderModule(m_Device.GetHandle(), m_FragmentShaderModule, nullptr);
-	vkDestroyShaderModule(m_Device.GetHandle(), m_VertexShaderModule, nullptr);
-	vkDestroyPipeline(m_Device.GetHandle(), m_Handle, nullptr);
-	vkDestroyPipelineLayout(m_Device.GetHandle(), m_Layout, nullptr);
+	vkDestroyShaderModule(m_Device->GetHandle(), m_FragmentShaderModule, nullptr);
+	vkDestroyShaderModule(m_Device->GetHandle(), m_VertexShaderModule, nullptr);
+	vkDestroyPipeline(m_Device->GetHandle(), m_Handle, nullptr);
+	vkDestroyPipelineLayout(m_Device->GetHandle(), m_Layout, nullptr);
 }
