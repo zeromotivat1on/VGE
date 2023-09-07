@@ -18,7 +18,7 @@ void vge::EngineLoop::Start()
 	while (!GApplication->ShouldClose())
 	{
 		SCOPE_TIMER("Tick");
-		UpdateTime();
+		UpdateDeltaTime();
 		Tick();
 		IncrementAppFrame();
 	}
@@ -44,7 +44,7 @@ void vge::EngineLoop::Destroy()
 	m_GameLoop.Destroy();
 }
 
-void vge::EngineLoop::UpdateTime()
+void vge::EngineLoop::UpdateDeltaTime()
 {
 	const float nowTime = static_cast<float>(glfwGetTime());
 	DeltaTime = nowTime - LastTime;

@@ -21,7 +21,7 @@ namespace vge
 
 	private:
 		void Tick();
-		void UpdateTime();
+		void UpdateDeltaTime();
 
 	private:
 		GameLoop m_GameLoop = {};
