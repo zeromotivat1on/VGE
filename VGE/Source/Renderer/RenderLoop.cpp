@@ -42,7 +42,7 @@ void vge::RenderLoop::RegisterRenderSystem()
 {
 	m_RenderSystem = GCoordinator->RegisterSystem<RenderSystem>();
 	ENSURE(m_RenderSystem);
-	m_RenderSystem->Initialize(GRenderer);
+	m_RenderSystem->Initialize(GRenderer, &m_Camera);
 
 	Signature signature;
 	signature.set(GCoordinator->GetComponentType<RenderComponent>());

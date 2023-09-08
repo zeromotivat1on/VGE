@@ -39,6 +39,7 @@ namespace vge
 		inline size_t GetImageCount() const { return m_Images.size(); }
 		inline size_t GetFramebufferCount() const { return m_Framebuffers.size(); }
 		inline VkFramebuffer GetFramebuffer(size_t index) { return index < GetFramebufferCount() ? m_Framebuffers[index] : VK_NULL_HANDLE; }
+		inline float GetAspectRatio() const { return static_cast<float>(m_Extent.width) / static_cast<float>(m_Extent.height); }
 
 		inline const SwapchainImage* GetImage(size_t index) const { return index < GetImageCount() ? &m_Images[index] : nullptr; }
 		inline 		 SwapchainImage* GetImage(size_t index)		  { return index < GetImageCount() ? &m_Images[index] : nullptr; }

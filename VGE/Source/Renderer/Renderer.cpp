@@ -34,10 +34,8 @@ void vge::Renderer::Initialize()
 	// Default texture (plain white square 64x64).
 	CreateTexture("Textures/plain.png");
 
-	const float aspectRatio = static_cast<float>(m_Swapchain->GetExtentWidth()) / static_cast<float>(m_Swapchain->GetExtentHeight());
-	m_UboViewProjection.Projection = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 10000.0f);
 	m_UboViewProjection.View = glm::lookAt(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-
+	m_UboViewProjection.Projection = glm::perspective(glm::radians(45.0f), m_Swapchain->GetAspectRatio(), 0.1f, 10000.0f);
 	m_UboViewProjection.Projection[1][1] *= -1; // invert y-axis as glm uses positive y-axis for up, but vulkan uses it for down
 }
 
@@ -958,10 +956,7 @@ void vge::Renderer::UpdateInputDescriptorSet()
 
 void vge::Renderer::UpdateUniformBuffers(uint32 ImageIndex)
 {
-	void* data;
-	vmaMapMemory(m_Device.GetAllocator(), m_VpUniformBuffers[ImageIndex].Allocation, &data);
-	memcpy(data, &m_UboViewProjection, sizeof(UboViewProjection));
-	vmaUnmapMemory(m_Device.GetAllocator(), m_VpUniformBuffers[ImageIndex].Allocation);
+	m_VpUniformBuffers[ImageIndex].TransferToGpuMemory(&m_UboViewProjection, sizeof(UboViewProjection));
 
 	// Usage of dynamic uniform buffer example. Costly for frequent actions like model matrix update.
 	//for (size_t i = 0; i < m_Meshes.size(); ++i)

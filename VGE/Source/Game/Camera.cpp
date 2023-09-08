@@ -13,6 +13,8 @@ void vge::Camera::SetOrthographicProjection(float l, float r, float t, float b, 
 #else
 	m_ProjectionMatrix = glm::ortho(l, r, b, t, n, f);
 #endif
+
+	m_ProjectionMatrix[1][1] *= -1; // invert y-axis as glm uses positive y-axis for up, but vulkan uses it for down
 }
 
 void vge::Camera::SetPerspectiveProjection(float fovy, float aspect, float n, float f) 
@@ -31,4 +33,6 @@ void vge::Camera::SetPerspectiveProjection(float fovy, float aspect, float n, fl
 #else
 	m_ProjectionMatrix = glm::perspective(glm::radians(fovy), aspect, n, f);
 #endif
+
+	m_ProjectionMatrix[1][1] *= -1; // invert y-axis as glm uses positive y-axis for up, but vulkan uses it for down
 }

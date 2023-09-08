@@ -49,12 +49,50 @@ namespace vge
 		void RecreateSwapchain();
 
 		inline VkExtent2D GetSwapchainExtent() const { return m_Swapchain->GetExtent(); }
+		inline float GetSwapchainAspectRatio() const { return m_Swapchain->GetAspectRatio(); }
+		inline VkDescriptorSet GetCurrentInputDescriptorSet() const { return m_InputDescriptorSets[m_Swapchain->GetCurrentImageIndex()]; }
+		inline VkDescriptorSet GetCurrentUniformDescriptorSet() const { return m_UniformDescriptorSets[m_Swapchain->GetCurrentImageIndex()]; }
+
+		inline Model* FindModel(int32 id) 
+		{
+			if (id < m_Models.size()) 
+			{
+				return &m_Models[id];
+			}
+
+			LOG(Warning, "Didn't find model with id: %d", id);
+			return nullptr;
+		}
+		
+		inline Texture* FindTexture(int32 id) 
+		{
+			if (id < m_Textures.size()) 
+			{
+				return &m_Textures[id];
+			}
+
+			LOG(Warning, "Didn't find texture with id: %d", id);
+			return nullptr;
+		}
 
 		inline void UpdateModelMatrix(int32 id, glm::mat4 model) 
 		{
-			ASSERT(id < m_Models.size()) 
+			ASSERT(id < m_Models.size());
 			m_Models[id].SetModelMatrix(model); 
 		}
+
+		inline Pipeline* FindPipeline(int32 index)
+		{
+			if (index < m_Pipelines.size())
+			{
+				return &m_Pipelines[index];
+			}
+
+			return nullptr;
+		}
+
+		inline void UpdateUniformBuffers() { UpdateUniformBuffers(m_Swapchain->GetCurrentImageIndex()); }
+		inline void SetProjectionBufferData(const glm::mat4& projection) { m_UboViewProjection.Projection = projection; }
 
 	private:
 		std::vector<Model> m_Models = {};
@@ -108,6 +146,7 @@ namespace vge
 
 		VkRenderPass m_RenderPass = VK_NULL_HANDLE;
 
+		int32 m_CurrentPipelineIndex = 0;
 		std::vector<Pipeline> m_Pipelines;
 		//Pipeline m_FirstPipeline;
 		//Pipeline m_SecondPipeline;
