@@ -6,9 +6,9 @@ namespace vge
 {
 	struct TransformComponent
 	{
-		glm::vec3 Translation;
-		glm::vec3 Rotation;
-		glm::vec3 Scale;
+		glm::vec3 Translation = glm::vec3(0.0f);
+		glm::vec3 Rotation = glm::vec3(0.0f);
+		glm::vec3 Scale = glm::vec3(1.0f);
 	};
 
 	// Matrix corresponds to Translate * Ry * Rx * Rz * Scale.

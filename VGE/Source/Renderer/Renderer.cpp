@@ -33,10 +33,6 @@ void vge::Renderer::Initialize()
 
 	// Default texture (plain white square 64x64).
 	CreateTexture("Textures/plain.png");
-
-	m_UboViewProjection.View = glm::lookAt(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	m_UboViewProjection.Projection = glm::perspective(glm::radians(45.0f), m_Swapchain->GetAspectRatio(), 0.1f, 10000.0f);
-	m_UboViewProjection.Projection[1][1] *= -1; // invert y-axis as glm uses positive y-axis for up, but vulkan uses it for down
 }
 
 void vge::Renderer::Draw()

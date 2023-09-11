@@ -2,7 +2,7 @@
 
 glm::mat4 vge::GetMat4(const TransformComponent& transformComponent)
 {
-#if REPLACE_GLM_WITH_CUSTOM_CALCS
+#if USE_CUSTOM_MATRIX_CALCS
 	const float c1 = glm::cos(glm::radians(transformComponent.Rotation.y));
 	const float s1 = glm::sin(glm::radians(transformComponent.Rotation.y));
 	const float c2 = glm::cos(glm::radians(transformComponent.Rotation.x));

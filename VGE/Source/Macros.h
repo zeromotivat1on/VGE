@@ -8,8 +8,8 @@
 	#define DEBUG 1
 #endif
 
-#ifndef REPLACE_GLM_WITH_CUSTOM_CALCS
-	#define REPLACE_GLM_WITH_CUSTOM_CALCS 0
+#ifndef USE_CUSTOM_MATRIX_CALCS
+	#define USE_CUSTOM_MATRIX_CALCS 0
 #endif
 
 #ifndef COMPILE_SHADERS_ON_INIT
@@ -45,7 +45,7 @@
 if (!(expr))																									\
 {																												\
 	LOG(Error, "Ensure condition failed: %s", #expr);															\
-	exit(EXIT_FAILURE);																							\
+	abort();																									\
 }
 
 #define ENSURE_MSG(expr, errMessage)																			\

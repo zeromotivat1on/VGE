@@ -10,8 +10,13 @@ void vge::RenderSystem::Initialize(Renderer* renderer, Camera* camera)
 	m_Renderer = renderer;
 	m_Camera = camera;
 
-	//m_Camera->SetPerspectiveProjection(glm::radians(45.0f), m_Renderer->GetSwapchainAspectRatio(), 0.1f, 10000.0f);
-	//m_Renderer->SetProjectionBufferData(m_Camera->GetProjectionMatrix());
+	m_Camera->ShouldInvertProjectionYAxis(true);
+	m_Camera->SetViewDirection(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	m_Camera->SetPerspectiveProjection(45.0f, m_Renderer->GetSwapchainAspectRatio(), 0.1f, 10000.0f);
+	//m_Camera->SetOrthographicProjection(-m_Renderer->GetSwapchainAspectRatio(), m_Renderer->GetSwapchainAspectRatio(), -1.0f, 1.0f, -1.0f, 1.0f);
+
+	m_Renderer->SetViewBufferData(m_Camera->GetViewMatrix());
+	m_Renderer->SetProjectionBufferData(m_Camera->GetProjectionMatrix());
 }
 
 void vge::RenderSystem::Tick(float deltaTime)
@@ -24,18 +29,16 @@ void vge::RenderSystem::Tick(float deltaTime)
 		m_Renderer->UpdateModelMatrix(renderComponent.ModelId, GetMat4(transformComponent));
 	}
 
-	//{
-	//	VK_ENSURE(m_Renderer->BeginFrame());
-	//	VkCommandBuffer cmd = m_Renderer->BeginCmdBufferRecord();
+	{
+		VK_ENSURE(m_Renderer->BeginFrame());
+		VkCommandBuffer cmd = m_Renderer->BeginCmdBufferRecord();
 
-	//	RecordCommandBuffer(cmd);
-	//	m_Renderer->UpdateUniformBuffers();
+		RecordCommandBuffer(cmd);
+		m_Renderer->UpdateUniformBuffers();
 
-	//	m_Renderer->EndCmdBufferRecord(cmd);
-	//	m_Renderer->EndFrame();
-	//}
-
-	m_Renderer->Draw();
+		m_Renderer->EndCmdBufferRecord(cmd);
+		m_Renderer->EndFrame();
+	}
 }
 
 void vge::RenderSystem::RecordCommandBuffer(VkCommandBuffer cmd)

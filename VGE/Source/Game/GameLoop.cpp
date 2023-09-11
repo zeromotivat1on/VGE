@@ -2,12 +2,11 @@
 #include "Application.h"
 #include "ECS/Coordinator.h"
 #include "Renderer/Window.h"
-#include "Components/RenderComponent.h"
 #include "Components/TransformComponent.h"
 
 void vge::GameLoop::Initialize()
 {
-	const ApplicationSpecs appSpecs = GApplication->Specs;
+	const ApplicationSpecs& appSpecs = GApplication->Specs;
 	CreateWindow(appSpecs.Window.Name, appSpecs.Window.Width, appSpecs.Window.Height);
 	ENSURE(GWindow);
 	GWindow->Initialize();

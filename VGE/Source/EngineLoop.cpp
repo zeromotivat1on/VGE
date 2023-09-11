@@ -19,12 +19,7 @@ void vge::EngineLoop::Initialize()
 
 	{
 		m_GameLoop.GetGameSystem()->Add(entity);
-
-		TransformComponent transformComponent = {};
-		transformComponent.Translation = glm::vec3(0.0f, 0.0f, -25.0f);
-		transformComponent.Rotation = glm::vec3(0.0f, 0.0f, 0.0f);
-		transformComponent.Scale = glm::vec3(1.0f, 1.0f, 1.0f);
-		GCoordinator->AddComponent(entity, transformComponent);
+		GCoordinator->AddComponent(entity, TransformComponent());
 	}
 
 	{
