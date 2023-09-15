@@ -1,6 +1,6 @@
 #version 450
 
-// Array for triangel that fills an entire screen.
+// Array for triangle that fills an entire screen.
 vec2 positions[3] = vec2[] 
 (
 	vec2(3.0, -1.0),

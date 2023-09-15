@@ -92,8 +92,8 @@ namespace vge
 		}
 
 		inline void UpdateUniformBuffers() { UpdateUniformBuffers(m_Swapchain->GetCurrentImageIndex()); }
-		inline void SetViewBufferData(const glm::mat4& view) { m_UboViewProjection.View = view; }
-		inline void SetProjectionBufferData(const glm::mat4& projection) { m_UboViewProjection.Projection = projection; }
+		inline void SetView(const glm::mat4& view) { m_UboViewProjection.View = view; }
+		inline void SetProjection(const glm::mat4& projection) { m_UboViewProjection.Projection = projection; }
 
 	private:
 		std::vector<Model> m_Models = {};

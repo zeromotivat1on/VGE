@@ -15,8 +15,8 @@ void vge::RenderSystem::Initialize(Renderer* renderer, Camera* camera)
 	m_Camera->SetPerspectiveProjection(45.0f, m_Renderer->GetSwapchainAspectRatio(), 0.1f, 10000.0f);
 	//m_Camera->SetOrthographicProjection(-m_Renderer->GetSwapchainAspectRatio(), m_Renderer->GetSwapchainAspectRatio(), -1.0f, 1.0f, -1.0f, 1.0f);
 
-	m_Renderer->SetViewBufferData(m_Camera->GetViewMatrix());
-	m_Renderer->SetProjectionBufferData(m_Camera->GetProjectionMatrix());
+	m_Renderer->SetView(m_Camera->GetViewMatrix());
+	m_Renderer->SetProjection(m_Camera->GetProjectionMatrix());
 }
 
 void vge::RenderSystem::Tick(float deltaTime)
