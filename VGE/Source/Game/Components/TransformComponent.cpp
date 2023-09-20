@@ -3,6 +3,10 @@
 glm::mat4 vge::GetMat4(const TransformComponent& transformComponent)
 {
 #if USE_CUSTOM_MATRIX_CALCS
+	// Matrix corresponds to Translate * Ry * Rx * Rz * Scale.
+	// Rotations correspond to Tait-bryan angles of Y(1), X(2), Z(3).
+	// https://en.wikipedia.org/wiki/Euler_angles#Rotation_matrix.
+
 	const float c1 = glm::cos(glm::radians(transformComponent.Rotation.y));
 	const float s1 = glm::sin(glm::radians(transformComponent.Rotation.y));
 	const float c2 = glm::cos(glm::radians(transformComponent.Rotation.x));

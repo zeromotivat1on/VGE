@@ -1,6 +1,6 @@
 #include "Camera.h"
 
-void vge::Camera::SetViewDirection(const glm::vec3& position, const glm::vec3& direction, const glm::vec3& up)
+void vge::Camera::SetViewDirection(const glm::vec3& position, const glm::vec3& direction, const glm::vec3& up /*=glm::vec3(0.0f, 1.0f, 0.0f)*/)
 {
 #if USE_CUSTOM_MATRIX_CALCS
 	const glm::vec3 w = { glm::normalize(direction) };
@@ -25,7 +25,7 @@ void vge::Camera::SetViewDirection(const glm::vec3& position, const glm::vec3& d
 #endif
 }
 
-void vge::Camera::SetViewTarget(const glm::vec3& position, const glm::vec3& target, const glm::vec3& up)
+void vge::Camera::SetViewTarget(const glm::vec3& position, const glm::vec3& target, const glm::vec3& up /*=glm::vec3(0.0f, 1.0f, 0.0f)*/)
 {
 	SetViewDirection(position, target - position, up);
 }

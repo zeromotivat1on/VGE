@@ -10,11 +10,6 @@ void vge::RenderSystem::Initialize(Renderer* renderer, Camera* camera)
 	m_Renderer = renderer;
 	m_Camera = camera;
 
-	m_Camera->ShouldInvertProjectionYAxis(true);
-	m_Camera->SetViewDirection(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	m_Camera->SetPerspectiveProjection(45.0f, m_Renderer->GetSwapchainAspectRatio(), 0.1f, 10000.0f);
-	//m_Camera->SetOrthographicProjection(-m_Renderer->GetSwapchainAspectRatio(), m_Renderer->GetSwapchainAspectRatio(), -1.0f, 1.0f, -1.0f, 1.0f);
-
 	m_Renderer->SetView(m_Camera->GetViewMatrix());
 	m_Renderer->SetProjection(m_Camera->GetProjectionMatrix());
 }

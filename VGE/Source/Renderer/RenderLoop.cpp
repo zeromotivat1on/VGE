@@ -42,6 +42,13 @@ void vge::RenderLoop::RegisterRenderSystem()
 {
 	m_RenderSystem = GCoordinator->RegisterSystem<RenderSystem>();
 	ENSURE(m_RenderSystem);
+
+#if !USE_CUSTOM_MATRIX_CALCS
+	m_Camera.ShouldInvertProjectionYAxis(true);
+#endif
+	m_Camera.SetViewDirection(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	//m_Camera.SetViewTarget(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	m_Camera.SetPerspectiveProjection(45.0f, GRenderer->GetSwapchainAspectRatio(), 0.1f, 10000.0f);
 	m_RenderSystem->Initialize(GRenderer, &m_Camera);
 
 	Signature signature;
