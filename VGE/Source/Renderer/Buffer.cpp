@@ -1,6 +1,7 @@
 #include "Buffer.h"
 #include "Device.h"
 #include "Logging.h"
+#include "CmdBuffer.h"
 
 vge::Buffer vge::Buffer::Create(const BufferCreateInfo& data)
 {
@@ -32,6 +33,25 @@ void vge::Buffer::Copy(const BufferCopyInfo& data)
 	vkCmdCopyBuffer(transferCmdBuffer.Get(), data.Source, data.Destination, 1, &bufferCopyRegion);
 }
 
+void vge::Buffer::CopyToImage(const BufferImageCopyInfo& data)
+{
+	ScopeCmdBuffer transferCmdBuffer(data.Device);
+
+	VkBufferImageCopy bufferImageCopyRegion = {};
+	bufferImageCopyRegion.bufferOffset = 0;
+	bufferImageCopyRegion.bufferRowLength = 0;										// for data spacing
+	bufferImageCopyRegion.bufferImageHeight = 0;									// for data spacing
+	bufferImageCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;	// which image aspect to copy
+	bufferImageCopyRegion.imageSubresource.mipLevel = 0;
+	bufferImageCopyRegion.imageSubresource.baseArrayLayer = 0;
+	bufferImageCopyRegion.imageSubresource.layerCount = 1;
+	bufferImageCopyRegion.imageOffset = { 0, 0, 0 };
+	bufferImageCopyRegion.imageExtent = { data.Extent.width, data.Extent.height, 1 };
+
+	const VkImageLayout imageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	vkCmdCopyBufferToImage(transferCmdBuffer.Get(), data.SrcBuffer, data.DstImage, imageLayout, 1, &bufferImageCopyRegion);
+}
+
 void vge::Buffer::Destroy()
 {
 	vmaDestroyBuffer(m_Allocator, Handle, Allocation);
@@ -47,76 +67,6 @@ void vge::Buffer::TransferToGpuMemory(const void* src, size_t size) const
 	vmaMapMemory(m_Allocator, Allocation, &data);
 	memcpy(data, src, size);
 	vmaUnmapMemory(m_Allocator, Allocation);
-}
-
-VkCommandBuffer vge::BeginOneTimeCmdBuffer(const Device* device)
-{
-	VkCommandBuffer cmdBuffer = VK_NULL_HANDLE;
-
-	VkCommandBufferAllocateInfo cmdBufferAllocInfo = {};
-	cmdBufferAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	cmdBufferAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	cmdBufferAllocInfo.commandPool = device->GetCommandPool();
-	cmdBufferAllocInfo.commandBufferCount = 1;
-
-	if (vkAllocateCommandBuffers(device->GetHandle(), &cmdBufferAllocInfo, &cmdBuffer) != VK_SUCCESS)
-	{
-		LOG(Error, "Failed to allcoate transfer command buffer.");
-		return VK_NULL_HANDLE;
-	}
-
-	VkCommandBufferBeginInfo cmdBufferBeginInfo = {};
-	cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	cmdBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-	vkBeginCommandBuffer(cmdBuffer, &cmdBufferBeginInfo);
-
-	return cmdBuffer;
-}
-
-void vge::EndOneTimeCmdBuffer(const Device* device, VkCommandBuffer cmdBuffer)
-{
-	vkEndCommandBuffer(cmdBuffer);
-
-	VkSubmitInfo submitInfo = {};
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &cmdBuffer;
-
-	vkQueueSubmit(device->GetGfxQueue(), 1, &submitInfo, VK_NULL_HANDLE);
-	vkQueueWaitIdle(device->GetGfxQueue()); // not good if we have a lot of calls to this
-
-	vkFreeCommandBuffers(device->GetHandle(), device->GetCommandPool(), 1, &cmdBuffer);
-}
-
-vge::ScopeCmdBuffer::ScopeCmdBuffer(const Device* device)
-	: m_Device(device)
-{
-	m_CmdBuffer = BeginOneTimeCmdBuffer(device);
-}
-
-vge::ScopeCmdBuffer::~ScopeCmdBuffer()
-{
-	EndOneTimeCmdBuffer(m_Device, m_CmdBuffer);
-}
-
-void vge::CopyImageBuffer(const Device* device, VkBuffer srcBuffer, VkImage dstImage, VkExtent2D extent)
-{
-	ScopeCmdBuffer transferCmdBuffer(device);
-
-	VkBufferImageCopy bufferImageCopyRegion = {};
-	bufferImageCopyRegion.bufferOffset = 0;
-	bufferImageCopyRegion.bufferRowLength = 0;										// for data spacing
-	bufferImageCopyRegion.bufferImageHeight = 0;									// for data spacing
-	bufferImageCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;	// which image aspect to copy
-	bufferImageCopyRegion.imageSubresource.mipLevel = 0;
-	bufferImageCopyRegion.imageSubresource.baseArrayLayer = 0;
-	bufferImageCopyRegion.imageSubresource.layerCount = 1;
-	bufferImageCopyRegion.imageOffset = { 0, 0, 0 };
-	bufferImageCopyRegion.imageExtent = { extent.width, extent.height, 1 };
-
-	const VkImageLayout imageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-	vkCmdCopyBufferToImage(transferCmdBuffer.Get(), srcBuffer, dstImage, imageLayout, 1, &bufferImageCopyRegion);
 }
 
 vge::ScopeStageBuffer::ScopeStageBuffer(const Device* device, VkDeviceSize size)
@@ -171,12 +121,12 @@ vge::IndexBuffer vge::IndexBuffer::Create(const Device* device, const std::vecto
 	return Create(device, indices.size(), indices.data());
 }
 
-vge::IndexBuffer vge::IndexBuffer::Create(const Device* device, size_t indexCount, const uint32* pIndices)
+vge::IndexBuffer vge::IndexBuffer::Create(const Device* device, size_t indexCount, const uint32* indices)
 {
-	const VkDeviceSize bufferSize = sizeof(pIndices[0]) * indexCount;
+	const VkDeviceSize bufferSize = sizeof(indices[0]) * indexCount;
 
 	ScopeStageBuffer stageBuffer(device, bufferSize);
-	stageBuffer.Get().TransferToGpuMemory(pIndices, static_cast<size_t>(bufferSize));
+	stageBuffer.Get().TransferToGpuMemory(indices, static_cast<size_t>(bufferSize));
 
 	BufferCreateInfo buffCreateInfo = {};
 	buffCreateInfo.Device = device;
@@ -203,12 +153,12 @@ vge::VertexBuffer vge::VertexBuffer::Create(const Device* device, const std::vec
 	return Create(device, vertices.size(), vertices.data());
 }
 
-vge::VertexBuffer vge::VertexBuffer::Create(const Device* device, size_t vertexCount, const Vertex* pVertices)
+vge::VertexBuffer vge::VertexBuffer::Create(const Device* device, size_t vertexCount, const Vertex* vertices)
 {
-	const VkDeviceSize bufferSize = sizeof(pVertices[0]) * vertexCount;
+	const VkDeviceSize bufferSize = sizeof(vertices[0]) * vertexCount;
 
 	ScopeStageBuffer stageBuffer(device, bufferSize);
-	stageBuffer.Get().TransferToGpuMemory(pVertices, static_cast<size_t>(bufferSize));
+	stageBuffer.Get().TransferToGpuMemory(vertices, static_cast<size_t>(bufferSize));
 
 	BufferCreateInfo buffCreateInfo = {};
 	buffCreateInfo.Device = device;

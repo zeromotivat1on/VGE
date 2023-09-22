@@ -2,6 +2,7 @@
 #include "Device.h"
 #include "File.h"
 #include "Buffer.h"
+#include "CmdBuffer.h"
 
 namespace 
 {
@@ -119,14 +120,22 @@ vge::Image vge::Image::CreateForTexture(const Device* device, const char* filena
 	transitionInfo.Device = device;
 	transitionInfo.Image = image.Handle;
 
-	// Transition image to be destination for copy operation.
+	// Transition image to have destination for copy operation.
 	{
 		transitionInfo.OldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		transitionInfo.NewLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		TransitionImageLayout(transitionInfo);
 	}
 
-	CopyImageBuffer(device, stageBuffer.Get().Handle, image.Handle, textureExtent);
+	// Copy stage buffer data to image.
+	{
+		BufferImageCopyInfo imageCopyInfo = {};
+		imageCopyInfo.Device = device;
+		imageCopyInfo.SrcBuffer = stageBuffer.Get().Handle;
+		imageCopyInfo.DstImage = image.Handle;
+		imageCopyInfo.Extent = textureExtent;
+		Buffer::CopyToImage(imageCopyInfo);
+	}
 
 	// Transition image to be shader readable for shade usage.
 	{

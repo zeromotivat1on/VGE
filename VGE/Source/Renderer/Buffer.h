@@ -23,11 +23,20 @@ namespace vge
 		VkDeviceSize Size = 0;
 	};
 
+	struct BufferImageCopyInfo
+	{
+		const Device* Device = nullptr;
+		VkBuffer SrcBuffer = VK_NULL_HANDLE;
+		VkImage DstImage = VK_NULL_HANDLE;
+		VkExtent2D Extent = {};
+	};
+
 	struct Buffer
 	{
 	public:
 		static Buffer Create(const BufferCreateInfo& data);
 		static void Copy(const BufferCopyInfo& data);
+		static void CopyToImage(const BufferImageCopyInfo& data);
 
 	public:
 		Buffer() = default;
@@ -42,30 +51,6 @@ namespace vge
 
 	private:
 		VmaAllocator m_Allocator = VK_NULL_HANDLE;
-	};
-
-	//void CreateBuffer(VmaAllocator allocator, VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memAllocUsage, Buffer& outBuffer);
-
-	VkCommandBuffer BeginOneTimeCmdBuffer(const Device* device);
-	void			EndOneTimeCmdBuffer(const Device* device, VkCommandBuffer cmdBuffer);
-
-	//void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags memProps, VkBuffer& outBuffer, VkDeviceMemory& outMemory);
-
-	//void CopyBuffer(VkQueue transferQueue, VkCommandPool transferCmdPool, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
-	void CopyImageBuffer(const Device* device, VkBuffer srcBuffer, VkImage dstImage, VkExtent2D extent);
-
-	// Simple wrapper for BeginOneTimeCmdBuffer (ctor) and EndOneTimeCmdBuffer (dtor) functions.
-	struct ScopeCmdBuffer
-	{
-	public:
-		ScopeCmdBuffer(const Device* device);
-		~ScopeCmdBuffer();
-
-		VkCommandBuffer Get() const { return m_CmdBuffer; }
-
-	private:
-		const Device* m_Device = nullptr;
-		VkCommandBuffer m_CmdBuffer = VK_NULL_HANDLE;
 	};
 
 	// Simple wrapper for scoped stage buffer.
@@ -85,7 +70,7 @@ namespace vge
 	{
 	public:
 		static IndexBuffer Create(const Device* device, const std::vector<uint32>& indices);
-		static IndexBuffer Create(const Device* device, size_t indexCount, const uint32* pIndices);
+		static IndexBuffer Create(const Device* device, size_t indexCount, const uint32* indices);
 
 	public:
 		IndexBuffer() = default;
@@ -117,7 +102,7 @@ namespace vge
 	{
 	public:
 		static VertexBuffer Create(const Device* device, const std::vector<Vertex>& vertices);
-		static VertexBuffer Create(const Device* device, size_t vertexCount, const Vertex* pVertices);
+		static VertexBuffer Create(const Device* device, size_t vertexCount, const Vertex* vertices);
 
 	public:
 		VertexBuffer() = default;

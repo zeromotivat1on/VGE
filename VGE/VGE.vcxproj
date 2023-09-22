@@ -147,6 +147,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Renderer\CmdBuffer.cpp" />
     <ClCompile Include="Source\Game\ECS\GameSystem.cpp" />
     <ClCompile Include="Source\Game\Camera.cpp" />
     <ClCompile Include="Source\Game\Components\TransformComponent.cpp" />
@@ -175,6 +176,7 @@
     <ClCompile Include="Source\Game\GameLoop.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Renderer\CmdBuffer.h" />
     <ClInclude Include="Source\Game\ECS\GameSystem.h" />
     <ClInclude Include="Source\Game\Camera.h" />
     <ClInclude Include="Source\Algo.h" />
