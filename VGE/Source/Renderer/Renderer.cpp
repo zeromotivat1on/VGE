@@ -320,15 +320,6 @@ void vge::Renderer::CreateRenderPass()
 	// Order should correspond to attachment values in attachment descriptions.
 	std::vector<VkAttachmentDescription> attachments = { swapchainColorAttachment, colorAttachment, depthAttachment };
 
-	//VkRenderPassCreateInfo renderPassCreateInfo = {};
-	//renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	//renderPassCreateInfo.attachmentCount = static_cast<uint32>(renderPassAttachments.size());
-	//renderPassCreateInfo.pAttachments = renderPassAttachments.data();
-	//renderPassCreateInfo.subpassCount = static_cast<uint32>(subpasses.size());
-	//renderPassCreateInfo.pSubpasses = subpasses.data();
-	//renderPassCreateInfo.dependencyCount = static_cast<uint32>(subpassDependencies.size());
-	//renderPassCreateInfo.pDependencies = subpassDependencies.data();
-
 	RenderPassCreateInfo createInfo = {};
 	createInfo.Device = &m_Device;
 	createInfo.SubpassCount = m_DefaultSubpassCount;
@@ -339,8 +330,6 @@ void vge::Renderer::CreateRenderPass()
 	createInfo.Dependencies = &dependencies;
 
 	m_RenderPass.Initialize(createInfo);
-
-	//VK_ENSURE(vkCreateRenderPass(m_Device.GetHandle(), &renderPassCreateInfo, nullptr, &m_RenderPass));
 }
 
 void vge::Renderer::CreatePushConstantRange()
