@@ -31,11 +31,13 @@ namespace vge
 		Mesh() = default;
 
 		inline int32 GetTextureId() const { return m_TextureId; }
-		inline size_t GetIndexCount() const { return m_IndexCount; }
-		inline size_t GetVertexCount() const { return m_VertexCount; }
+		inline size_t GetIndexCount() const { return m_IndexBuffer.GetIndexCount(); }
+		inline size_t GetVertexCount() const { return m_VertexBuffer.GetVertexCount(); }
 		inline ModelData GetModelData() const { return m_ModelData; }
-		inline IndexBuffer GetIndexBuffer() const { return m_IndexBuffer; }
-		inline VertexBuffer GetVertexBuffer() const{ return m_VertexBuffer; }
+		inline IndexBuffer* GetIndexBuffer() { return &m_IndexBuffer; }
+		inline VertexBuffer* GetVertexBuffer() { return &m_VertexBuffer; }
+		inline const IndexBuffer* GetIndexBuffer() const { return &m_IndexBuffer; }
+		inline const VertexBuffer* GetVertexBuffer() const { return &m_VertexBuffer; }
 
 		inline void SetModelData(const ModelData& data) { m_ModelData = data; }
 		inline void SetModelMatrix(const glm::mat4& model) { m_ModelData.ModelMatrix = model; }
@@ -44,8 +46,8 @@ namespace vge
 
 	private:
 		int32 m_TextureId = INDEX_NONE;
-		size_t m_IndexCount = 0;
-		size_t m_VertexCount = 0;
+		//size_t m_IndexCount = 0;
+		//size_t m_VertexCount = 0;
 		ModelData m_ModelData = {};
 		IndexBuffer m_IndexBuffer = {};
 		VertexBuffer m_VertexBuffer = {};

@@ -33,7 +33,7 @@ void vge::EngineLoop::Initialize()
 
 void vge::EngineLoop::Start()
 {
-	StartTime = static_cast<float>(glfwGetTime());
+	m_StartTime = static_cast<float>(glfwGetTime());
 
 	while (!GApplication->ShouldClose())
 	{
@@ -43,7 +43,7 @@ void vge::EngineLoop::Start()
 		IncrementAppFrame();
 	}
 
-	const float loopDurationTime = LastTime - StartTime;
+	const float loopDurationTime = m_LastTime - m_StartTime;
 	LOG(Log, "Engine loop stats:");
 	LOG(Log, " Duration: %.2fs", loopDurationTime);
 	LOG(Log, " Iterations: %d", GAppFrame);
@@ -53,8 +53,8 @@ void vge::EngineLoop::Start()
 void vge::EngineLoop::Tick()
 {
 	// TODO: make separate threads for game and render.
-	m_GameLoop.Tick(DeltaTime);
-	m_RenderLoop.Tick(DeltaTime);
+	m_GameLoop.Tick(m_DeltaTime);
+	m_RenderLoop.Tick(m_DeltaTime);
 	// TODO: when separate threads are done - implement their sync.
 }
 
@@ -67,6 +67,6 @@ void vge::EngineLoop::Destroy()
 void vge::EngineLoop::UpdateDeltaTime()
 {
 	const float nowTime = static_cast<float>(glfwGetTime());
-	DeltaTime = nowTime - LastTime;
-	LastTime = nowTime;
+	m_DeltaTime = nowTime - m_LastTime;
+	m_LastTime = nowTime;
 }

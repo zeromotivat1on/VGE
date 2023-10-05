@@ -1,6 +1,7 @@
 #include "Swapchain.h"
 #include "Window.h"
 #include "Utils.h"
+#include "RenderPass.h"
 
 #pragma region Statics
 static VkSurfaceFormatKHR GetBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats)
@@ -156,11 +157,17 @@ void vge::Swapchain::Initialize(SwapchainRecreateInfo* recreateInfo /*= nullptr*
 	std::vector<VkImage> images(swapchainImageCount);
 	vkGetSwapchainImagesKHR(m_Device.GetHandle(), m_Handle, &swapchainImageCount, images.data());
 
-	for (const auto& image : images)
+	for (const VkImage& image : images)
 	{
+		ImageViewCreateInfo imgViewCreateInfo = {};
+		imgViewCreateInfo.Device = &m_Device;
+		imgViewCreateInfo.Format = m_ImageFormat;
+		imgViewCreateInfo.AspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
+		imgViewCreateInfo.Image = image;
+
 		SwapchainImage swapchainImage = {};
 		swapchainImage.Handle = image;
-		CreateImageView(m_Device.GetHandle(), image, m_ImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, swapchainImage.View);
+		swapchainImage.View = Image::CreateView(imgViewCreateInfo);
 
 		m_Images.push_back(swapchainImage);
 	}
@@ -168,9 +175,9 @@ void vge::Swapchain::Initialize(SwapchainRecreateInfo* recreateInfo /*= nullptr*
 
 void vge::Swapchain::Destroy(SwapchainRecreateInfo* recreateInfo /*= nullptr*/)
 {
-	for (VkFramebuffer& framebuffer : m_Framebuffers)
+	for (FrameBuffer& framebuffer : m_Framebuffers)
 	{
-		vkDestroyFramebuffer(m_Device.GetHandle(), framebuffer, nullptr);
+		framebuffer.Destroy();
 	}
 
 	for (SwapchainImage& swapchainImage : m_Images)
@@ -190,18 +197,14 @@ void vge::Swapchain::Destroy(SwapchainRecreateInfo* recreateInfo /*= nullptr*/)
 	}
 }
 
-void vge::Swapchain::CreateFramebuffer(VkRenderPass renderPass, uint32 attachmentCount, const VkImageView* attachments)
+void vge::Swapchain::CreateFramebuffer(const RenderPass* renderPass, uint32 attachmentCount, const VkImageView* attachments)
 {
-	VkFramebufferCreateInfo framebufferCreateInfo = {};
-	framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-	framebufferCreateInfo.renderPass = renderPass;
-	framebufferCreateInfo.attachmentCount = attachmentCount;
-	framebufferCreateInfo.pAttachments = attachments;
-	framebufferCreateInfo.width = m_Extent.width;
-	framebufferCreateInfo.height = m_Extent.height;
-	framebufferCreateInfo.layers = 1;
+	FrameBufferCreateInfo createInfo = {};
+	createInfo.Device = &m_Device;
+	createInfo.RenderPass = renderPass->GetHandle();
+	createInfo.AttachmentCount = attachmentCount;
+	createInfo.Attachments = attachments;
+	createInfo.Extent = m_Extent;
 
-	VkFramebuffer framebuffer = VK_NULL_HANDLE;
-	VK_ENSURE(vkCreateFramebuffer(m_Device.GetHandle(), &framebufferCreateInfo, nullptr, &framebuffer));
-	m_Framebuffers.push_back(framebuffer);
+	m_Framebuffers.push_back(FrameBuffer::Create(createInfo));
 }

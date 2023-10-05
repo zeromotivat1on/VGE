@@ -1,5 +1,4 @@
 #include "Window.h"
-#include "Renderer.h"
 
 void vge::Window::GetInstanceExtensions(std::vector<const char*>& outExtensions) const
 {
@@ -29,12 +28,7 @@ void vge::Window::FramebufferResizeCallback(GLFWwindow* windowRaw, int32 width, 
 
 	LOG(Log, "Dimensions: %dx%d", width, height);
 
-	// Preserve actual image resize as well.
-	if (GRenderer)
-	{
-		GRenderer->RecreateSwapchain();
-		GRenderer->Draw();
-	}
+	// TODO: add clever and beautiful way to recreate swapchain.
 }
 
 vge::Window::Window(const char* name, const int32 width, const int32 height)

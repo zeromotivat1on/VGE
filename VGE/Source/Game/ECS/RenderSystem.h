@@ -7,6 +7,7 @@ namespace vge
 {
 	class Renderer;
 	class Camera;
+	class CommandBuffer;
 
 	class RenderSystem : public System
 	{
@@ -16,11 +17,10 @@ namespace vge
 		void Tick(float deltaTime);
 
 	private:
-		void RecordCommandBuffer(VkCommandBuffer cmd);
+		void RecordCommandBuffer(CommandBuffer* cmd);
 
 	private:
 		Renderer* m_Renderer = nullptr;
 		Camera* m_Camera = nullptr;
 	};
 }
-

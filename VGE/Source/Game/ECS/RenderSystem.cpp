@@ -5,6 +5,32 @@
 #include "Components/RenderComponent.h"
 #include "Components/TransformComponent.h"
 
+struct ScopeFrameControl
+{
+	ScopeFrameControl(vge::Renderer* renderer) : Renderer(renderer)
+	{
+		VK_ENSURE(Renderer->BeginFrame());
+		Cmd = Renderer->GetCurrentCmdBuffer();
+		Cmd->BeginRecord();
+
+		std::array<VkClearValue, 3> clearValues = {};
+		clearValues[0].color = { 0.0f, 0.0f, 0.0f, 1.0f }; // draw black triangle by default, dont care actually
+		clearValues[1].color = { 0.3f, 0.3f, 0.2f, 1.0f };
+		clearValues[2].depthStencil.depth = 1.0f;
+		Cmd->BeginRenderPass(Renderer->GetRenderPass(), Renderer->GetCurrentFrameBuffer(), static_cast<uint32>(clearValues.size()), clearValues.data());
+	}
+
+	~ScopeFrameControl()
+	{
+		Cmd->EndRenderPass();
+		Cmd->EndRecord();
+		Renderer->EndFrame();
+	}
+
+	vge::Renderer* Renderer = nullptr;
+	vge::CommandBuffer* Cmd = {};
+};
+
 void vge::RenderSystem::Initialize(Renderer* renderer, Camera* camera)
 {
 	m_Renderer = renderer;
@@ -25,35 +51,25 @@ void vge::RenderSystem::Tick(float deltaTime)
 	}
 
 	{
-		VK_ENSURE(m_Renderer->BeginFrame());
-		VkCommandBuffer cmd = m_Renderer->BeginCmdBufferRecord();
-
-		RecordCommandBuffer(cmd);
+		ScopeFrameControl scopeFrame(m_Renderer);
+		RecordCommandBuffer(scopeFrame.Cmd);
 		m_Renderer->UpdateUniformBuffers();
-
-		m_Renderer->EndCmdBufferRecord(cmd);
-		m_Renderer->EndFrame();
 	}
 }
 
-void vge::RenderSystem::RecordCommandBuffer(VkCommandBuffer cmd)
+void vge::RenderSystem::RecordCommandBuffer(CommandBuffer* cmd)
 {
-	VkViewport viewport = {};
-	viewport.x = 0.0f;
-	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(m_Renderer->GetSwapchainExtent().width);
-	viewport.height = static_cast<float>(m_Renderer->GetSwapchainExtent().height);
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
-	vkCmdSetViewport(cmd, 0, 1, &viewport);
+	{
+		glm::vec2 size;
+		size.x = static_cast<float>(m_Renderer->GetSwapchainExtent().width);
+		size.y = static_cast<float>(m_Renderer->GetSwapchainExtent().height);
+		cmd->SetViewport(size);
+	}
 
-	VkRect2D scissor = {};
-	scissor.offset = { 0, 0 };
-	scissor.extent = m_Renderer->GetSwapchainExtent();
-	vkCmdSetScissor(cmd, 0, 1, &scissor);
+	cmd->SetScissor(m_Renderer->GetSwapchainExtent());
 
 	int32 pipelineIndex = 0;
-	Pipeline* currentPipeline = m_Renderer->FindPipeline(pipelineIndex++);
+	const Pipeline* currentPipeline = m_Renderer->FindPipeline(pipelineIndex++);
 	if (!currentPipeline)
 	{
 		return;
@@ -61,7 +77,7 @@ void vge::RenderSystem::RecordCommandBuffer(VkCommandBuffer cmd)
 
 	// 1st subpass.
 	{
-		currentPipeline->Bind(cmd);
+		cmd->Bind(currentPipeline);
 
 		for (const Entity& entity : m_Entities)
 		{
@@ -74,7 +90,7 @@ void vge::RenderSystem::RecordCommandBuffer(VkCommandBuffer cmd)
 			}
 
 			const ModelData& modelData = model->GetModelData();
-			vkCmdPushConstants(cmd, currentPipeline->GetLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ModelData), &modelData);
+			cmd->PushConstants(currentPipeline, currentPipeline->GetShader(ShaderStage::Vertex), sizeof(ModelData), &modelData);
 
 			for (size_t MeshIndex = 0; MeshIndex < model->GetMeshCount(); ++MeshIndex)
 			{
@@ -90,19 +106,13 @@ void vge::RenderSystem::RecordCommandBuffer(VkCommandBuffer cmd)
 					continue;
 				}
 
+				std::vector<const VertexBuffer*> vertBuffers = { mesh->GetVertexBuffer() };
+				cmd->Bind(static_cast<uint32>(vertBuffers.size()), vertBuffers.data(), currentPipeline->GetShader(ShaderStage::Vertex));
+				cmd->Bind(mesh->GetIndexBuffer());
 
-				VkBuffer vertexBuffers[] = { mesh->GetVertexBuffer().Get().Handle };
-				VkDeviceSize offsets[] = { 0 };
-				vkCmdBindVertexBuffers(cmd, 0, 1, vertexBuffers, offsets);
-
-				vkCmdBindIndexBuffer(cmd, mesh->GetIndexBuffer().Get().Handle, 0, VK_INDEX_TYPE_UINT32);
-
-				//const uint32 dynamicOffset = static_cast<uint32>(m_ModelUniformAlignment * MeshIndex);
-				const std::array<VkDescriptorSet, 2> currentDescriptorSets = { m_Renderer->GetCurrentUniformDescriptorSet(), texture->GetDescriptor()};
-				vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, currentPipeline->GetLayout(),
-					0, static_cast<uint32>(currentDescriptorSets.size()), currentDescriptorSets.data(), 0, nullptr);
-
-				vkCmdDrawIndexed(cmd, static_cast<uint32>(mesh->GetIndexCount()), 1, 0, 0, 0);
+				std::vector<VkDescriptorSet> descriptorSets = { m_Renderer->GetCurrentUniformDescriptorSet(), texture->GetDescriptor() };
+				cmd->Bind(currentPipeline, static_cast<uint32>(descriptorSets.size()), descriptorSets.data());
+				cmd->DrawIndexed(static_cast<uint32>(mesh->GetIndexCount()));
 			}
 		}
 	}
@@ -113,15 +123,13 @@ void vge::RenderSystem::RecordCommandBuffer(VkCommandBuffer cmd)
 		return;
 	}
 
-	// 2 subpass.
+	// 2nd subpass.
 	{
-		vkCmdNextSubpass(cmd, VK_SUBPASS_CONTENTS_INLINE);
-		currentPipeline->Bind(cmd);
+		cmd->NextSubpass();
+		cmd->Bind(currentPipeline);
 
-		const std::array<VkDescriptorSet, 1> currentDescriptorSets = { m_Renderer->GetCurrentInputDescriptorSet() };
-		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, currentPipeline->GetLayout(),
-			0, static_cast<uint32>(currentDescriptorSets.size()), currentDescriptorSets.data(), 0, nullptr);
-
-		vkCmdDraw(cmd, 3, 1, 0, 0); // fill screen with one big triangle to draw on
+		std::vector<VkDescriptorSet> descriptorSets = { m_Renderer->GetCurrentInputDescriptorSet() };
+		cmd->Bind(currentPipeline, static_cast<uint32>(descriptorSets.size()), descriptorSets.data());
+		cmd->Draw(3u); // fill screen with one big triangle to draw on
 	}
 }

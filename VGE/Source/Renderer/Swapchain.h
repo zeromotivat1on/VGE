@@ -2,9 +2,12 @@
 
 #include "Common.h"
 #include "Device.h"
+#include "Buffer.h"
 
 namespace vge
 {
+	class RenderPass;
+
 	struct SwapchainImage
 	{
 		VkImage Handle = VK_NULL_HANDLE;
@@ -38,7 +41,7 @@ namespace vge
 		inline uint32 GetExtentHeight() const { return m_Extent.height; }
 		inline size_t GetImageCount() const { return m_Images.size(); }
 		inline size_t GetFramebufferCount() const { return m_Framebuffers.size(); }
-		inline VkFramebuffer GetFramebuffer(size_t index) { return index < GetFramebufferCount() ? m_Framebuffers[index] : VK_NULL_HANDLE; }
+		inline FrameBuffer* GetFramebuffer(size_t index) { return index < GetFramebufferCount() ? &m_Framebuffers[index] : nullptr; }
 		inline float GetAspectRatio() const { return static_cast<float>(m_Extent.width) / static_cast<float>(m_Extent.height); }
 
 		inline const SwapchainImage* GetImage(size_t index) const { return index < GetImageCount() ? &m_Images[index] : nullptr; }
@@ -50,16 +53,9 @@ namespace vge
 			return vkAcquireNextImageKHR(m_Device.GetHandle(), m_Handle, timeout, semaphore, fence, &m_CurrentImageIndex);
 		}
 
-		//inline VkResult AcquireNextImage(VkSemaphore semaphore, uint32& outImage, uint64 timeout = UINT64_MAX, VkFence fence = VK_NULL_HANDLE)
-		//{
-		//	VkResult result = vkAcquireNextImageKHR(m_Device.GetHandle(), m_Handle, timeout, semaphore, fence, &outImage);
-		//	m_CurrentImageIndex = outImage;
-		//	return result;
-		//}
-
 		inline SwapchainSupportDetails GetSupportDetails() const { return m_Device.GetSwapchainSupportDetails(m_Surface); }
 
-		void CreateFramebuffer(VkRenderPass renderPass, uint32 attachmentCount, const VkImageView* attachments);
+		void CreateFramebuffer(const RenderPass* renderPass, uint32 attachmentCount, const VkImageView* attachments);
 
 	private:
 		Device& m_Device;
@@ -69,6 +65,6 @@ namespace vge
 		VkFormat m_ImageFormat = {};
 		VkExtent2D m_Extent = {};
 		std::vector<SwapchainImage> m_Images = {};
-		std::vector<VkFramebuffer> m_Framebuffers = {};
+		std::vector<FrameBuffer> m_Framebuffers = {};
 	};
 }

@@ -93,7 +93,10 @@
     <ClCompile Include="Source\Game\ECS\GameSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Renderer\CmdBuffer.cpp">
+    <ClCompile Include="Source\Renderer\CommandBuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Renderer\RenderPass.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -212,7 +215,10 @@
     <ClInclude Include="Source\Game\ECS\GameSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Renderer\CmdBuffer.h">
+    <ClInclude Include="Source\Renderer\CommandBuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Renderer\RenderPass.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

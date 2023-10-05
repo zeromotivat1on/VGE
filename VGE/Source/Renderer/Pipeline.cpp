@@ -1,6 +1,7 @@
 #include "Pipeline.h"
 #include "File.h"
-#include "Shader.h"
+#include "Device.h"
+#include "RenderPass.h"
 
 void vge::Pipeline::DefaultCreateInfo(PipelineCreateInfo& createInfo)
 {
@@ -59,58 +60,115 @@ void vge::Pipeline::DefaultCreateInfo(PipelineCreateInfo& createInfo)
 	createInfo.DynamicStateInfo.pDynamicStates = createInfo.DynamicStates.data();
 }
 
-vge::Pipeline::Pipeline(Device* device) : m_Device(device) { ASSERT(m_Device); }
-
-void vge::Pipeline::Initialize(const char* vertexShader, const char* fragmentShader, const PipelineCreateInfo& data)
+void vge::Pipeline::Initialize(const PipelineCreateInfo& data)
 {
-	ENSURE(data.PipelineLayout != VK_NULL_HANDLE);
-	ENSURE(data.RenderPass != VK_NULL_HANDLE);
+	ENSURE(data.Device);
+	ENSURE(data.RenderPass);
 	ENSURE(data.SubpassIndex != INDEX_NONE);
+	ENSURE(data.SubpassIndex < data.RenderPass->GeSubpassCount());
 
-	m_Layout = data.PipelineLayout;
+	m_Device = data.Device;
+	m_RenderPass = data.RenderPass;
 	m_SubpassIndex = data.SubpassIndex;
+	m_BindPoint = data.BindPoint;
 
-	std::vector<char> vertexShaderCode = file::ReadShader(vertexShader);
-	std::vector<char> fragmentShaderCode = file::ReadShader(fragmentShader);
+	// Initialize pipeline shaders.
+	{
+		const size_t shaderFilenameCount = data.ShaderFilenames.size();
+		const size_t bindingsCount = data.DescriptorSetLayoutBindings.size();
 
-	m_VertexShaderModule = CreateShaderModule(m_Device->GetHandle(), vertexShaderCode);
-	m_FragmentShaderModule = CreateShaderModule(m_Device->GetHandle(), fragmentShaderCode);
+		ENSURE(shaderFilenameCount <= (size_t)ShaderStage::Count);
+		ENSURE(shaderFilenameCount == bindingsCount);
 
-	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages = {};
-	shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-	shaderStages[0].module = m_VertexShaderModule;
-	shaderStages[0].pName = "main";
-	shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-	shaderStages[1].module = m_FragmentShaderModule;
-	shaderStages[1].pName = "main";
+		for (size_t i = 0; i < shaderFilenameCount; ++i)
+		{
+			std::vector<char> shaderCode = file::ReadShader(data.ShaderFilenames[i]);
 
-	VkGraphicsPipelineCreateInfo pipelineCreateInfo = {};
-	pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-	pipelineCreateInfo.stageCount = static_cast<uint32>(shaderStages.size());
-	pipelineCreateInfo.pStages = shaderStages.data();
-	pipelineCreateInfo.pVertexInputState = &data.VertexInfo;
-	pipelineCreateInfo.pInputAssemblyState = &data.InputAssemblyInfo;
-	pipelineCreateInfo.pViewportState = &data.ViewportInfo;
-	pipelineCreateInfo.pDynamicState = &data.DynamicStateInfo;
-	pipelineCreateInfo.pRasterizationState = &data.RasterizationInfo;
-	pipelineCreateInfo.pMultisampleState = &data.MultisampleInfo;
-	pipelineCreateInfo.pColorBlendState = &data.ColorBlendInfo;
-	pipelineCreateInfo.pDepthStencilState = &data.DepthStencilInfo;
-	pipelineCreateInfo.layout = data.PipelineLayout;
-	pipelineCreateInfo.renderPass = data.RenderPass;
-	pipelineCreateInfo.subpass = data.SubpassIndex;
-	pipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
-	pipelineCreateInfo.basePipelineIndex = INDEX_NONE;
+			ShaderCreateInfo createInfo = {};
+			createInfo.Device = m_Device;
+			createInfo.SpirvChar = &shaderCode;
+			createInfo.StageFlags = Shader::GetFlagsFromStage((ShaderStage)i);
+			createInfo.DescriptorSetLayoutBindings = data.DescriptorSetLayoutBindings[i];
 
-	VK_ENSURE(vkCreateGraphicsPipelines(m_Device->GetHandle(), nullptr, 1, &pipelineCreateInfo, nullptr, &m_Handle));
+			m_Shaders[i].Initialize(createInfo);
+		}
+	}
+
+	// Create pipeline layout.
+	{
+		std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
+		for (size_t i = 0; i < C_ARRAY_NUM(m_Shaders); ++i)
+		{
+			if (!m_Shaders[i].IsValid())
+			{
+				LOG(Warning, "Shader with index %d is not valid.", i);
+				continue;
+			}
+
+			if (m_Shaders[i].GetDescriptorSetLayout().Handle != VK_NULL_HANDLE)
+			{
+				descriptorSetLayouts.push_back(m_Shaders[i].GetDescriptorSetLayout().Handle);
+			}
+		}
+
+		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
+		pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		pipelineLayoutCreateInfo.setLayoutCount = static_cast<uint32>(descriptorSetLayouts.size());
+		pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts.data();
+		pipelineLayoutCreateInfo.pushConstantRangeCount = static_cast<uint32>(data.PushConstants.size());
+		pipelineLayoutCreateInfo.pPushConstantRanges = data.PushConstants.data();
+
+		VK_ENSURE(vkCreatePipelineLayout(m_Device->GetHandle(), &pipelineLayoutCreateInfo, nullptr, &m_Layout));
+	}
+
+	// Create gfx pipeline.
+	{
+		std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
+		GetShaderStageInfos(shaderStages);
+
+		VkGraphicsPipelineCreateInfo pipelineCreateInfo = {};
+		pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+		pipelineCreateInfo.stageCount = static_cast<uint32>(shaderStages.size());
+		pipelineCreateInfo.pStages = shaderStages.data();
+		pipelineCreateInfo.pVertexInputState = &data.VertexInfo;
+		pipelineCreateInfo.pInputAssemblyState = &data.InputAssemblyInfo;
+		pipelineCreateInfo.pViewportState = &data.ViewportInfo;
+		pipelineCreateInfo.pDynamicState = &data.DynamicStateInfo;
+		pipelineCreateInfo.pRasterizationState = &data.RasterizationInfo;
+		pipelineCreateInfo.pMultisampleState = &data.MultisampleInfo;
+		pipelineCreateInfo.pColorBlendState = &data.ColorBlendInfo;
+		pipelineCreateInfo.pDepthStencilState = &data.DepthStencilInfo;
+		pipelineCreateInfo.layout = m_Layout;
+		pipelineCreateInfo.renderPass = data.RenderPass->GetHandle();
+		pipelineCreateInfo.subpass = data.SubpassIndex;
+		pipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
+		pipelineCreateInfo.basePipelineIndex = INDEX_NONE;
+
+		VK_ENSURE(vkCreateGraphicsPipelines(m_Device->GetHandle(), nullptr, 1, &pipelineCreateInfo, nullptr, &m_Handle));
+	}
 }
 
 void vge::Pipeline::Destroy()
 {
-	vkDestroyShaderModule(m_Device->GetHandle(), m_FragmentShaderModule, nullptr);
-	vkDestroyShaderModule(m_Device->GetHandle(), m_VertexShaderModule, nullptr);
+	for (Shader& shader : m_Shaders)
+	{
+		shader.Destroy();
+	}
+
 	vkDestroyPipeline(m_Device->GetHandle(), m_Handle, nullptr);
 	vkDestroyPipelineLayout(m_Device->GetHandle(), m_Layout, nullptr);
+}
+
+void vge::Pipeline::GetShaderStageInfos(std::vector<VkPipelineShaderStageCreateInfo>& outStageInfos)
+{
+	for (size_t i = 0; i < C_ARRAY_NUM(m_Shaders); ++i)
+	{
+		if (!m_Shaders[i].IsValid())
+		{
+			LOG(Warning, "Shader with index %d is not valid.", i);
+			continue;
+		}
+
+		outStageInfos.push_back(m_Shaders[i].GetStageCreateInfo());
+	}
 }

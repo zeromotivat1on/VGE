@@ -21,7 +21,7 @@ vge::Model vge::Model::Create(const ModelCreateInfo& data)
 
 	model.LoadNode(data.Device, scene, scene->mRootNode, textureToDescriptorSet);
 
-	LOG(Log, "New - ID: %d, name: %s", model.GetId(), model.GetFilename());
+	LOG(Log, "New - ID: %d, filename: %s", model.GetId(), model.GetFilename());
 
 	return model;
 }

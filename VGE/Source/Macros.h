@@ -48,35 +48,47 @@ if (!(expr))																									\
 	abort();																									\
 }
 
-#define ENSURE_MSG(expr, errMessage)																			\
+#define ENSURE_MSG(expr, msg)																					\
 if (!(expr))																									\
 {																												\
-	LOG(Error, errMessage);																						\
+	LOG(Error, msg);																							\
 	abort();																									\
 }
 
+#define CHECK(expr)																								\
+if (!(expr))																									\
+{																												\
+	LOG(Error, "Check condition failed: %s", #expr);															\
+}
+
+#define CHECK_MSG(expr, msg)																					\
+if (!(expr))																									\
+{																												\
+	LOG(Error, msg);																							\
+}
+
 #if USE_LOGGING
-	#define VK_ENSURE(vkFunction)																				\
+	#define VK_ENSURE(vkResult)																					\
 	{																											\
-		const VkResult ScopedResult = vkFunction;																\
+		const VkResult ScopedResult = vkResult;																	\
 		if (ScopedResult != VK_SUCCESS)																			\
 		{																										\
-			vge::NotifyVulkanEnsureFailure(ScopedResult, #vkFunction, __FILE__, __LINE__);						\
+			vge::NotifyVulkanEnsureFailure(ScopedResult, #vkResult, __FILE__, __LINE__);						\
 		}																										\
 	}
 #else
-	#define VK_ENSURE(vkFunction) ENSURE(vkFunction == VK_SUCCESS);
+	#define VK_ENSURE(vkResult) ENSURE(vkResult == VK_SUCCESS);
 #endif
 
 #if USE_LOGGING
-	#define VK_ENSURE_MSG(vkFunction, errMessage)																\
+	#define VK_ENSURE_MSG(vkResult, msg)																		\
 	{																											\
-		const VkResult ScopedResult = vkFunction;																\
+		const VkResult ScopedResult = vkResult;																	\
 		if (ScopedResult != VK_SUCCESS)																			\
 		{																										\
-			vge::NotifyVulkanEnsureFailure(ScopedResult, #vkFunction, __FILE__, __LINE__, errMessage);			\
+			vge::NotifyVulkanEnsureFailure(ScopedResult, #vkResult, __FILE__, __LINE__, msg);					\
 		}																										\
 	}
 #else
-	#define VK_ENSURE_MSG(vkFunction, errMessage) ENSURE(vkFunction == VK_SUCCESS);
+	#define VK_ENSURE_MSG(vkResult, msg) ENSURE(vkResult == VK_SUCCESS);
 #endif

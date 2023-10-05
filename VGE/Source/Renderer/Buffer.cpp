@@ -1,7 +1,7 @@
 #include "Buffer.h"
 #include "Device.h"
 #include "Logging.h"
-#include "CmdBuffer.h"
+#include "CommandBuffer.h"
 
 vge::Buffer vge::Buffer::Create(const BufferCreateInfo& data)
 {
@@ -30,7 +30,7 @@ void vge::Buffer::Copy(const BufferCopyInfo& data)
 	bufferCopyRegion.dstOffset = 0;
 	bufferCopyRegion.size = data.Size;
 
-	vkCmdCopyBuffer(transferCmdBuffer.Get(), data.Source, data.Destination, 1, &bufferCopyRegion);
+	vkCmdCopyBuffer(transferCmdBuffer.GetHandle(), data.Source, data.Destination, 1, &bufferCopyRegion);
 }
 
 void vge::Buffer::CopyToImage(const BufferImageCopyInfo& data)
@@ -49,7 +49,7 @@ void vge::Buffer::CopyToImage(const BufferImageCopyInfo& data)
 	bufferImageCopyRegion.imageExtent = { data.Extent.width, data.Extent.height, 1 };
 
 	const VkImageLayout imageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-	vkCmdCopyBufferToImage(transferCmdBuffer.Get(), data.SrcBuffer, data.DstImage, imageLayout, 1, &bufferImageCopyRegion);
+	vkCmdCopyBufferToImage(transferCmdBuffer.GetHandle(), data.SrcBuffer, data.DstImage, imageLayout, 1, &bufferImageCopyRegion);
 }
 
 void vge::Buffer::Destroy()
@@ -57,7 +57,7 @@ void vge::Buffer::Destroy()
 	vmaDestroyBuffer(m_Allocator, Handle, Allocation);
 	Handle = VK_NULL_HANDLE;
 	Allocation = VK_NULL_HANDLE;
-	memory::memzero(&AllocInfo, sizeof(VmaAllocationInfo));
+	memory::Memzero(&AllocInfo, sizeof(VmaAllocationInfo));
 	m_Allocator = VK_NULL_HANDLE;
 }
 
@@ -135,6 +135,8 @@ vge::IndexBuffer vge::IndexBuffer::Create(const Device* device, size_t indexCoun
 	buffCreateInfo.MemAllocUsage = VMA_MEMORY_USAGE_GPU_ONLY;
 
 	IndexBuffer idxBuffer = {};
+	idxBuffer.m_IndexCount = indexCount;
+	idxBuffer.m_IndexType = VK_INDEX_TYPE_UINT32;
 	idxBuffer.m_AllocatedBuffer = Buffer::Create(buffCreateInfo);
 
 	BufferCopyInfo buffCopyInfo = {};
@@ -167,6 +169,7 @@ vge::VertexBuffer vge::VertexBuffer::Create(const Device* device, size_t vertexC
 	buffCreateInfo.MemAllocUsage = VMA_MEMORY_USAGE_GPU_ONLY;
 
 	VertexBuffer vertBuffer = {};
+	vertBuffer.m_VertexCount = vertexCount;
 	vertBuffer.m_AllocatedBuffer = Buffer::Create(buffCreateInfo);
 
 	BufferCopyInfo buffCopyInfo = {};
@@ -178,4 +181,29 @@ vge::VertexBuffer vge::VertexBuffer::Create(const Device* device, size_t vertexC
 	Buffer::Copy(buffCopyInfo);
 
 	return vertBuffer;
+}
+
+vge::FrameBuffer vge::FrameBuffer::Create(const FrameBufferCreateInfo& data)
+{
+	FrameBuffer framebuffer = {};
+	framebuffer.m_Device = data.Device;
+	framebuffer.m_Extent = data.Extent;
+
+	VkFramebufferCreateInfo framebufferCreateInfo = {};
+	framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+	framebufferCreateInfo.renderPass = data.RenderPass;
+	framebufferCreateInfo.attachmentCount = data.AttachmentCount;
+	framebufferCreateInfo.pAttachments = data.Attachments;
+	framebufferCreateInfo.width = data.Extent.width;
+	framebufferCreateInfo.height = data.Extent.height;
+	framebufferCreateInfo.layers = 1;
+
+	VK_ENSURE(vkCreateFramebuffer(data.Device->GetHandle(), &framebufferCreateInfo, nullptr, &framebuffer.m_Handle));
+
+	return framebuffer;
+}
+
+void vge::FrameBuffer::Destroy()
+{
+	vkDestroyFramebuffer(m_Device->GetHandle(), m_Handle, nullptr);
 }
