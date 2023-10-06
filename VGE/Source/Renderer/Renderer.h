@@ -56,47 +56,14 @@ namespace vge
 		inline VkDescriptorSet GetCurrentUniformDescriptorSet() const { return m_UniformDescriptorSets[m_Swapchain->GetCurrentImageIndex()]; }
 		inline const RenderPass* GetRenderPass() const { return &m_RenderPass; }
 
-		inline Model* FindModel(int32 id) 
-		{
-			if (id < m_Models.size()) 
-			{
-				return &m_Models[id];
-			}
-
-			LOG(Warning, "Didn't find model with id: %d", id);
-			return nullptr;
-		}
-		
-		inline Texture* FindTexture(int32 id) 
-		{
-			if (id < m_Textures.size()) 
-			{
-				return &m_Textures[id];
-			}
-
-			LOG(Warning, "Didn't find texture with id: %d", id);
-			return nullptr;
-		}
-
-		inline void UpdateModelMatrix(int32 id, glm::mat4 model) 
-		{
-			ASSERT(id < m_Models.size());
-			m_Models[id].SetModelMatrix(model); 
-		}
-
-		inline Pipeline* FindPipeline(int32 index)
-		{
-			if (index < m_Pipelines.size())
-			{
-				return &m_Pipelines[index];
-			}
-
-			return nullptr;
-		}
-
-		inline void UpdateUniformBuffers() { UpdateUniformBuffers(m_Swapchain->GetCurrentImageIndex()); }
 		inline void SetView(const glm::mat4& view) { m_UboViewProjection.View = view; }
 		inline void SetProjection(const glm::mat4& projection) { m_UboViewProjection.Projection = projection; }
+		inline void UpdateModelMatrix(int32 id, glm::mat4 model) { ASSERT(id < m_Models.size()); m_Models[id].SetModelMatrix(model); }
+		inline void UpdateUniformBuffers() { UpdateUniformBuffers(m_Swapchain->GetCurrentImageIndex()); }
+
+		inline Model* FindModel(int32 id) { return id < m_Models.size() ? &m_Models[id] : nullptr; }
+		inline Texture* FindTexture(int32 id) { return id < m_Textures.size() ? &m_Textures[id] : nullptr; }
+		inline Pipeline* FindPipeline(int32 index) { return index < m_Pipelines.size() ? &m_Pipelines[index] : nullptr; }
 
 	private:
 		std::vector<Model> m_Models = {};
