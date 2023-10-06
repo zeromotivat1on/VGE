@@ -9,15 +9,9 @@ struct ScopeFrameControl
 {
 	ScopeFrameControl(vge::Renderer* renderer) : Renderer(renderer)
 	{
-		VK_ENSURE(Renderer->BeginFrame());
-		Cmd = Renderer->GetCurrentCmdBuffer();
+		Cmd = Renderer->BeginFrame();
 		Cmd->BeginRecord();
-
-		std::array<VkClearValue, 3> clearValues = {};
-		clearValues[0].color = { 0.0f, 0.0f, 0.0f, 1.0f }; // draw black triangle by default, dont care actually
-		clearValues[1].color = { 0.3f, 0.3f, 0.2f, 1.0f };
-		clearValues[2].depthStencil.depth = 1.0f;
-		Cmd->BeginRenderPass(Renderer->GetRenderPass(), Renderer->GetCurrentFrameBuffer(), static_cast<uint32>(clearValues.size()), clearValues.data());
+		Cmd->BeginRenderPass(Renderer->GetRenderPass(), Renderer->GetCurrentFrameBuffer());
 	}
 
 	~ScopeFrameControl()

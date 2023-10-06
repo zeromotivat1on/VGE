@@ -15,7 +15,7 @@ namespace vge
 		std::vector<std::vector<VkDescriptorSetLayoutBinding>> DescriptorSetLayoutBindings = {};
 		std::vector<VkDynamicState> DynamicStates = {};
 		std::vector<VkPushConstantRange> PushConstants = {};
-		int32 SubpassIndex = INDEX_NONE;
+		uint32 SubpassIndex = 0;
 		vge::RenderPass* RenderPass = nullptr;
 		VkPipelineBindPoint BindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 

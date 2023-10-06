@@ -46,8 +46,6 @@ namespace vge
 
 	private:
 		int32 m_TextureId = INDEX_NONE;
-		//size_t m_IndexCount = 0;
-		//size_t m_VertexCount = 0;
 		ModelData m_ModelData = {};
 		IndexBuffer m_IndexBuffer = {};
 		VertexBuffer m_VertexBuffer = {};

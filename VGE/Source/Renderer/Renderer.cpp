@@ -84,18 +84,17 @@ void vge::Renderer::Destroy()
 	m_Swapchain->Destroy(m_SwapchainRecreateInfo.get());
 }
 
-VkResult vge::Renderer::BeginFrame()
+vge::CommandBuffer* vge::Renderer::BeginFrame()
 {
 	vkWaitForFences(m_Device.GetHandle(), 1, &m_DrawFences[GRenderFrame], VK_TRUE, UINT64_MAX);	// wait till open
 	vkResetFences(m_Device.GetHandle(), 1, &m_DrawFences[GRenderFrame]);						// close after enter
 
-	VkResult acquireImageResult = m_Swapchain->AcquireNextImage(m_ImageAvailableSemas[GRenderFrame]);
-	if (acquireImageResult == VK_ERROR_OUT_OF_DATE_KHR)
+	if (m_Swapchain->AcquireNextImage(m_ImageAvailableSemas[GRenderFrame]) == VK_ERROR_OUT_OF_DATE_KHR)
 	{
 		RecreateSwapchain();
 	}
 
-	return acquireImageResult;
+	return GetCurrentCmdBuffer();
 }
 
 void vge::Renderer::EndFrame()
@@ -319,15 +318,20 @@ void vge::Renderer::CreateRenderPass()
 
 	// Order should correspond to attachment values in attachment descriptions.
 	std::vector<VkAttachmentDescription> attachments = { swapchainColorAttachment, colorAttachment, depthAttachment };
+	std::vector<VkClearValue> clearValues(attachments.size());
+	clearValues[0].color = { 0.0f, 0.0f, 0.0f, 1.0f }; // draw black triangle by default, dont care actually
+	clearValues[1].color = { 0.3f, 0.3f, 0.2f, 1.0f };
+	clearValues[2].depthStencil.depth = 1.0f;
 
 	RenderPassCreateInfo createInfo = {};
 	createInfo.Device = &m_Device;
 	createInfo.SubpassCount = m_DefaultSubpassCount;
 	createInfo.ColorFormat = m_ColorFormat;
 	createInfo.DepthFormat = m_DepthFormat;
-	createInfo.Attachments = &attachments;
 	createInfo.Subpasses = &subpasses;
 	createInfo.Dependencies = &dependencies;
+	createInfo.Attachments = &attachments;
+	createInfo.ClearValues = &clearValues;
 
 	m_RenderPass.Initialize(createInfo);
 }

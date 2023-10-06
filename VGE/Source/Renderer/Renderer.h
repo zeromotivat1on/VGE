@@ -38,7 +38,7 @@ namespace vge
 		void Initialize();
 		void Destroy();
 
-		VkResult BeginFrame();
+		CommandBuffer* BeginFrame();
 		void EndFrame();
 
 		// TODO: 1 mesh can have only 1 texture which is cringe (or not, idk for now).
@@ -108,7 +108,7 @@ namespace vge
 		//ModelData* m_ModelTransferSpace = nullptr;
 
 		// Amount of subpasses in render pass and pipelines in it.
-		int8 m_DefaultSubpassCount = 2;
+		uint32 m_DefaultSubpassCount = 2;
 		//VkRenderPass m_RenderPass = VK_NULL_HANDLE;
 		RenderPass m_RenderPass = {};
 		std::vector<Pipeline> m_Pipelines;

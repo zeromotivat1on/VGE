@@ -54,15 +54,15 @@ void vge::CommandBuffer::BeginRecord(VkCommandBufferUsageFlags flags /*= 0*/)
 	vkBeginCommandBuffer(m_Handle, &cmdBufferBeginInfo);
 }
 
-void vge::CommandBuffer::BeginRenderPass(const RenderPass* renderPass, const FrameBuffer* framebuffer, uint32 clearValueCount, const VkClearValue* clearValues)
+void vge::CommandBuffer::BeginRenderPass(const RenderPass* renderPass, const FrameBuffer* framebuffer)
 {
 	VkRenderPassBeginInfo renderPassBeginInfo = {};
 	renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	renderPassBeginInfo.renderPass = renderPass->GetHandle();
 	renderPassBeginInfo.renderArea.offset = { 0, 0 };
 	renderPassBeginInfo.renderArea.extent = framebuffer->GetExtent();
-	renderPassBeginInfo.clearValueCount = clearValueCount;
-	renderPassBeginInfo.pClearValues = clearValues;
+	renderPassBeginInfo.clearValueCount = renderPass->GetClearValueCount();
+	renderPassBeginInfo.pClearValues = renderPass->GetClearValues();
 	renderPassBeginInfo.framebuffer = framebuffer->GetHandle();
 
 	vkCmdBeginRenderPass(m_Handle, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);

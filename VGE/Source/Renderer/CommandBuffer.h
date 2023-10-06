@@ -28,7 +28,7 @@ namespace vge
 		inline void NextSubpass(VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE) { vkCmdNextSubpass(m_Handle, contents); }
 
 		void BeginRecord(VkCommandBufferUsageFlags flags = 0);
-		void BeginRenderPass(const RenderPass* renderPass, const FrameBuffer* framebuffer, uint32 clearValueCount, const VkClearValue* clearValues);
+		void BeginRenderPass(const RenderPass* renderPass, const FrameBuffer* framebuffer);
 		void EndRenderPass();
 		void EndRecord();
 
