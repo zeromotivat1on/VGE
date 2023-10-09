@@ -26,7 +26,7 @@ namespace vge
 	{
 	public:
 		Swapchain() = default;
-		Swapchain(Device& device);
+		Swapchain(const Device* device);
 		NOT_COPYABLE(Swapchain);
 
 	public:
@@ -50,15 +50,15 @@ namespace vge
 		inline uint32 GetCurrentImageIndex() const { return m_CurrentImageIndex; }
 		inline VkResult AcquireNextImage(VkSemaphore semaphore, uint64 timeout = UINT64_MAX, VkFence fence = VK_NULL_HANDLE)
 		{
-			return vkAcquireNextImageKHR(m_Device.GetHandle(), m_Handle, timeout, semaphore, fence, &m_CurrentImageIndex);
+			return vkAcquireNextImageKHR(m_Device->GetHandle(), m_Handle, timeout, semaphore, fence, &m_CurrentImageIndex);
 		}
 
-		inline SwapchainSupportDetails GetSupportDetails() const { return m_Device.GetSwapchainSupportDetails(m_Surface); }
+		inline SwapchainSupportDetails GetSupportDetails() const { return m_Device->GetSwapchainSupportDetails(m_Surface); }
 
 		void CreateFramebuffer(const RenderPass* renderPass, uint32 attachmentCount, const VkImageView* attachments);
 
 	private:
-		Device& m_Device;
+		const Device* m_Device = nullptr;
 		uint32 m_CurrentImageIndex = 0;
 		VkSwapchainKHR m_Handle = VK_NULL_HANDLE;
 		VkSurfaceKHR m_Surface = VK_NULL_HANDLE;

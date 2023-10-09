@@ -7,7 +7,10 @@
 #include "Components/RenderComponent.h"
 #include "Components/TransformComponent.h"
 
-static inline void IncrementAppFrame() { ++vge::GAppFrame; }
+static inline void IncrementAppFrame() 
+{ 
+	++vge::GAppFrame; 
+}
 
 void vge::EngineLoop::Initialize()
 {
@@ -46,7 +49,7 @@ void vge::EngineLoop::Start()
 	const float loopDurationTime = m_LastTime - m_StartTime;
 	LOG(Log, "Engine loop stats:");
 	LOG(Log, " Duration: %.2fs", loopDurationTime);
-	LOG(Log, " Iterations: %d", GAppFrame);
+	LOG(Log, " Frames: %d", GAppFrame);
 	LOG(Log, " Average FPS: %.2f", static_cast<float>(GAppFrame) / loopDurationTime);
 }
 

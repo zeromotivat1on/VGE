@@ -5,11 +5,12 @@
 #include "Utils.h"
 #include "File.h"
 
-static inline void IncrementRenderFrame() { vge::GRenderFrame = (vge::GRenderFrame + 1) % vge::GMaxDrawFrames; }
+static inline void IncrementRenderFrame() 
+{ 
+	vge::GRenderFrame = (vge::GRenderFrame + 1) % vge::GMaxDrawFrames; 
+}
 
-vge::Renderer::Renderer(Device& device)
-	: m_Device(device)
-	//, m_FirstPipeline(device), m_SecondPipeline(device)
+vge::Renderer::Renderer(Device* device) : m_Device(device)
 {
 }
 
@@ -36,14 +37,14 @@ void vge::Renderer::Initialize()
 
 void vge::Renderer::Destroy()
 {
-	m_Device.WaitIdle();
+	m_Device->WaitIdle();
 
 	for (size_t i = 0; i < m_Models.size(); ++i)
 	{
 		m_Models[i].Destroy();
 	}
 
-	vkDestroySampler(m_Device.GetHandle(), m_TextureSampler, nullptr);
+	vkDestroySampler(m_Device->GetHandle(), m_TextureSampler, nullptr);
 
 	for (size_t i = 0; i < m_Textures.size(); ++i)
 	{
@@ -55,9 +56,9 @@ void vge::Renderer::Destroy()
 	DestroyRenderPassColorAttachments();
 	DestroyRenderPassDepthAttachments();
 
-	vkDestroyDescriptorPool(m_Device.GetHandle(), m_InputDescriptorPool, nullptr);
-	vkDestroyDescriptorPool(m_Device.GetHandle(), m_SamplerDescriptorPool, nullptr);
-	vkDestroyDescriptorPool(m_Device.GetHandle(), m_UniformDescriptorPool, nullptr);
+	vkDestroyDescriptorPool(m_Device->GetHandle(), m_InputDescriptorPool, nullptr);
+	vkDestroyDescriptorPool(m_Device->GetHandle(), m_SamplerDescriptorPool, nullptr);
+	vkDestroyDescriptorPool(m_Device->GetHandle(), m_UniformDescriptorPool, nullptr);
 
 	for (size_t i = 0; i < m_Swapchain->GetImageCount(); ++i)
 	{
@@ -68,9 +69,9 @@ void vge::Renderer::Destroy()
 
 	for (int32 i = 0; i < GMaxDrawFrames; ++i)
 	{
-		vkDestroyFence(m_Device.GetHandle(), m_DrawFences[i], nullptr);
-		vkDestroySemaphore(m_Device.GetHandle(), m_RenderFinishedSemas[i], nullptr);
-		vkDestroySemaphore(m_Device.GetHandle(), m_ImageAvailableSemas[i], nullptr);
+		vkDestroyFence(m_Device->GetHandle(), m_DrawFences[i], nullptr);
+		vkDestroySemaphore(m_Device->GetHandle(), m_RenderFinishedSemas[i], nullptr);
+		vkDestroySemaphore(m_Device->GetHandle(), m_ImageAvailableSemas[i], nullptr);
 	}
 
 	for (Pipeline& pipeline : m_Pipelines)
@@ -78,7 +79,7 @@ void vge::Renderer::Destroy()
 		pipeline.Destroy();
 	}
 
-	//vkDestroyRenderPass(m_Device.GetHandle(), m_RenderPass, nullptr);
+	//vkDestroyRenderPass(m_Device->GetHandle(), m_RenderPass, nullptr);
 	m_RenderPass.Destroy();
 
 	m_Swapchain->Destroy(m_SwapchainRecreateInfo.get());
@@ -86,8 +87,8 @@ void vge::Renderer::Destroy()
 
 vge::CommandBuffer* vge::Renderer::BeginFrame()
 {
-	vkWaitForFences(m_Device.GetHandle(), 1, &m_DrawFences[GRenderFrame], VK_TRUE, UINT64_MAX);	// wait till open
-	vkResetFences(m_Device.GetHandle(), 1, &m_DrawFences[GRenderFrame]);						// close after enter
+	vkWaitForFences(m_Device->GetHandle(), 1, &m_DrawFences[GRenderFrame], VK_TRUE, UINT64_MAX);	// wait till open
+	vkResetFences(m_Device->GetHandle(), 1, &m_DrawFences[GRenderFrame]);						// close after enter
 
 	if (m_Swapchain->AcquireNextImage(m_ImageAvailableSemas[GRenderFrame]) == VK_ERROR_OUT_OF_DATE_KHR)
 	{
@@ -115,7 +116,7 @@ void vge::Renderer::EndFrame()
 	submitInfo.pSignalSemaphores = &m_RenderFinishedSemas[GRenderFrame];
 
 	// Open fence after successful render.
-	VK_ENSURE(vkQueueSubmit(m_Device.GetGfxQueue(), 1, &submitInfo, m_DrawFences[GRenderFrame]));
+	VK_ENSURE(vkQueueSubmit(m_Device->GetGfxQueue(), 1, &submitInfo, m_DrawFences[GRenderFrame]));
 
 	VkSwapchainKHR swapchain = m_Swapchain->GetHandle();
 	VkPresentInfoKHR presentInfo = {};
@@ -126,10 +127,10 @@ void vge::Renderer::EndFrame()
 	presentInfo.pSwapchains = &swapchain;
 	presentInfo.pImageIndices = &imageIndex;
 
-	VkResult queuePresentResult = vkQueuePresentKHR(m_Device.GetPresentQueue(), &presentInfo);
-	if (queuePresentResult == VK_ERROR_OUT_OF_DATE_KHR || queuePresentResult == VK_SUBOPTIMAL_KHR || m_Device.WasWindowResized())
+	VkResult queuePresentResult = vkQueuePresentKHR(m_Device->GetPresentQueue(), &presentInfo);
+	if (queuePresentResult == VK_ERROR_OUT_OF_DATE_KHR || queuePresentResult == VK_SUBOPTIMAL_KHR || m_Device->WasWindowResized())
 	{
-		m_Device.ResetWindowResizedFlag();
+		m_Device->ResetWindowResizedFlag();
 		RecreateSwapchain();
 	}
 	else
@@ -143,7 +144,7 @@ void vge::Renderer::EndFrame()
 void vge::Renderer::CreateSwapchain()
 {
 	m_SwapchainRecreateInfo = std::make_unique<SwapchainRecreateInfo>();
-	m_SwapchainRecreateInfo->Surface = m_Device.GetInitialSurface();
+	m_SwapchainRecreateInfo->Surface = m_Device->GetInitialSurface();
 
 	m_Swapchain = std::make_unique<Swapchain>(m_Device);
 	m_Swapchain->Initialize(m_SwapchainRecreateInfo.get());
@@ -153,10 +154,10 @@ void vge::Renderer::CreateRenderPassColorAttachments()
 {
 	const size_t swapchainImageCount = m_Swapchain->GetImageCount();
 	m_ColorAttachments.resize(swapchainImageCount);
-	m_ColorFormat = Image::GetBestFormat(&m_Device, { VK_FORMAT_R8G8B8A8_UNORM }, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	m_ColorFormat = Image::GetBestFormat(m_Device, { VK_FORMAT_R8G8B8A8_UNORM }, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
 	ImageCreateInfo imageCreateInfo = {};
-	imageCreateInfo.Device = &m_Device;
+	imageCreateInfo.Device = m_Device;
 	imageCreateInfo.Extent = m_Swapchain->GetExtent();
 	imageCreateInfo.Format = m_ColorFormat;
 	imageCreateInfo.Tiling = VK_IMAGE_TILING_OPTIMAL;
@@ -164,7 +165,7 @@ void vge::Renderer::CreateRenderPassColorAttachments()
 	imageCreateInfo.MemAllocUsage = VMA_MEMORY_USAGE_GPU_ONLY;
 
 	ImageViewCreateInfo viewCreateInfo = {};
-	viewCreateInfo.Device = &m_Device;
+	viewCreateInfo.Device = m_Device;
 	viewCreateInfo.Format = m_ColorFormat;
 	viewCreateInfo.AspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
 
@@ -180,10 +181,10 @@ void vge::Renderer::CreateRenderPassDepthAttachments()
 {
 	const size_t swapchainImageCount = m_Swapchain->GetImageCount();
 	m_DepthAttachments.resize(swapchainImageCount);
-	m_DepthFormat = Image::GetBestFormat(&m_Device, { VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT }, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+	m_DepthFormat = Image::GetBestFormat(m_Device, { VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT }, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
 	ImageCreateInfo imageCreateInfo = {};
-	imageCreateInfo.Device = &m_Device;
+	imageCreateInfo.Device = m_Device;
 	imageCreateInfo.Extent = m_Swapchain->GetExtent();
 	imageCreateInfo.Format = m_DepthFormat;
 	imageCreateInfo.Tiling = VK_IMAGE_TILING_OPTIMAL;
@@ -191,7 +192,7 @@ void vge::Renderer::CreateRenderPassDepthAttachments()
 	imageCreateInfo.MemAllocUsage = VMA_MEMORY_USAGE_GPU_ONLY;
 
 	ImageViewCreateInfo viewCreateInfo = {};
-	viewCreateInfo.Device = &m_Device;
+	viewCreateInfo.Device = m_Device;
 	viewCreateInfo.Format = m_DepthFormat;
 	viewCreateInfo.AspectFlags = VK_IMAGE_ASPECT_DEPTH_BIT;
 
@@ -324,7 +325,7 @@ void vge::Renderer::CreateRenderPass()
 	clearValues[2].depthStencil.depth = 1.0f;
 
 	RenderPassCreateInfo createInfo = {};
-	createInfo.Device = &m_Device;
+	createInfo.Device = m_Device;
 	createInfo.SubpassCount = m_DefaultSubpassCount;
 	createInfo.ColorFormat = m_ColorFormat;
 	createInfo.DepthFormat = m_DepthFormat;
@@ -378,7 +379,7 @@ void vge::Renderer::CreatePipelines()
 		pipelineCreateInfo.DynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
 		Pipeline::DefaultCreateInfo(pipelineCreateInfo);
 
-		pipelineCreateInfo.Device = &m_Device;
+		pipelineCreateInfo.Device = m_Device;
 		pipelineCreateInfo.PushConstants = { m_PushConstantRange };
 		pipelineCreateInfo.ShaderFilenames = { "Shaders/Bin/first_vert.spv", "Shaders/Bin/first_frag.spv" };
 		pipelineCreateInfo.DescriptorSetLayoutBindings = { { vpLayoutBinding }, { samplerLayoutBinding } };
@@ -408,7 +409,7 @@ void vge::Renderer::CreatePipelines()
 		pipelineCreateInfo.DynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
 		Pipeline::DefaultCreateInfo(pipelineCreateInfo);
 
-		pipelineCreateInfo.Device = &m_Device;
+		pipelineCreateInfo.Device = m_Device;
 		pipelineCreateInfo.ShaderFilenames = { "Shaders/Bin/second_vert.spv", "Shaders/Bin/second_frag.spv" };
 		pipelineCreateInfo.DescriptorSetLayoutBindings = { {}, { colorInputLayoutBinding, depthInputLayoutBinding } };
 		pipelineCreateInfo.RenderPass = &m_RenderPass;
@@ -439,7 +440,7 @@ void vge::Renderer::AllocateCommandBuffers()
 
 	for (size_t i = 0; i < cmdBufferCount; ++i)
 	{
-		m_CommandBuffers.push_back(CommandBuffer::Allocate(&m_Device));
+		m_CommandBuffers.push_back(CommandBuffer::Allocate(m_Device));
 	}
 }
 
@@ -463,7 +464,7 @@ void vge::Renderer::CreateTextureSampler()
 	samplerCreateInfo.anisotropyEnable = VK_TRUE;						// generally, if enabled, handle texture stretching at strange angles
 	samplerCreateInfo.maxAnisotropy = 16;
 
-	VK_ENSURE(vkCreateSampler(m_Device.GetHandle(), &samplerCreateInfo, nullptr, &m_TextureSampler));
+	VK_ENSURE(vkCreateSampler(m_Device->GetHandle(), &samplerCreateInfo, nullptr, &m_TextureSampler));
 }
 
 //void vge::Renderer::AllocateDynamicBufferTransferSpace()
@@ -488,7 +489,7 @@ void vge::Renderer::CreateUniformBuffers()
 	//constexpr VmaMemoryUsage memUsage = VMA_MEMORY_USAGE_CPU_ONLY;
 
 	BufferCreateInfo buffCreateInfo = {};
-	buffCreateInfo.Device = &m_Device;
+	buffCreateInfo.Device = m_Device;
 	buffCreateInfo.Size = vpBufferSize;
 	buffCreateInfo.Usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 	buffCreateInfo.MemAllocUsage = VMA_MEMORY_USAGE_CPU_ONLY;
@@ -496,7 +497,7 @@ void vge::Renderer::CreateUniformBuffers()
 	for (size_t i = 0; i < m_Swapchain->GetImageCount(); ++i)
 	{
 		m_VpUniformBuffers[i] = Buffer::Create(buffCreateInfo);
-		//CreateBuffer(m_Device.GetAllocator(), vpBufferSize, usage, memUsage, m_VpUniformBuffers[i]);
+		//CreateBuffer(m_Device->GetAllocator(), vpBufferSize, usage, memUsage, m_VpUniformBuffers[i]);
 		//CreateBuffer(m_Gpu, m_Device, modelBufferSize, usage, props, m_ModelDynamicUniformBuffers[i], m_ModelDynamicUniformBuffersMemory[i]);
 	}
 }
@@ -520,7 +521,7 @@ void vge::Renderer::CreateDescriptorPools()
 		uniformPoolCreateInfo.poolSizeCount = static_cast<uint32>(uniformPoolSizes.size());
 		uniformPoolCreateInfo.pPoolSizes = uniformPoolSizes.data();
 
-		VK_ENSURE(vkCreateDescriptorPool(m_Device.GetHandle(), &uniformPoolCreateInfo, nullptr, &m_UniformDescriptorPool));
+		VK_ENSURE(vkCreateDescriptorPool(m_Device->GetHandle(), &uniformPoolCreateInfo, nullptr, &m_UniformDescriptorPool));
 	}
 
 	{
@@ -536,7 +537,7 @@ void vge::Renderer::CreateDescriptorPools()
 		samplerPoolCreateInfo.poolSizeCount = static_cast<uint32>(samplerPoolSizes.size());
 		samplerPoolCreateInfo.pPoolSizes = samplerPoolSizes.data();
 
-		VK_ENSURE(vkCreateDescriptorPool(m_Device.GetHandle(), &samplerPoolCreateInfo, nullptr, &m_SamplerDescriptorPool));
+		VK_ENSURE(vkCreateDescriptorPool(m_Device->GetHandle(), &samplerPoolCreateInfo, nullptr, &m_SamplerDescriptorPool));
 	}
 
 	{
@@ -556,7 +557,7 @@ void vge::Renderer::CreateDescriptorPools()
 		inputPoolCreateInfo.poolSizeCount = static_cast<uint32>(inputPoolSizes.size());
 		inputPoolCreateInfo.pPoolSizes = inputPoolSizes.data();
 
-		VK_ENSURE(vkCreateDescriptorPool(m_Device.GetHandle(), &inputPoolCreateInfo, nullptr, &m_InputDescriptorPool));
+		VK_ENSURE(vkCreateDescriptorPool(m_Device->GetHandle(), &inputPoolCreateInfo, nullptr, &m_InputDescriptorPool));
 	}
 }
 
@@ -588,9 +589,9 @@ void vge::Renderer::CreateSyncObjects()
 
 	for (int32 i = 0; i < GMaxDrawFrames; ++i)
 	{
-		VK_ENSURE(vkCreateSemaphore(m_Device.GetHandle(), &semaphoreCreateInfo, nullptr, &m_ImageAvailableSemas[i]));
-		VK_ENSURE(vkCreateSemaphore(m_Device.GetHandle(), &semaphoreCreateInfo, nullptr, &m_RenderFinishedSemas[i]));
-		VK_ENSURE(vkCreateFence(m_Device.GetHandle(), &fenceCreateInfo, nullptr, &m_DrawFences[i]));
+		VK_ENSURE(vkCreateSemaphore(m_Device->GetHandle(), &semaphoreCreateInfo, nullptr, &m_ImageAvailableSemas[i]));
+		VK_ENSURE(vkCreateSemaphore(m_Device->GetHandle(), &semaphoreCreateInfo, nullptr, &m_RenderFinishedSemas[i]));
+		VK_ENSURE(vkCreateFence(m_Device->GetHandle(), &fenceCreateInfo, nullptr, &m_DrawFences[i]));
 	}
 }
 
@@ -606,7 +607,7 @@ void vge::Renderer::AllocateUniformDescriptorSet()
 	setAllocInfo.descriptorSetCount = static_cast<uint32>(m_Swapchain->GetImageCount());
 	setAllocInfo.pSetLayouts = setLayouts.data(); // 1 to 1 relationship with layout and set
 
-	VK_ENSURE(vkAllocateDescriptorSets(m_Device.GetHandle(), &setAllocInfo, m_UniformDescriptorSets.data()));
+	VK_ENSURE(vkAllocateDescriptorSets(m_Device->GetHandle(), &setAllocInfo, m_UniformDescriptorSets.data()));
 }
 
 void vge::Renderer::AllocateInputDescriptorSet()
@@ -621,7 +622,7 @@ void vge::Renderer::AllocateInputDescriptorSet()
 	setAllocInfo.descriptorSetCount = static_cast<uint32>(m_Swapchain->GetImageCount());
 	setAllocInfo.pSetLayouts = setLayouts.data();
 
-	VK_ENSURE(vkAllocateDescriptorSets(m_Device.GetHandle(), &setAllocInfo, m_InputDescriptorSets.data()));
+	VK_ENSURE(vkAllocateDescriptorSets(m_Device->GetHandle(), &setAllocInfo, m_InputDescriptorSets.data()));
 }
 
 void vge::Renderer::UpdateUniformDescriptorSet()
@@ -658,7 +659,7 @@ void vge::Renderer::UpdateUniformDescriptorSet()
 
 		const std::array<VkWriteDescriptorSet, 1> setWrites = { vpSetWrite, /*modelSetWrite*/ };
 
-		vkUpdateDescriptorSets(m_Device.GetHandle(), static_cast<uint32>(setWrites.size()), setWrites.data(), 0, nullptr);
+		vkUpdateDescriptorSets(m_Device->GetHandle(), static_cast<uint32>(setWrites.size()), setWrites.data(), 0, nullptr);
 	}
 }
 
@@ -696,7 +697,7 @@ void vge::Renderer::UpdateInputDescriptorSet()
 
 		const std::array<VkWriteDescriptorSet, 2> setWrites = { colorSetWrite, depthSetWrite };
 
-		vkUpdateDescriptorSets(m_Device.GetHandle(), static_cast<uint32>(setWrites.size()), setWrites.data(), 0, nullptr);
+		vkUpdateDescriptorSets(m_Device->GetHandle(), static_cast<uint32>(setWrites.size()), setWrites.data(), 0, nullptr);
 	}
 }
 
@@ -718,8 +719,8 @@ void vge::Renderer::UpdateUniformBuffers(uint32 ImageIndex)
 
 void vge::Renderer::RecreateSwapchain()
 {
-	m_Device.WaitWindowSizeless();
-	m_Device.WaitIdle();
+	m_Device->WaitWindowSizeless();
+	m_Device->WaitIdle();
 
 	// Destruction.
 	DestroyRenderPassColorAttachments();
@@ -756,7 +757,7 @@ void vge::Renderer::DestroyRenderPassColorAttachments()
 {
 	for (size_t i = 0; i < m_Swapchain->GetImageCount(); ++i)
 	{
-		vkDestroyImageView(m_Device.GetHandle(), m_ColorAttachments[i].View, nullptr);
+		vkDestroyImageView(m_Device->GetHandle(), m_ColorAttachments[i].View, nullptr);
 		m_ColorAttachments[i].Image.Destroy();
 	}
 }
@@ -765,7 +766,7 @@ void vge::Renderer::DestroyRenderPassDepthAttachments()
 {
 	for (size_t i = 0; i < m_Swapchain->GetImageCount(); ++i)
 	{
-		vkDestroyImageView(m_Device.GetHandle(), m_DepthAttachments[i].View, nullptr);
+		vkDestroyImageView(m_Device->GetHandle(), m_DepthAttachments[i].View, nullptr);
 		m_DepthAttachments[i].Image.Destroy();
 	}
 }
@@ -775,7 +776,7 @@ int32 vge::Renderer::CreateTexture(const char* filename)
 	TextureCreateInfo texCreateInfo = {};
 	texCreateInfo.Id = static_cast<int32>(m_Textures.size());
 	texCreateInfo.Filename = filename;
-	texCreateInfo.Device = &m_Device;
+	texCreateInfo.Device = m_Device;
 	texCreateInfo.Sampler = m_TextureSampler;
 	texCreateInfo.DescriptorPool = m_SamplerDescriptorPool;
 	texCreateInfo.DescriptorLayout = m_Pipelines[0].GetShader(ShaderStage::Fragment)->GetDescriptorSetLayout().Handle; // first pipeline is used to render everything
@@ -791,7 +792,7 @@ int32 vge::Renderer::CreateModel(const char* filename)
 	ModelCreateInfo modelCreateInfo = {};
 	modelCreateInfo.Id = static_cast<int32>(m_Models.size());
 	modelCreateInfo.Filename = filename;
-	modelCreateInfo.Device = &m_Device;
+	modelCreateInfo.Device = m_Device;
 
 	Model model = Model::Create(modelCreateInfo);
 	m_Models.push_back(model);

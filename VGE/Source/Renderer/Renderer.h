@@ -30,7 +30,7 @@ namespace vge
 	class Renderer final
 	{
 	public:
-		Renderer(Device& device);
+		Renderer(Device* device);
 		NOT_COPYABLE(Renderer);
 		~Renderer() = default;
 
@@ -71,7 +71,7 @@ namespace vge
 
 		UboViewProjection m_UboViewProjection = {};
 
-		Device& m_Device;
+		Device* m_Device = nullptr;
 		std::unique_ptr<Swapchain> m_Swapchain = nullptr;
 		std::unique_ptr<SwapchainRecreateInfo> m_SwapchainRecreateInfo = nullptr;
 
@@ -141,7 +141,7 @@ namespace vge
 		void DestroyRenderPassDepthAttachments();
 	};
 
-	inline Renderer* CreateRenderer(Device& device)
+	inline Renderer* CreateRenderer(Device* device)
 	{
 		if (GRenderer) return GRenderer;
 		return (GRenderer = new Renderer(device));
