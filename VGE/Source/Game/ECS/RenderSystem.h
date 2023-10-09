@@ -17,9 +17,6 @@ namespace vge
 		void Tick(float deltaTime);
 
 	private:
-		void RecordCommandBuffer(CommandBuffer* cmd);
-
-	private:
 		Renderer* m_Renderer = nullptr;
 		Camera* m_Camera = nullptr;
 	};

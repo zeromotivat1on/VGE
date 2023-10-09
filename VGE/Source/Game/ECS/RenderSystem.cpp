@@ -5,25 +5,120 @@
 #include "Components/RenderComponent.h"
 #include "Components/TransformComponent.h"
 
-struct ScopeFrameControl
+namespace vge
 {
-	ScopeFrameControl(vge::Renderer* renderer) : Renderer(renderer)
+	struct ScopeFrameControl
 	{
-		Cmd = Renderer->BeginFrame();
-		Cmd->BeginRecord();
-		Cmd->BeginRenderPass(Renderer->GetRenderPass(), Renderer->GetCurrentFrameBuffer());
-	}
+	public:
+		vge::CommandBuffer* Cmd = {};
 
-	~ScopeFrameControl()
-	{
-		Cmd->EndRenderPass();
-		Cmd->EndRecord();
-		Renderer->EndFrame();
-	}
+		ScopeFrameControl(Renderer* renderer) : m_Renderer(renderer)
+		{
+			Cmd = m_Renderer->BeginFrame();
+			Cmd->BeginRecord();
+			Cmd->BeginRenderPass(m_Renderer->GetRenderPass(), m_Renderer->GetCurrentFrameBuffer());
+		}
 
-	vge::Renderer* Renderer = nullptr;
-	vge::CommandBuffer* Cmd = {};
-};
+		~ScopeFrameControl()
+		{
+			Cmd->EndRenderPass();
+			Cmd->EndRecord();
+			m_Renderer->EndFrame();
+		}
+
+		void RecordCmd(const std::set<Entity>& entities)
+		{
+			RecordCmdPreSubpass();
+
+			int32 pipelineIdx = 0;
+			RecordCmdFirstSubpass(pipelineIdx, entities);
+			RecordCmdSecondSubpass(pipelineIdx);
+		}
+
+		inline void UpdateUniforms() { m_Renderer->UpdateUniformBuffers(); }
+
+	private:
+		vge::Renderer* m_Renderer = nullptr;
+
+	private:
+		void RecordCmdPreSubpass()
+		{
+			glm::vec2 viewportSize;
+			viewportSize.x = static_cast<float>(m_Renderer->GetSwapchainExtent().width);
+			viewportSize.y = static_cast<float>(m_Renderer->GetSwapchainExtent().height);
+			Cmd->SetViewport(viewportSize);
+			Cmd->SetScissor(m_Renderer->GetSwapchainExtent());
+		}
+
+		void RecordCmdFirstSubpass(int32& pipelineIdx, const std::set<Entity>& entities)
+		{
+			Pipeline* pipeline = m_Renderer->FindPipeline(pipelineIdx);
+			if (!pipeline)
+			{
+				return;
+			}
+
+			Cmd->Bind(pipeline);
+
+			for (const Entity& entity : entities)
+			{
+				const auto& renderComponent = GCoordinator->GetComponent<RenderComponent>(entity);
+				const Model* model = m_Renderer->FindModel(renderComponent.ModelId);
+
+				if (!model)
+				{
+					continue;
+				}
+
+				const ModelData& modelData = model->GetModelData();
+				Cmd->PushConstants(pipeline, pipeline->GetShader(ShaderStage::Vertex), sizeof(ModelData), &modelData);
+
+				for (size_t MeshIndex = 0; MeshIndex < model->GetMeshCount(); ++MeshIndex)
+				{
+					const Mesh* mesh = model->GetMesh(MeshIndex);
+					if (!mesh)
+					{
+						continue;
+					}
+
+					const Texture* texture = m_Renderer->FindTexture(mesh->GetTextureId());
+					if (!texture)
+					{
+						continue;
+					}
+
+					std::vector<const VertexBuffer*> vertBuffers = { mesh->GetVertexBuffer() };
+					Cmd->Bind(static_cast<uint32>(vertBuffers.size()), vertBuffers.data(), pipeline->GetShader(ShaderStage::Vertex));
+					Cmd->Bind(mesh->GetIndexBuffer());
+
+					std::vector<VkDescriptorSet> descriptorSets = { m_Renderer->GetCurrentUniformDescriptorSet(), texture->GetDescriptor() };
+					Cmd->Bind(pipeline, static_cast<uint32>(descriptorSets.size()), descriptorSets.data());
+					Cmd->DrawIndexed(static_cast<uint32>(mesh->GetIndexCount()));
+				}
+			}
+
+			++pipelineIdx;
+		}
+
+		void RecordCmdSecondSubpass(int32& pipelineIdx)
+		{
+			Pipeline* pipeline = m_Renderer->FindPipeline(pipelineIdx);
+			if (!pipeline)
+			{
+				return;
+			}
+
+			Cmd->NextSubpass();
+			Cmd->Bind(pipeline);
+
+			std::vector<VkDescriptorSet> descriptorSets = { m_Renderer->GetCurrentInputDescriptorSet() };
+			Cmd->Bind(pipeline, static_cast<uint32>(descriptorSets.size()), descriptorSets.data());
+			Cmd->Draw(3); // fill screen with one big triangle to draw on
+
+			++pipelineIdx;
+		}
+	};
+}
 
 void vge::RenderSystem::Initialize(Renderer* renderer, Camera* camera)
 {
@@ -44,86 +139,7 @@ void vge::RenderSystem::Tick(float deltaTime)
 		m_Renderer->UpdateModelMatrix(renderComponent.ModelId, GetMat4(transformComponent));
 	}
 
-	{
-		ScopeFrameControl scopeFrame(m_Renderer);
-		RecordCommandBuffer(scopeFrame.Cmd);
-		m_Renderer->UpdateUniformBuffers();
-	}
-}
-
-void vge::RenderSystem::RecordCommandBuffer(CommandBuffer* cmd)
-{
-	{
-		glm::vec2 size;
-		size.x = static_cast<float>(m_Renderer->GetSwapchainExtent().width);
-		size.y = static_cast<float>(m_Renderer->GetSwapchainExtent().height);
-		cmd->SetViewport(size);
-	}
-
-	cmd->SetScissor(m_Renderer->GetSwapchainExtent());
-
-	int32 pipelineIndex = 0;
-	const Pipeline* currentPipeline = m_Renderer->FindPipeline(pipelineIndex++);
-	if (!currentPipeline)
-	{
-		return;
-	}
-
-	// 1st subpass.
-	{
-		cmd->Bind(currentPipeline);
-
-		for (const Entity& entity : m_Entities)
-		{
-			const auto& renderComponent = GCoordinator->GetComponent<RenderComponent>(entity);
-			const Model* model = m_Renderer->FindModel(renderComponent.ModelId);
-			
-			if (!model)
-			{
-				continue;
-			}
-
-			const ModelData& modelData = model->GetModelData();
-			cmd->PushConstants(currentPipeline, currentPipeline->GetShader(ShaderStage::Vertex), sizeof(ModelData), &modelData);
-
-			for (size_t MeshIndex = 0; MeshIndex < model->GetMeshCount(); ++MeshIndex)
-			{
-				const Mesh* mesh = model->GetMesh(MeshIndex);
-				if (!mesh)
-				{
-					continue;
-				}
-
-				const Texture* texture = m_Renderer->FindTexture(mesh->GetTextureId());
-				if (!texture)
-				{
-					continue;
-				}
-
-				std::vector<const VertexBuffer*> vertBuffers = { mesh->GetVertexBuffer() };
-				cmd->Bind(static_cast<uint32>(vertBuffers.size()), vertBuffers.data(), currentPipeline->GetShader(ShaderStage::Vertex));
-				cmd->Bind(mesh->GetIndexBuffer());
-
-				std::vector<VkDescriptorSet> descriptorSets = { m_Renderer->GetCurrentUniformDescriptorSet(), texture->GetDescriptor() };
-				cmd->Bind(currentPipeline, static_cast<uint32>(descriptorSets.size()), descriptorSets.data());
-				cmd->DrawIndexed(static_cast<uint32>(mesh->GetIndexCount()));
-			}
-		}
-	}
-
-	currentPipeline = m_Renderer->FindPipeline(pipelineIndex++);
-	if (!currentPipeline)
-	{
-		return;
-	}
-
-	// 2nd subpass.
-	{
-		cmd->NextSubpass();
-		cmd->Bind(currentPipeline);
-
-		std::vector<VkDescriptorSet> descriptorSets = { m_Renderer->GetCurrentInputDescriptorSet() };
-		cmd->Bind(currentPipeline, static_cast<uint32>(descriptorSets.size()), descriptorSets.data());
-		cmd->Draw(3u); // fill screen with one big triangle to draw on
-	}
+	ScopeFrameControl scopeFrame(m_Renderer);
+	scopeFrame.RecordCmd(m_Entities);
+	scopeFrame.UpdateUniforms();
 }
