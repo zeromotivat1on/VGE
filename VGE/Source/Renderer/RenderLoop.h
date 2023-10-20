@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ECS/RenderSystem.h"
-#include "Game/Camera.h"
 
 namespace vge
 {
@@ -22,6 +21,5 @@ namespace vge
 
 	private:
 		std::shared_ptr<RenderSystem> m_RenderSystem = nullptr;
-		Camera m_Camera = {};
 	};
 }

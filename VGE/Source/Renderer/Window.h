@@ -17,6 +17,7 @@ namespace vge
 		void Initialize();
 		void Destroy();
 
+		inline GLFWwindow* GetHandle() const { return m_Handle; }
 		inline void PollEvents() const { glfwPollEvents(); }
 		inline bool ShouldClose() const { return glfwWindowShouldClose(m_Handle); }
 		inline void GetFramebufferSize(int32& outw, int32& outh) const { glfwGetFramebufferSize(m_Handle, &outw, &outh); }

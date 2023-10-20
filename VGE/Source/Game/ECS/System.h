@@ -17,6 +17,16 @@ namespace vge
 		inline void Remove(Entity entity) { m_Entities.erase(entity); }
 
 	protected:
-		std::set<Entity> m_Entities;
+		template<typename Functor>
+		inline void ForEachEntity(Functor functor) const
+		{
+			for (const auto& entity : m_Entities)
+			{
+				functor(entity);
+			}
+		}
+
+	protected:
+		std::unordered_set<Entity> m_Entities;
 	};
 }

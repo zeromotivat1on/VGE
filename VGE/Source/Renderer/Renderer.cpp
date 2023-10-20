@@ -321,7 +321,7 @@ void vge::Renderer::CreateRenderPass()
 	std::vector<VkAttachmentDescription> attachments = { swapchainColorAttachment, colorAttachment, depthAttachment };
 	std::vector<VkClearValue> clearValues(attachments.size());
 	clearValues[0].color = { 0.0f, 0.0f, 0.0f, 1.0f }; // draw black triangle by default, dont care actually
-	clearValues[1].color = { 0.3f, 0.3f, 0.2f, 1.0f };
+	clearValues[1].color = { 0.0f, 0.2f, 0.3f, 1.0f };
 	clearValues[2].depthStencil.depth = 1.0f;
 
 	RenderPassCreateInfo createInfo = {};

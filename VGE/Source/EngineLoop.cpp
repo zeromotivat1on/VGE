@@ -1,7 +1,8 @@
 #include "EngineLoop.h"
 #include "Application.h"
-#include "ECS/Coordinator.h"
 #include "Profiling.h"
+#include "Game/Camera.h"
+#include "ECS/Coordinator.h"
 #include "Renderer/Renderer.h"
 #include "Renderer/RenderCommon.h"
 #include "Components/RenderComponent.h"
@@ -14,6 +15,8 @@ static inline void IncrementAppFrame()
 
 void vge::EngineLoop::Initialize()
 {
+	GCamera = new Camera();
+
 	m_GameLoop.Initialize();
 	m_RenderLoop.Initialize();
 
@@ -40,7 +43,7 @@ void vge::EngineLoop::Start()
 
 	while (!GApplication->ShouldClose())
 	{
-		SCOPE_TIMER("Tick");
+		//SCOPE_TIMER("Tick");
 		UpdateDeltaTime();
 		Tick();
 		IncrementAppFrame();
@@ -65,6 +68,11 @@ void vge::EngineLoop::Destroy()
 {
 	m_RenderLoop.Destroy();
 	m_GameLoop.Destroy();
+	
+	if (GCamera)
+	{
+		delete GCamera;
+	}
 }
 
 void vge::EngineLoop::UpdateDeltaTime()

@@ -26,13 +26,13 @@ namespace vge
 			m_Renderer->EndFrame();
 		}
 
-		void RecordCmd(const std::set<Entity>& entities)
+		void RecordCmd(const std::unordered_set<Entity>& entities)
 		{
 			RecordCmdPreSubpass();
 
 			int32 pipelineIdx = 0;
-			RecordCmdFirstSubpass(pipelineIdx, entities);
-			RecordCmdSecondSubpass(pipelineIdx);
+			RecordCmdFirstSubpass(pipelineIdx++, entities);
+			RecordCmdSecondSubpass(pipelineIdx++);
 		}
 
 		inline void UpdateUniforms() { m_Renderer->UpdateUniformBuffers(); }
@@ -50,7 +50,7 @@ namespace vge
 			Cmd->SetScissor(m_Renderer->GetSwapchainExtent());
 		}
 
-		void RecordCmdFirstSubpass(int32& pipelineIdx, const std::set<Entity>& entities)
+		void RecordCmdFirstSubpass(int32 pipelineIdx, const std::unordered_set<Entity>& entities)
 		{
 			Pipeline* pipeline = m_Renderer->FindPipeline(pipelineIdx);
 			if (!pipeline)
@@ -62,9 +62,13 @@ namespace vge
 
 			for (const Entity& entity : entities)
 			{
-				const auto& renderComponent = GCoordinator->GetComponent<RenderComponent>(entity);
-				const Model* model = m_Renderer->FindModel(renderComponent.ModelId);
+				const auto* renderComponent = RenderComponent::GetFrom(entity);
+				if (!renderComponent)
+				{
+					continue;
+				}
 
+				const Model* model = m_Renderer->FindModel(renderComponent->ModelId);
 				if (!model)
 				{
 					continue;
@@ -96,11 +100,9 @@ namespace vge
 					Cmd->DrawIndexed(static_cast<uint32>(mesh->GetIndexCount()));
 				}
 			}
-
-			++pipelineIdx;
 		}
 
-		void RecordCmdSecondSubpass(int32& pipelineIdx)
+		void RecordCmdSecondSubpass(int32 pipelineIdx)
 		{
 			Pipeline* pipeline = m_Renderer->FindPipeline(pipelineIdx);
 			if (!pipeline)
@@ -114,8 +116,6 @@ namespace vge
 			std::vector<VkDescriptorSet> descriptorSets = { m_Renderer->GetCurrentInputDescriptorSet() };
 			Cmd->Bind(pipeline, static_cast<uint32>(descriptorSets.size()), descriptorSets.data());
 			Cmd->Draw(3); // fill screen with one big triangle to draw on
-
-			++pipelineIdx;
 		}
 	};
 }
@@ -124,19 +124,29 @@ void vge::RenderSystem::Initialize(Renderer* renderer, Camera* camera)
 {
 	m_Renderer = renderer;
 	m_Camera = camera;
-
-	m_Renderer->SetView(m_Camera->GetViewMatrix());
-	m_Renderer->SetProjection(m_Camera->GetProjectionMatrix());
 }
 
 void vge::RenderSystem::Tick(float deltaTime)
 {
+	m_Renderer->SetView(m_Camera->GetViewMatrix());
+	m_Renderer->SetProjection(m_Camera->GetProjectionMatrix());
+
 	// TODO: transfer model data update to separate system etc.
 	for (const Entity& entity : m_Entities)
 	{
-		const auto& renderComponent = GCoordinator->GetComponent<RenderComponent>(entity);
-		const auto& transformComponent = GCoordinator->GetComponent<TransformComponent>(entity);
-		m_Renderer->UpdateModelMatrix(renderComponent.ModelId, GetMat4(transformComponent));
+		const auto* renderComponent = RenderComponent::GetFrom(entity);
+		if (!renderComponent)
+		{
+			continue;
+		}
+
+		const auto* transformComponent = TransformComponent::GetFrom(entity);
+		if (!transformComponent)
+		{
+			continue;
+		}
+
+		m_Renderer->UpdateModelMatrix(renderComponent->ModelId, transformComponent->GetMat4());
 	}
 
 	ScopeFrameControl scopeFrame(m_Renderer);

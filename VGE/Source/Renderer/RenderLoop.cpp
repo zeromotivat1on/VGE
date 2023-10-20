@@ -2,6 +2,7 @@
 #include "Application.h"
 #include "Renderer.h"
 #include "Window.h"
+#include "Game/Camera.h"
 #include "ECS/Coordinator.h"
 #include "Components/RenderComponent.h"
 #include "Components/TransformComponent.h"
@@ -24,6 +25,7 @@ void vge::RenderLoop::Initialize()
 
 void vge::RenderLoop::Tick(float deltaTime)
 {
+	GCamera->SetPerspectiveProjection(glm::radians(45.0f), GRenderer->GetSwapchainAspectRatio(), 0.1f, 1000.0f);
 	m_RenderSystem->Tick(deltaTime);
 }
 
@@ -43,13 +45,15 @@ void vge::RenderLoop::RegisterRenderSystem()
 	m_RenderSystem = GCoordinator->RegisterSystem<RenderSystem>();
 	ENSURE(m_RenderSystem);
 
-#if !USE_CUSTOM_MATRIX_CALCS
-	m_Camera.ShouldInvertProjectionYAxis(true);
-#endif
-	m_Camera.SetViewDirection(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	m_Camera.SetPerspectiveProjection(45.0f, GRenderer->GetSwapchainAspectRatio(), 0.1f, 10000.0f);
-	
-	m_RenderSystem->Initialize(GRenderer, &m_Camera);
+	// Initialize default camera.
+	{
+		GCamera->ShouldInvertProjectionYAxis(true);
+		GCamera->SetViewDirection(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		//GCamera->SetViewTarget(glm::vec3(-30.0f, -30.0f, 30.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+		//GCamera->SetOrthographicProjection(-20.0f, 20.0f, -20.0f, 20.0f, -10000.0f, 10000.0f);
+	}
+
+	m_RenderSystem->Initialize(GRenderer, GCamera);
 
 	Signature signature;
 	signature.set(GCoordinator->GetComponentType<RenderComponent>());

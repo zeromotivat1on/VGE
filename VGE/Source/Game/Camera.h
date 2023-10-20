@@ -4,13 +4,16 @@
 
 namespace vge
 {
+	// Current camera that observes the world.
+	inline class Camera* GCamera = nullptr;
+	
 	class Camera
 	{
 	public:
 		Camera() = default;
 
-		void SetViewDirection(const glm::vec3& position, const glm::vec3& direction, const glm::vec3& up = glm::vec3(0.0f, 1.0f, 0.0f));
-		void SetViewTarget(const glm::vec3& position, const glm::vec3& target, const glm::vec3& up = glm::vec3(0.0f, 1.0f, 0.0f));
+		void SetViewDirection(const glm::vec3& position, const glm::vec3& direction, const glm::vec3& up = glm::vec3(0.0f, -1.0f, 0.0f));
+		void SetViewTarget(const glm::vec3& position, const glm::vec3& target, const glm::vec3& up = glm::vec3(0.0f, -1.0f, 0.0f));
 		void SetViewYXZ(const glm::vec3& position, const glm::vec3& rotation);
 
 		void SetOrthographicProjection(float l, float r, float t, float b, float n, float f);

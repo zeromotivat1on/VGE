@@ -8,10 +8,6 @@
 	#define DEBUG 1
 #endif
 
-#ifndef USE_CUSTOM_MATRIX_CALCS
-	#define USE_CUSTOM_MATRIX_CALCS 0
-#endif
-
 #ifndef COMPILE_SHADERS_ON_INIT
 	#define COMPILE_SHADERS_ON_INIT 1
 #endif

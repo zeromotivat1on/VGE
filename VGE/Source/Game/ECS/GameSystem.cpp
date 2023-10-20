@@ -1,18 +1,21 @@
 #include "GameSystem.h"
 #include "Coordinator.h"
+#include "Game/Camera.h"
+#include "Renderer/Window.h"
 #include "Components/TransformComponent.h"
 
 void vge::GameSystem::Initialize()
 {
+	m_InputController = InputController(GWindow);
+	m_InputController.SetMoveSpeed(80.0f);
+	m_InputController.SetRotateSpeed(100.0f);
+	m_InputController.ShouldInvertVerticalAxis(true);
 }
 
 void vge::GameSystem::Tick(float deltaTime)
 {
-	for (const auto& entity : m_Entities)
-	{
-		auto& transformComponent = GCoordinator->GetComponent<TransformComponent>(entity);
-		transformComponent.Translation.z = 30.0f;
-		transformComponent.Translation.x = 15.0f;
-		transformComponent.Rotation.y += (30.0f * deltaTime);
-	}
+	const auto& firstEntity = *m_Entities.begin();
+	auto* transform = TransformComponent::GetFrom(firstEntity);
+	m_InputController.MoveInPlaneXZ(deltaTime, firstEntity);
+	//GCamera->SetViewYXZ(transform->Translation, transform->Rotation);
 }
