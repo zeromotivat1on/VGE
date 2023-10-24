@@ -1,4 +1,5 @@
 #include "Logging.h"
+#include "Color.h"
 
 #if USE_LOGGING
 
@@ -36,10 +37,13 @@ std::string vge::Logger::LogCategoryToString(const LogCategory category)
 	switch (category)
 	{
 	case LogCategory::Warning:
+		std::cout << hue::yellow;
 		return "Warning: ";
 	case LogCategory::Error:
+		std::cout << hue::red;
 		return "Error: ";
 	default:
+		std::cout << hue::white;
 		return "Log: ";
 	}
 }
