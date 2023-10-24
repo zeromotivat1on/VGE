@@ -43,10 +43,15 @@ namespace vge
 
 		static std::string LogCategoryToString(const LogCategory category);
 
+		// Change console text color according to a given category.
+		static void PaintConsoleText(const LogCategory category);
+
+		// Restore default console text color - white.
+		static void PaintDefaultConsoleText();
+
 	private:
 		static void PrintLog_Implementation(const LogCategory category, const char* message, va_list args);
 		static void PrintLogRaw_Implementation(const char* message, va_list args);
-		static void PaintConsoleText(const LogCategory category);
 	};
 
 	extern void NotifyVulkanEnsureFailure(VkResult result, const char* function, const char* filename, uint32 line, const char* errMessage = "");

@@ -21,10 +21,12 @@ void vge::Logger::PrintLogRaw(const char* message, ...)
 void vge::Logger::PrintLog_Implementation(const LogCategory category, const char* message, va_list args)
 {
 	PaintConsoleText(category);
+	
 	const std::string categoryStr = LogCategoryToString(category);
 	const std::string caller = "[%s::%d]: "; // function name + log line
-
 	vprintf((categoryStr + caller + message + '\n').c_str(), args);
+
+	PaintDefaultConsoleText();
 }
 
 void vge::Logger::PrintLogRaw_Implementation(const char* message, va_list args)
@@ -41,8 +43,13 @@ void vge::Logger::PaintConsoleText(const LogCategory category)
 	case LogCategory::Error:
 		std::cout << hue::red; return;
 	default:
-		std::cout << hue::white; return;
+		std::cout << hue::reset; return;
 	}
+}
+
+void vge::Logger::PaintDefaultConsoleText()
+{
+	std::cout << hue::reset;
 }
 
 std::string vge::Logger::LogCategoryToString(const LogCategory category)
@@ -103,6 +110,6 @@ void vge::NotifyVulkanEnsureFailure(VkResult result, const char* function, const
 		LOG(Error, " User error message: %s", errMessage);
 	}
 
-	abort();
+	DEBUG_BREAK();
 }
 #endif

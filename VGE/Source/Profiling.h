@@ -11,7 +11,7 @@
 #endif
 
 #if ENABLE_SCOPE_TIMERS
-	#define SCOPE_TIMER(LogPrefix) ScopeTimer CONCAT(__scope_timer_, __LINE__)(LogPrefix);
+	#define SCOPE_TIMER(LogPrefix) ScopeTimer GLUE(__scope_timer_, __LINE__)(LogPrefix);
 #else
 	#define SCOPE_TIMER(LogPrefix)
 #endif
