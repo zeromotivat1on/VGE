@@ -20,7 +20,7 @@
 struct ScopeTimer
 {
 public:
-	ScopeTimer(const std::string_view logPrefix) : m_LogPrefix(logPrefix)
+	ScopeTimer(std::string_view logPrefix) : m_LogPrefix(logPrefix)
 	{
 		m_StartTime = std::chrono::high_resolution_clock::now();
 	}

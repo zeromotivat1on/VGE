@@ -2,7 +2,6 @@
 #include "Color.h"
 
 #if USE_LOGGING
-
 void vge::Logger::PrintLog(const LogCategory category, const char* message, ...)
 {
 	va_list args;
@@ -21,8 +20,9 @@ void vge::Logger::PrintLogRaw(const char* message, ...)
 
 void vge::Logger::PrintLog_Implementation(const LogCategory category, const char* message, va_list args)
 {
+	PaintConsoleText(category);
 	const std::string categoryStr = LogCategoryToString(category);
-	const std::string caller = "[%s]: ";
+	const std::string caller = "[%s::%d]: "; // function name + log line
 
 	vprintf((categoryStr + caller + message + '\n').c_str(), args);
 }
@@ -32,18 +32,28 @@ void vge::Logger::PrintLogRaw_Implementation(const char* message, va_list args)
 	vprintf(message, args);
 }
 
+void vge::Logger::PaintConsoleText(const LogCategory category)
+{
+	switch (category)
+	{
+	case LogCategory::Warning:
+		std::cout << hue::yellow; return;
+	case LogCategory::Error:
+		std::cout << hue::red; return;
+	default:
+		std::cout << hue::white; return;
+	}
+}
+
 std::string vge::Logger::LogCategoryToString(const LogCategory category)
 {
 	switch (category)
 	{
 	case LogCategory::Warning:
-		std::cout << hue::yellow;
 		return "Warning: ";
 	case LogCategory::Error:
-		std::cout << hue::red;
 		return "Error: ";
 	default:
-		std::cout << hue::white;
 		return "Log: ";
 	}
 }

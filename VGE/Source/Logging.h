@@ -15,7 +15,7 @@
 #define LOG_VK_VERBOSE 0
 
 #if USE_LOGGING
-	#define LOG(Category, Message, ...)	vge::Logger::PrintLog(vge::LogCategory::Category, Message, __FUNCTION__, __VA_ARGS__);
+	#define LOG(Category, Message, ...)	vge::Logger::PrintLog(vge::LogCategory::Category, Message, __FUNCTION__, __LINE__, __VA_ARGS__);
 	#define LOG_RAW(Message, ...)		vge::Logger::PrintLogRaw(Message, __VA_ARGS__);
 #else
 	#define LOG(Category, Message, ...)
@@ -46,6 +46,7 @@ namespace vge
 	private:
 		static void PrintLog_Implementation(const LogCategory category, const char* message, va_list args);
 		static void PrintLogRaw_Implementation(const char* message, va_list args);
+		static void PaintConsoleText(const LogCategory category);
 	};
 
 	extern void NotifyVulkanEnsureFailure(VkResult result, const char* function, const char* filename, uint32 line, const char* errMessage = "");
