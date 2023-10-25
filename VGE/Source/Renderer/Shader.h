@@ -6,7 +6,7 @@ namespace vge
 {
 	class Device;
 
-	enum class ShaderStage : int8
+	enum class ShaderStage : i8
 	{
 		None = -1,
 
@@ -26,14 +26,14 @@ namespace vge
 	{
 		vge::Device* Device = nullptr;
 		VkShaderStageFlagBits StageFlags = VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM;
-		std::vector<char>* SpirvChar = {};
+		std::vector<c8>* SpirvChar = {};
 		std::vector<VkDescriptorSetLayoutBinding> DescriptorSetLayoutBindings = {};
 	};
 
 	class Shader
 	{
 	public:
-		static const char* const DefaultEntryName;
+		static const c8* const DefaultEntryName;
 
 		static VkShaderStageFlagBits GetFlagsFromStage(ShaderStage stage);
 		static ShaderStage GetStageFromFlags(VkShaderStageFlagBits flags);
@@ -54,7 +54,7 @@ namespace vge
 		VkPipelineShaderStageCreateInfo GetStageCreateInfo() const;
 
 	private:
-		void CreateModule(const std::vector<char>* SpirvInt8);
+		void CreateModule(const std::vector<c8>* SpirvInt8);
 		void CreateDescriptorSetLayout(const std::vector<VkDescriptorSetLayoutBinding>& bindings);
 
 	private:

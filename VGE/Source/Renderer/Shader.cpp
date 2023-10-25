@@ -1,7 +1,7 @@
 #include "Shader.h"
 #include "Device.h"
 
-const char* const vge::Shader::DefaultEntryName = "main";
+const vge::c8* const vge::Shader::DefaultEntryName = "main";
 
 VkShaderStageFlagBits vge::Shader::GetFlagsFromStage(ShaderStage stage)
 {
@@ -69,12 +69,12 @@ VkPipelineShaderStageCreateInfo vge::Shader::GetStageCreateInfo() const
 	return stageCreateInfo;
 }
 
-void vge::Shader::CreateModule(const std::vector<char>* SpirvInt8)
+void vge::Shader::CreateModule(const std::vector<c8>* SpirvInt8)
 {
 	VkShaderModuleCreateInfo createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 	createInfo.codeSize = SpirvInt8->size();
-	createInfo.pCode = reinterpret_cast<const uint32*>(SpirvInt8->data());
+	createInfo.pCode = reinterpret_cast<const u32*>(SpirvInt8->data());
 
 	VK_ENSURE(vkCreateShaderModule(m_Device->GetHandle(), &createInfo, nullptr, &m_Module));
 }
@@ -85,7 +85,7 @@ void vge::Shader::CreateDescriptorSetLayout(const std::vector<VkDescriptorSetLay
 
 	VkDescriptorSetLayoutCreateInfo uniformLayoutCreateInfo = {};
 	uniformLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	uniformLayoutCreateInfo.bindingCount = static_cast<uint32>(bindings.size());
+	uniformLayoutCreateInfo.bindingCount = static_cast<u32>(bindings.size());
 	uniformLayoutCreateInfo.pBindings = bindings.data();
 
 	VK_ENSURE(vkCreateDescriptorSetLayout(m_Device->GetHandle(), &uniformLayoutCreateInfo, nullptr, &m_DescriptorLayout.Handle))
@@ -94,13 +94,13 @@ void vge::Shader::CreateDescriptorSetLayout(const std::vector<VkDescriptorSetLay
 #if DEBUG
 void vge::Shader::VerifyBindingIndices(const std::vector<VkDescriptorSetLayoutBinding>& bindings)
 {
-	std::vector<uint32> bindingIndices;
+	std::vector<u32> bindingIndices;
 	for (const VkDescriptorSetLayoutBinding& binding : bindings)
 	{
 		bindingIndices.push_back(binding.binding);
 	}
 
-	std::unordered_set<uint32> uniqueBindingIndices(std::cbegin(bindingIndices), std::cend(bindingIndices));
+	std::unordered_set<u32> uniqueBindingIndices(std::cbegin(bindingIndices), std::cend(bindingIndices));
 	ENSURE_MSG(uniqueBindingIndices.size() == bindingIndices.size(), "Descriptor set layout bindings must have unique indices.");
 }
 #endif

@@ -17,7 +17,7 @@ namespace vge
 
 	struct SubpassCreateInfo
 	{
-		int32 Index = INDEX_NONE;
+		i32 Index = INDEX_NONE;
 		VkSubpassDescription Description = {};
 	};
 
@@ -28,11 +28,11 @@ namespace vge
 
 		void Initialize(const SubpassCreateInfo& data);
 
-		inline int32 GetIndex() const { return m_Index; }
+		inline i32 GetIndex() const { return m_Index; }
 		inline const VkSubpassDescription& GetDescription() const { return m_Description; }
 
 	private:
-		int32 m_Index = INDEX_NONE;
+		i32 m_Index = INDEX_NONE;
 		VkSubpassDescription m_Description = {};
 	};
 
@@ -40,7 +40,7 @@ namespace vge
 	{
 		vge::Device* Device = nullptr;
 		vge::Swapchain* Swapchain = nullptr;
-		uint32 SubpassCount = 0;
+		u32 SubpassCount = 0;
 		VkFormat ColorFormat = VK_FORMAT_UNDEFINED;
 		VkFormat DepthFormat = VK_FORMAT_UNDEFINED;
 		std::vector<VkSubpassDescription>* Subpasses = nullptr;
@@ -58,12 +58,12 @@ namespace vge
 		void Destroy();
 
 		inline VkRenderPass GetHandle() const { return m_Handle; }
-		inline uint32 GeSubpassCount() const { return m_SubpassCount; }
-		inline uint32 GeAttachmentCount() const { return m_AttachmentCount; }
-		inline uint32 GetClearValueCount() const { return m_AttachmentCount; }
+		inline u32 GeSubpassCount() const { return m_SubpassCount; }
+		inline u32 GeAttachmentCount() const { return m_AttachmentCount; }
+		inline u32 GetClearValueCount() const { return m_AttachmentCount; }
 		inline const VkClearValue* GetClearValues() const { return m_ClearValues.data(); }
-		inline const Subpass* GetSubpass(uint32 index) const { return index < m_SubpassCount ? &m_Subpasses[index] : nullptr; }
-		inline const VkClearValue* GetClearValue(uint32 attachmentIdx) const { return attachmentIdx < m_AttachmentCount ? &m_ClearValues[attachmentIdx] : nullptr; }
+		inline const Subpass* GetSubpass(u32 index) const { return index < m_SubpassCount ? &m_Subpasses[index] : nullptr; }
+		inline const VkClearValue* GetClearValue(u32 attachmentIdx) const { return attachmentIdx < m_AttachmentCount ? &m_ClearValues[attachmentIdx] : nullptr; }
 
 	private:
 		// Creates attachments for render pass (images, views) according to description.
@@ -73,8 +73,8 @@ namespace vge
 		const Device* m_Device = nullptr;
 		const Swapchain* m_Swapchain = nullptr;
 		VkRenderPass m_Handle = VK_NULL_HANDLE;
-		uint32 m_AttachmentCount = 0;
-		uint32 m_SubpassCount = 0;
+		u32 m_AttachmentCount = 0;
+		u32 m_SubpassCount = 0;
 		std::vector<Subpass> m_Subpasses = {};
 		std::vector<VkClearValue> m_ClearValues = {};
 	};

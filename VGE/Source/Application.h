@@ -6,18 +6,18 @@ namespace vge
 {
 	inline class Application* GApplication = nullptr;
 
-	inline uint64 GAppFrame = 0;
+	inline u64 GAppFrame = 0;
 
 	struct ApplicationSpecs
 	{
 		struct {
-			const char* Name = nullptr;
-			uint32 Width = 0;
-			uint32 Height = 0;
+			const c8* Name = nullptr;
+			u32 Width = 0;
+			u32 Height = 0;
 		} Window;
 
-		const char* Name = "";
-		const char* InternalName = "";
+		const c8* Name = "";
+		const c8* InternalName = "";
 	};
 
 	class Application
@@ -52,5 +52,5 @@ namespace vge
 		return true;
 	}
 
-	int32 Main(int argc, const char** argv);
+	i32 Main(int argc, const c8** argv);
 }

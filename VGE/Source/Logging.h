@@ -25,7 +25,7 @@
 #if USE_LOGGING
 namespace vge
 {
-	enum LogCategory : uint8
+	enum LogCategory : u8
 	{
 		Log,
 		Warning,
@@ -36,10 +36,10 @@ namespace vge
 	{
 	public:
 		// Formatted message log.
-		static void PrintLog(const LogCategory category, const char* message, ...);
+		static void PrintLog(const LogCategory category, const c8* message, ...);
 
 		// Log given message with args as given.
-		static void PrintLogRaw(const char* message, ...);
+		static void PrintLogRaw(const c8* message, ...);
 
 		static std::string LogCategoryToString(const LogCategory category);
 
@@ -50,10 +50,10 @@ namespace vge
 		static void PaintDefaultConsoleText();
 
 	private:
-		static void PrintLog_Implementation(const LogCategory category, const char* message, va_list args);
-		static void PrintLogRaw_Implementation(const char* message, va_list args);
+		static void PrintLog_Implementation(const LogCategory category, const c8* message, va_list args);
+		static void PrintLogRaw_Implementation(const c8* message, va_list args);
 	};
 
-	extern void NotifyVulkanEnsureFailure(VkResult result, const char* function, const char* filename, uint32 line, const char* errMessage = "");
+	extern void NotifyVulkanEnsureFailure(VkResult result, const c8* function, const c8* filename, u32 line, const c8* errMessage = "");
 }
 #endif

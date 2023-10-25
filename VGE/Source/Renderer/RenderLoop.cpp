@@ -23,7 +23,7 @@ void vge::RenderLoop::Initialize()
 	RegisterRenderSystem();
 }
 
-void vge::RenderLoop::Tick(float deltaTime)
+void vge::RenderLoop::Tick(f32 deltaTime)
 {
 	GCamera->SetPerspectiveProjection(glm::radians(45.0f), GRenderer->GetSwapchainAspectRatio(), 0.1f, 1000.0f);
 	m_RenderSystem->Tick(deltaTime);

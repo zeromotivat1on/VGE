@@ -16,10 +16,10 @@ namespace vge
 
 	inline class Renderer* GRenderer = nullptr;
 	
-	inline constexpr int32 GMaxDrawFrames = 3;
-	inline			 int32 GRenderFrame  = 0;
+	inline constexpr i32 GMaxDrawFrames = 3;
+	inline			 i32 GRenderFrame  = 0;
 
-	inline constexpr int32 GMaxSceneObjects = 32;
+	inline constexpr i32 GMaxSceneObjects = 32;
 
 	struct UboViewProjection
 	{
@@ -42,8 +42,8 @@ namespace vge
 		void EndFrame();
 
 		// TODO: 1 mesh can have only 1 texture which is cringe (or not, idk for now).
-		int32 CreateTexture(const char* filename);
-		int32 CreateModel(const char* filename);
+		i32 CreateTexture(const c8* filename);
+		i32 CreateModel(const c8* filename);
 
 		void RecreateSwapchain();
 
@@ -51,19 +51,19 @@ namespace vge
 		inline FrameBuffer* GetCurrentFrameBuffer() { return m_Swapchain->GetFramebuffer(m_Swapchain->GetCurrentImageIndex()); }
 		inline const Swapchain* GetSwapchain() const { return m_Swapchain.get(); }
 		inline VkExtent2D GetSwapchainExtent() const { return m_Swapchain->GetExtent(); }
-		inline float GetSwapchainAspectRatio() const { return m_Swapchain->GetAspectRatio(); }
+		inline f32 GetSwapchainAspectRatio() const { return m_Swapchain->GetAspectRatio(); }
 		inline VkDescriptorSet GetCurrentInputDescriptorSet() const { return m_InputDescriptorSets[m_Swapchain->GetCurrentImageIndex()]; }
 		inline VkDescriptorSet GetCurrentUniformDescriptorSet() const { return m_UniformDescriptorSets[m_Swapchain->GetCurrentImageIndex()]; }
 		inline const RenderPass* GetRenderPass() const { return &m_RenderPass; }
 
 		inline void SetView(const glm::mat4& view) { m_UboViewProjection.View = view; }
 		inline void SetProjection(const glm::mat4& projection) { m_UboViewProjection.Projection = projection; }
-		inline void UpdateModelMatrix(int32 id, glm::mat4 model) { ASSERT(id < m_Models.size()); m_Models[id].SetModelMatrix(model); }
+		inline void UpdateModelMatrix(i32 id, glm::mat4 model) { ASSERT(id < m_Models.size()); m_Models[id].SetModelMatrix(model); }
 		inline void UpdateUniformBuffers() { UpdateUniformBuffers(m_Swapchain->GetCurrentImageIndex()); }
 
-		inline Model* FindModel(int32 id) { return id < m_Models.size() ? &m_Models[id] : nullptr; }
-		inline Texture* FindTexture(int32 id) { return id < m_Textures.size() ? &m_Textures[id] : nullptr; }
-		inline Pipeline* FindPipeline(int32 index) { return index < m_Pipelines.size() ? &m_Pipelines[index] : nullptr; }
+		inline Model* FindModel(i32 id) { return id < m_Models.size() ? &m_Models[id] : nullptr; }
+		inline Texture* FindTexture(i32 id) { return id < m_Textures.size() ? &m_Textures[id] : nullptr; }
+		inline Pipeline* FindPipeline(i32 index) { return index < m_Pipelines.size() ? &m_Pipelines[index] : nullptr; }
 
 	private:
 		std::vector<Model> m_Models = {};
@@ -108,7 +108,7 @@ namespace vge
 		//ModelData* m_ModelTransferSpace = nullptr;
 
 		// Amount of subpasses in render pass and pipelines in it.
-		uint32 m_DefaultSubpassCount = 2;
+		u32 m_DefaultSubpassCount = 2;
 		//VkRenderPass m_RenderPass = VK_NULL_HANDLE;
 		RenderPass m_RenderPass = {};
 		std::vector<Pipeline> m_Pipelines;
@@ -134,7 +134,7 @@ namespace vge
 		void UpdateUniformDescriptorSet();
 		void UpdateInputDescriptorSet();
 
-		void UpdateUniformBuffers(uint32 ImageIndex);
+		void UpdateUniformBuffers(u32 ImageIndex);
 
 		void FreeCommandBuffers();
 		void DestroyRenderPassColorAttachments();

@@ -69,8 +69,8 @@ namespace vge
 	class IndexBuffer
 	{
 	public:
-		static IndexBuffer Create(const Device* device, const std::vector<uint32>& indices);
-		static IndexBuffer Create(const Device* device, size_t indexCount, const uint32* indices);
+		static IndexBuffer Create(const Device* device, const std::vector<u32>& indices);
+		static IndexBuffer Create(const Device* device, size_t indexCount, const u32* indices);
 
 	public:
 		IndexBuffer() = default;
@@ -123,7 +123,7 @@ namespace vge
 	{
 		const Device* Device = nullptr;
 		VkRenderPass RenderPass = VK_NULL_HANDLE;
-		uint32 AttachmentCount = 0; 
+		u32 AttachmentCount = 0; 
 		const VkImageView* Attachments = nullptr;
 		VkExtent2D Extent = { 0, 0 };
 	};

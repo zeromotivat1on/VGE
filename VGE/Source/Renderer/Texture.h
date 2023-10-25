@@ -9,8 +9,8 @@ namespace vge
 
 	struct TextureCreateInfo
 	{
-		int32 Id = INDEX_NONE;
-		const char* Filename = nullptr;
+		i32 Id = INDEX_NONE;
+		const c8* Filename = nullptr;
 		const Device* Device = nullptr;
 		VkSampler Sampler = VK_NULL_HANDLE;
 		VkDescriptorPool DescriptorPool = VK_NULL_HANDLE;
@@ -27,13 +27,13 @@ namespace vge
 
 		void Destroy();
 
-		inline int32 GetId() const { return m_Id; }
-		inline const char* GetFilename() const { return m_Filename; }
+		inline i32 GetId() const { return m_Id; }
+		inline const c8* GetFilename() const { return m_Filename; }
 		inline VkDescriptorSet GetDescriptor() const { return m_Descriptor; }
 
 	private:
-		int32 m_Id = INDEX_NONE;
-		const char* m_Filename = nullptr;
+		i32 m_Id = INDEX_NONE;
+		const c8* m_Filename = nullptr;
 		const Device* m_Device = nullptr;
 		Image m_Image = {};
 		VkImageView m_View = VK_NULL_HANDLE;

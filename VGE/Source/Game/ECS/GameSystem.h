@@ -11,7 +11,7 @@ namespace vge
 		GameSystem() = default;
 
 		void Initialize();
-		void Tick(float deltaTime);
+		void Tick(f32 deltaTime);
 
 	private:
 		InputController m_InputController = {};

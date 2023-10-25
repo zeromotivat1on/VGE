@@ -39,7 +39,7 @@ void vge::EngineLoop::Initialize()
 
 void vge::EngineLoop::Start()
 {
-	m_StartTime = static_cast<float>(glfwGetTime());
+	m_StartTime = static_cast<f32>(glfwGetTime());
 
 	while (!GApplication->ShouldClose())
 	{
@@ -49,11 +49,11 @@ void vge::EngineLoop::Start()
 		IncrementAppFrame();
 	}
 
-	const float loopDurationTime = m_LastTime - m_StartTime;
+	const f32 loopDurationTime = m_LastTime - m_StartTime;
 	LOG(Log, "Engine loop stats:");
 	LOG(Log, " Duration: %.2fs", loopDurationTime);
 	LOG(Log, " Frames: %d", GAppFrame);
-	LOG(Log, " Average FPS: %.2f", static_cast<float>(GAppFrame) / loopDurationTime);
+	LOG(Log, " Average FPS: %.2f", static_cast<f32>(GAppFrame) / loopDurationTime);
 }
 
 void vge::EngineLoop::Tick()
@@ -77,7 +77,7 @@ void vge::EngineLoop::Destroy()
 
 void vge::EngineLoop::UpdateDeltaTime()
 {
-	const float nowTime = static_cast<float>(glfwGetTime());
+	const f32 nowTime = static_cast<f32>(glfwGetTime());
 	m_DeltaTime = nowTime - m_LastTime;
 	m_LastTime = nowTime;
 }

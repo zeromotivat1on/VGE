@@ -12,7 +12,7 @@ void vge::GameSystem::Initialize()
 	m_InputController.ShouldInvertVerticalAxis(true);
 }
 
-void vge::GameSystem::Tick(float deltaTime)
+void vge::GameSystem::Tick(f32 deltaTime)
 {
 	const auto& firstEntity = *m_Entities.begin();
 	auto* transform = TransformComponent::GetFrom(firstEntity);

@@ -8,10 +8,10 @@ vge::Model vge::Model::Create(const ModelCreateInfo& data)
 	Assimp::Importer importer;
 	const aiScene* scene = file::LoadModel(data.Filename, importer);
 
-	std::vector<const char*> texturePaths;
+	std::vector<const c8*> texturePaths;
 	GetTexturesFromMaterials(scene, texturePaths);
 
-	std::vector<int32> textureToDescriptorSet;
+	std::vector<i32> textureToDescriptorSet;
 	ResolveTexturesForDescriptors(GRenderer, texturePaths, textureToDescriptorSet);
 
 	Model model = {};
@@ -26,7 +26,7 @@ vge::Model vge::Model::Create(const ModelCreateInfo& data)
 	return model;
 }
 
-void vge::Model::LoadNode(const Device* device, const aiScene* scene, const aiNode* node, const std::vector<int32>& materialToTextureId)
+void vge::Model::LoadNode(const Device* device, const aiScene* scene, const aiNode* node, const std::vector<i32>& materialToTextureId)
 {
 	if (!node)
 	{
@@ -34,25 +34,25 @@ void vge::Model::LoadNode(const Device* device, const aiScene* scene, const aiNo
 		return;
 	}
 
-	for (uint32 i = 0; i < node->mNumMeshes; ++i)
+	for (u32 i = 0; i < node->mNumMeshes; ++i)
 	{
 		LoadMesh(device, scene, scene->mMeshes[node->mMeshes[i]], materialToTextureId);
 	}
 
-	for (uint32 i = 0; i < node->mNumChildren; ++i)
+	for (u32 i = 0; i < node->mNumChildren; ++i)
 	{
 		LoadNode(device, scene, node->mChildren[i], materialToTextureId);
 	}
 }
 
-void vge::Model::LoadMesh(const Device* device, const aiScene* scene, const aiMesh* mesh, const std::vector<int32>& materialToTextureId)
+void vge::Model::LoadMesh(const Device* device, const aiScene* scene, const aiMesh* mesh, const std::vector<i32>& materialToTextureId)
 {
 	static constexpr glm::vec3 DontCareColor = glm::vec3(0.0f);
 
 	std::vector<Vertex> vertices(mesh->mNumVertices);
-	std::vector<uint32> indices = {};
+	std::vector<u32> indices = {};
 
-	for (uint32 i = 0; i < mesh->mNumVertices; ++i)
+	for (u32 i = 0; i < mesh->mNumVertices; ++i)
 	{
 		vertices[i].Color = DontCareColor;
 
@@ -72,10 +72,10 @@ void vge::Model::LoadMesh(const Device* device, const aiScene* scene, const aiMe
 		}
 	}
 
-	for (uint32 i = 0; i < mesh->mNumFaces; ++i)
+	for (u32 i = 0; i < mesh->mNumFaces; ++i)
 	{
 		const aiFace face = mesh->mFaces[i];
-		for (uint32 j = 0; j < face.mNumIndices; ++j)
+		for (u32 j = 0; j < face.mNumIndices; ++j)
 		{
 			indices.push_back(face.mIndices[j]);
 		}

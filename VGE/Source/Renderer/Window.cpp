@@ -1,11 +1,11 @@
 #include "Window.h"
 
-void vge::Window::GetInstanceExtensions(std::vector<const char*>& outExtensions) const
+void vge::Window::GetInstanceExtensions(std::vector<const c8*>& outExtensions) const
 {
-	uint32 glfwExtensionCount = 0;
-	const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+	u32 glfwExtensionCount = 0;
+	const c8** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
-	for (uint32 i = 0; i < glfwExtensionCount; ++i)
+	for (u32 i = 0; i < glfwExtensionCount; ++i)
 	{
 		outExtensions.push_back(glfwExtensions[i]);
 	}
@@ -19,7 +19,7 @@ void vge::Window::WaitSizeless() const
 	}
 }
 
-void vge::Window::FramebufferResizeCallback(GLFWwindow* windowRaw, int32 width, int32 height)
+void vge::Window::FramebufferResizeCallback(GLFWwindow* windowRaw, i32 width, i32 height)
 {
 	Window* window = reinterpret_cast<Window*>(glfwGetWindowUserPointer(windowRaw));
 	window->m_FramebufferResized = true;
@@ -31,7 +31,7 @@ void vge::Window::FramebufferResizeCallback(GLFWwindow* windowRaw, int32 width, 
 	// TODO: add clever and beautiful way to recreate swapchain.
 }
 
-vge::Window::Window(const char* name, const int32 width, const int32 height)
+vge::Window::Window(const c8* name, const i32 width, const i32 height)
 	: m_Name(name), m_Width(width), m_Height(height)
 {}
 

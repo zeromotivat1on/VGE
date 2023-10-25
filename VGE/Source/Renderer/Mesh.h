@@ -18,8 +18,8 @@ namespace vge
 		size_t VertexCount = 0;
 		const Vertex* Vertices = nullptr;
 		size_t IndexCount = 0;
-		const uint32* Indices = nullptr;
-		int32 TextureId = INDEX_NONE;
+		const u32* Indices = nullptr;
+		i32 TextureId = INDEX_NONE;
 	};
 
 	class Mesh
@@ -30,7 +30,7 @@ namespace vge
 	public:
 		Mesh() = default;
 
-		inline int32 GetTextureId() const { return m_TextureId; }
+		inline i32 GetTextureId() const { return m_TextureId; }
 		inline size_t GetIndexCount() const { return m_IndexBuffer.GetIndexCount(); }
 		inline size_t GetVertexCount() const { return m_VertexBuffer.GetVertexCount(); }
 		inline ModelData GetModelData() const { return m_ModelData; }
@@ -45,7 +45,7 @@ namespace vge
 		void Destroy();
 
 	private:
-		int32 m_TextureId = INDEX_NONE;
+		i32 m_TextureId = INDEX_NONE;
 		ModelData m_ModelData = {};
 		IndexBuffer m_IndexBuffer = {};
 		VertexBuffer m_VertexBuffer = {};

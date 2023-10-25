@@ -38,7 +38,7 @@ bool vge::Application::ShouldClose() const
 	return GWindow->ShouldClose();
 }
 
-int32 vge::Main(int argc, const char** argv)
+vge::i32 vge::Main(int argc, const c8** argv)
 {
 	ApplicationSpecs specs = {};
 	specs.Name = "Vulkan Game Engine";

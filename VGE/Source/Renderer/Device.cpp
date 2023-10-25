@@ -3,255 +3,258 @@
 #include "VulkanGlobals.h"
 #include "Utils.h"
 
+namespace vge
+{
 #pragma region DebugMessengerSetup
-static VKAPI_ATTR VkBool32 VKAPI_CALL VulkanDebugCallback(
-	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-	VkDebugUtilsMessageTypeFlagsEXT messageType,
-	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-	void* pUserData)
-{
-	switch (messageSeverity)
+	static VKAPI_ATTR VkBool32 VKAPI_CALL VulkanDebugCallback(
+		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+		VkDebugUtilsMessageTypeFlagsEXT messageType,
+		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+		void* pUserData)
 	{
-	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-		LOG(Warning, "%s", pCallbackData->pMessage);
-		break;
-
-	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-		LOG(Error, "%s", pCallbackData->pMessage);
-		break;
-	}
-
-#if LOG_VK_VERBOSE
-	LOG(Log, "%s", pCallbackData->pMessage);
-#endif
-
-	return VK_FALSE;
-}
-
-static VkResult CreateDebugUtilsMessengerEXT(
-	VkInstance instance,
-	const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-	const VkAllocationCallbacks* pAllocator,
-	VkDebugUtilsMessengerEXT* pDebugMessenger)
-{
-	if (auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"))
-	{
-		return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-	}
-	else
-	{
-		return VK_ERROR_EXTENSION_NOT_PRESENT;
-	}
-}
-
-static void DestroyDebugUtilsMessengerEXT(
-	VkInstance instance,
-	VkDebugUtilsMessengerEXT debugMessenger,
-	const VkAllocationCallbacks* pAllocator)
-{
-	auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-	if (func != nullptr)
-	{
-		func(instance, debugMessenger, pAllocator);
-	}
-}
-
-static void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
-{
-	createInfo = {};
-	createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-	createInfo.messageSeverity =
-		VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-	createInfo.messageType =
-		VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-	createInfo.pfnUserCallback = VulkanDebugCallback;
-}
-#pragma endregion DebugMessengerSetup
-
-#pragma region Statics
-static bool SupportValidationLayers()
-{
-	uint32 layerCount;
-	vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-
-	std::vector<VkLayerProperties> availableLayers(layerCount);
-	vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
-
-	for (const char* layerName : vge::GValidationLayers)
-	{
-		bool hasLayer = false;
-		for (const auto& layerProperties : availableLayers)
+		switch (messageSeverity)
 		{
-			if (strcmp(layerName, layerProperties.layerName) == 0)
-			{
-				hasLayer = true;
-				break;
-			}
-		}
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
+			LOG(Warning, "%s", pCallbackData->pMessage);
+			break;
 
-		if (!hasLayer)
-		{
-			return false;
-		}
-	}
-
-	return true;
-}
-
-void GetRequriedInstanceExtensions(std::vector<const char*>& outExtensions)
-{
-	if (vge::GWindow)
-	{
-		vge::GWindow->GetInstanceExtensions(outExtensions);
-	}
-
-	outExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-}
-
-bool SupportInstanceExtensions(const std::vector<const char*>& checkExtensions)
-{
-	uint32 extensionCount = 0;
-	vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-
-	if (extensionCount == 0) return false;
-
-	std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-	vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, availableExtensions.data());
-
-	for (const auto& checkExtension : checkExtensions)
-	{
-		bool hasExtension = false;
-		for (const auto& availableExtension : availableExtensions)
-		{
-			if (strcmp(checkExtension, availableExtension.extensionName) == 0)
-			{
-				hasExtension = true;
-				break;
-			}
-		}
-
-		if (!hasExtension)
-		{
-			return false;
-		}
-	}
-
-	return true;
-}
-
-static vge::QueueFamilyIndices GetQueueFamilies(VkPhysicalDevice gpu, VkSurfaceKHR surface)
-{
-	uint32 queueFamilyCount = 0;
-	vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queueFamilyCount, nullptr);
-
-	std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-	vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queueFamilyCount, queueFamilies.data());
-
-	vge::QueueFamilyIndices indices = {};
-	int32 queueFamilyIndex = 0;
-	for (const auto& queueFamily : queueFamilies)
-	{
-		if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
-		{
-			indices.GraphicsFamily = queueFamilyIndex;
-		}
-
-		if (surface)
-		{
-			VkBool32 presentSupport = false;
-			vkGetPhysicalDeviceSurfaceSupportKHR(gpu, queueFamilyIndex, surface, &presentSupport);
-			if (queueFamily.queueCount > 0 && presentSupport)
-			{
-				indices.PresentFamily = queueFamilyIndex;
-			}
-		}
-
-		if (indices.IsValid())
-		{
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+			LOG(Error, "%s", pCallbackData->pMessage);
 			break;
 		}
 
-		queueFamilyIndex++;
+	#if LOG_VK_VERBOSE
+		LOG(Log, "%s", pCallbackData->pMessage);
+	#endif
+
+		return VK_FALSE;
 	}
 
-	return indices;
-}
-
-static vge::SwapchainSupportDetails GetSwapchainSupportDetailsInternal(VkPhysicalDevice gpu, VkSurfaceKHR surface)
-{
-	vge::SwapchainSupportDetails details;
-	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(gpu, surface, &details.SurfaceCapabilities);
-
-	uint32 formatCount = 0;
-	vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, surface, &formatCount, nullptr);
-
-	if (formatCount != 0)
+	static VkResult CreateDebugUtilsMessengerEXT(
+		VkInstance instance,
+		const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+		const VkAllocationCallbacks* pAllocator,
+		VkDebugUtilsMessengerEXT* pDebugMessenger)
 	{
-		details.SurfaceFormats.resize(formatCount);
-		vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, surface, &formatCount, details.SurfaceFormats.data());
-	}
-
-	uint32 presentCount = 0;
-	vkGetPhysicalDeviceSurfacePresentModesKHR(gpu, surface, &presentCount, nullptr);
-
-	if (presentCount != 0)
-	{
-		details.PresentModes.resize(presentCount);
-		vkGetPhysicalDeviceSurfacePresentModesKHR(gpu, surface, &presentCount, details.PresentModes.data());
-	}
-
-	return details;
-}
-
-static bool SupportDeviceExtensions(VkPhysicalDevice gpu, const std::vector<const char*>& checkExtensions)
-{
-	uint32 extensionCount = 0;
-	vkEnumerateDeviceExtensionProperties(gpu, nullptr, &extensionCount, nullptr);
-
-	if (extensionCount == 0) return false;
-
-	std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-	vkEnumerateDeviceExtensionProperties(gpu, nullptr, &extensionCount, availableExtensions.data());
-
-	for (const auto& checkExtension : checkExtensions)
-	{
-		bool hasExtension = false;
-		for (const auto& availableExtension : availableExtensions)
+		if (auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"))
 		{
-			if (strcmp(checkExtension, availableExtension.extensionName) == 0)
+			return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
+		}
+		else
+		{
+			return VK_ERROR_EXTENSION_NOT_PRESENT;
+		}
+	}
+
+	static void DestroyDebugUtilsMessengerEXT(
+		VkInstance instance,
+		VkDebugUtilsMessengerEXT debugMessenger,
+		const VkAllocationCallbacks* pAllocator)
+	{
+		auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+		if (func != nullptr)
+		{
+			func(instance, debugMessenger, pAllocator);
+		}
+	}
+
+	static void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
+	{
+		createInfo = {};
+		createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+		createInfo.messageSeverity =
+			VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+		createInfo.messageType =
+			VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+		createInfo.pfnUserCallback = VulkanDebugCallback;
+	}
+#pragma endregion DebugMessengerSetup
+
+#pragma region Statics
+	static bool SupportValidationLayers()
+	{
+		u32 layerCount;
+		vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+		std::vector<VkLayerProperties> availableLayers(layerCount);
+		vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+		for (const c8* layerName : vge::GValidationLayers)
+		{
+			bool hasLayer = false;
+			for (const auto& layerProperties : availableLayers)
 			{
-				hasExtension = true;
-				break;
+				if (strcmp(layerName, layerProperties.layerName) == 0)
+				{
+					hasLayer = true;
+					break;
+				}
+			}
+
+			if (!hasLayer)
+			{
+				return false;
 			}
 		}
 
-		if (!hasExtension)
-		{
-			return false;
-		}
+		return true;
 	}
 
-	return true;
-}
+	void GetRequriedInstanceExtensions(std::vector<const c8*>& outExtensions)
+	{
+		if (vge::GWindow)
+		{
+			vge::GWindow->GetInstanceExtensions(outExtensions);
+		}
 
-static bool SuitableGpu(VkPhysicalDevice gpu, VkSurfaceKHR surface)
-{
-	//VkPhysicalDeviceProperties gpuProps;
-	//vkGetPhysicalDeviceProperties(gpu, &gpuProps);
+		outExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+	}
 
-	VkPhysicalDeviceFeatures gpuFeatures;
-	vkGetPhysicalDeviceFeatures(gpu, &gpuFeatures);
+	bool SupportInstanceExtensions(const std::vector<const c8*>& checkExtensions)
+	{
+		u32 extensionCount = 0;
+		vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
 
-	vge::QueueFamilyIndices indices = GetQueueFamilies(gpu, surface);
+		if (extensionCount == 0) return false;
 
-	std::vector<const char*> deviceExtensions;
-	deviceExtensions.assign(vge::GDeviceExtensions, vge::GDeviceExtensions + C_ARRAY_NUM(vge::GDeviceExtensions));
+		std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+		vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, availableExtensions.data());
 
-	vge::SwapchainSupportDetails swapchainDetails = GetSwapchainSupportDetailsInternal(gpu, surface);
+		for (const auto& checkExtension : checkExtensions)
+		{
+			bool hasExtension = false;
+			for (const auto& availableExtension : availableExtensions)
+			{
+				if (strcmp(checkExtension, availableExtension.extensionName) == 0)
+				{
+					hasExtension = true;
+					break;
+				}
+			}
 
-	return indices.IsValid() && SupportDeviceExtensions(gpu, deviceExtensions) && swapchainDetails.IsValid() && gpuFeatures.samplerAnisotropy;
-}
+			if (!hasExtension)
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	static vge::QueueFamilyIndices GetQueueFamilies(VkPhysicalDevice gpu, VkSurfaceKHR surface)
+	{
+		u32 queueFamilyCount = 0;
+		vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queueFamilyCount, nullptr);
+
+		std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+		vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queueFamilyCount, queueFamilies.data());
+
+		vge::QueueFamilyIndices indices = {};
+		i32 queueFamilyIndex = 0;
+		for (const auto& queueFamily : queueFamilies)
+		{
+			if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+			{
+				indices.GraphicsFamily = queueFamilyIndex;
+			}
+
+			if (surface)
+			{
+				VkBool32 presentSupport = false;
+				vkGetPhysicalDeviceSurfaceSupportKHR(gpu, queueFamilyIndex, surface, &presentSupport);
+				if (queueFamily.queueCount > 0 && presentSupport)
+				{
+					indices.PresentFamily = queueFamilyIndex;
+				}
+			}
+
+			if (indices.IsValid())
+			{
+				break;
+			}
+
+			queueFamilyIndex++;
+		}
+
+		return indices;
+	}
+
+	static vge::SwapchainSupportDetails GetSwapchainSupportDetailsInternal(VkPhysicalDevice gpu, VkSurfaceKHR surface)
+	{
+		vge::SwapchainSupportDetails details;
+		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(gpu, surface, &details.SurfaceCapabilities);
+
+		u32 formatCount = 0;
+		vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, surface, &formatCount, nullptr);
+
+		if (formatCount != 0)
+		{
+			details.SurfaceFormats.resize(formatCount);
+			vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, surface, &formatCount, details.SurfaceFormats.data());
+		}
+
+		u32 presentCount = 0;
+		vkGetPhysicalDeviceSurfacePresentModesKHR(gpu, surface, &presentCount, nullptr);
+
+		if (presentCount != 0)
+		{
+			details.PresentModes.resize(presentCount);
+			vkGetPhysicalDeviceSurfacePresentModesKHR(gpu, surface, &presentCount, details.PresentModes.data());
+		}
+
+		return details;
+	}
+
+	static bool SupportDeviceExtensions(VkPhysicalDevice gpu, const std::vector<const c8*>& checkExtensions)
+	{
+		u32 extensionCount = 0;
+		vkEnumerateDeviceExtensionProperties(gpu, nullptr, &extensionCount, nullptr);
+
+		if (extensionCount == 0) return false;
+
+		std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+		vkEnumerateDeviceExtensionProperties(gpu, nullptr, &extensionCount, availableExtensions.data());
+
+		for (const auto& checkExtension : checkExtensions)
+		{
+			bool hasExtension = false;
+			for (const auto& availableExtension : availableExtensions)
+			{
+				if (strcmp(checkExtension, availableExtension.extensionName) == 0)
+				{
+					hasExtension = true;
+					break;
+				}
+			}
+
+			if (!hasExtension)
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	static bool SuitableGpu(VkPhysicalDevice gpu, VkSurfaceKHR surface)
+	{
+		//VkPhysicalDeviceProperties gpuProps;
+		//vkGetPhysicalDeviceProperties(gpu, &gpuProps);
+
+		VkPhysicalDeviceFeatures gpuFeatures;
+		vkGetPhysicalDeviceFeatures(gpu, &gpuFeatures);
+
+		vge::QueueFamilyIndices indices = GetQueueFamilies(gpu, surface);
+
+		std::vector<const c8*> deviceExtensions;
+		deviceExtensions.assign(vge::GDeviceExtensions, vge::GDeviceExtensions + C_ARRAY_NUM(vge::GDeviceExtensions));
+
+		vge::SwapchainSupportDetails swapchainDetails = GetSwapchainSupportDetailsInternal(gpu, surface);
+
+		return indices.IsValid() && SupportDeviceExtensions(gpu, deviceExtensions) && swapchainDetails.IsValid() && gpuFeatures.samplerAnisotropy;
+	}
 #pragma endregion Statics
+}
 
 vge::Device::Device(Window* window) : m_Window(window)
 {
@@ -311,7 +314,7 @@ void vge::Device::CreateInstance()
 	appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
 	appInfo.apiVersion = VK_API_VERSION_1_0;
 
-	std::vector<const char*> instanceExtensions = {};
+	std::vector<const c8*> instanceExtensions = {};
 	GetRequriedInstanceExtensions(instanceExtensions);
 
 	ENSURE_MSG(SupportInstanceExtensions(instanceExtensions), "Instance does not support requried extensions.");
@@ -319,12 +322,12 @@ void vge::Device::CreateInstance()
 	VkInstanceCreateInfo createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	createInfo.pApplicationInfo = &appInfo;
-	createInfo.enabledExtensionCount = static_cast<uint32>(instanceExtensions.size());
+	createInfo.enabledExtensionCount = static_cast<u32>(instanceExtensions.size());
 	createInfo.ppEnabledExtensionNames = instanceExtensions.data();
 
 	if (GEnableValidationLayers)
 	{
-		createInfo.enabledLayerCount = static_cast<uint32>(C_ARRAY_NUM(GValidationLayers));
+		createInfo.enabledLayerCount = static_cast<u32>(C_ARRAY_NUM(GValidationLayers));
 		createInfo.ppEnabledLayerNames = GValidationLayers;
 
 		// Validate VkCreateInstance and VkDestroyInstance function calls.
@@ -333,7 +336,7 @@ void vge::Device::CreateInstance()
 		createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
 
 		std::string layersString;
-		for (int32 i = C_ARRAY_NUM(GValidationLayers) - 1; i >= 0; --i)
+		for (i32 i = C_ARRAY_NUM(GValidationLayers) - 1; i >= 0; --i)
 		{
 			layersString.append(GValidationLayers[i]);
 			layersString.append(" ");
@@ -367,7 +370,7 @@ void vge::Device::CreateInitialSurface()
 
 void vge::Device::FindGpu()
 {
-	uint32 gpuCount = 0;
+	u32 gpuCount = 0;
 	vkEnumeratePhysicalDevices(m_Instance, &gpuCount, nullptr);
 
 	ENSURE_MSG(gpuCount > 0, "Can't find GPUs that support Vulkan.");
@@ -402,12 +405,12 @@ void vge::Device::FindGpu()
 
 void vge::Device::CreateDevice()
 {
-	std::unordered_set<int32> queueFamilyIndices = { m_QueueIndices.GraphicsFamily, m_QueueIndices.PresentFamily };
+	std::unordered_set<i32> queueFamilyIndices = { m_QueueIndices.GraphicsFamily, m_QueueIndices.PresentFamily };
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 
-	for (int32 queueFamilyIndex : queueFamilyIndices)
+	for (i32 queueFamilyIndex : queueFamilyIndices)
 	{
-		const float priority = 1.0f;
+		const f32 priority = 1.0f;
 		VkDeviceQueueCreateInfo queueCreateInfo = {};
 		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 		queueCreateInfo.queueFamilyIndex = queueFamilyIndex;
@@ -422,15 +425,15 @@ void vge::Device::CreateDevice()
 
 	VkDeviceCreateInfo deviceCreateInfo = {};
 	deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	deviceCreateInfo.queueCreateInfoCount = static_cast<uint32>(queueCreateInfos.size());
+	deviceCreateInfo.queueCreateInfoCount = static_cast<u32>(queueCreateInfos.size());
 	deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
-	deviceCreateInfo.enabledExtensionCount = static_cast<uint32>(C_ARRAY_NUM(GDeviceExtensions));
+	deviceCreateInfo.enabledExtensionCount = static_cast<u32>(C_ARRAY_NUM(GDeviceExtensions));
 	deviceCreateInfo.ppEnabledExtensionNames = GDeviceExtensions;
 	deviceCreateInfo.pEnabledFeatures = &gpuFeatures;
 
 	{
 		std::string extensionsString;
-		for (int32 i = C_ARRAY_NUM(GDeviceExtensions) - 1; i >= 0; --i)
+		for (i32 i = C_ARRAY_NUM(GDeviceExtensions) - 1; i >= 0; --i)
 		{
 			extensionsString.append(GDeviceExtensions[i]);
 			extensionsString.append(" ");

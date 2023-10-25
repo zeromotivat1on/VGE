@@ -11,11 +11,11 @@ namespace vge
 	struct PipelineCreateInfo
 	{
 		vge::Device* Device = nullptr;
-		std::vector<const char*> ShaderFilenames = {};
+		std::vector<const c8*> ShaderFilenames = {};
 		std::vector<std::vector<VkDescriptorSetLayoutBinding>> DescriptorSetLayoutBindings = {};
 		std::vector<VkDynamicState> DynamicStates = {};
 		std::vector<VkPushConstantRange> PushConstants = {};
-		uint32 SubpassIndex = 0;
+		u32 SubpassIndex = 0;
 		vge::RenderPass* RenderPass = nullptr;
 		VkPipelineBindPoint BindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 
@@ -57,7 +57,7 @@ namespace vge
 		RenderPass* m_RenderPass = nullptr;
 		VkPipeline m_Handle = VK_NULL_HANDLE;
 		VkPipelineLayout m_Layout = VK_NULL_HANDLE;
-		int32 m_SubpassIndex = INDEX_NONE;
+		i32 m_SubpassIndex = INDEX_NONE;
 		Shader m_Shaders[(size_t)ShaderStage::Count];
 		VkPipelineBindPoint m_BindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	};

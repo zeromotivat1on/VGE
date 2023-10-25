@@ -96,15 +96,15 @@ void vge::CommandBuffer::Bind(const Pipeline* pipeline, VkPipelineBindPoint bind
 	vkCmdBindPipeline(m_Handle, bindPoint, pipeline->GetHandle());
 }
 
-void vge::CommandBuffer::Bind(const Pipeline* pipeline, uint32 descriptorSetCount, VkDescriptorSet* descriptorSets)
+void vge::CommandBuffer::Bind(const Pipeline* pipeline, u32 descriptorSetCount, VkDescriptorSet* descriptorSets)
 {
 	vkCmdBindDescriptorSets(m_Handle, pipeline->GetBindPoint(), pipeline->GetLayout(), 0, descriptorSetCount, descriptorSets, 0, nullptr);
 }
 
-void vge::CommandBuffer::Bind(uint32 vertBufferCount, const VertexBuffer** vertBuffers, const Shader* shader, uint32 firstBinding /*= 0*/)
+void vge::CommandBuffer::Bind(u32 vertBufferCount, const VertexBuffer** vertBuffers, const Shader* shader, u32 firstBinding /*= 0*/)
 {
 	std::vector<VkDeviceSize> offsets(vertBufferCount, 0);
-	const uint32 bindingCount = static_cast<uint32>(shader->GetDescriptorSetLayout().Bindings.size());
+	const u32 bindingCount = static_cast<u32>(shader->GetDescriptorSetLayout().Bindings.size());
 
 	std::vector<VkBuffer> vkVertBuffers;
 	vkVertBuffers.reserve(vertBufferCount);
@@ -116,12 +116,12 @@ void vge::CommandBuffer::Bind(uint32 vertBufferCount, const VertexBuffer** vertB
 	vkCmdBindVertexBuffers(m_Handle, firstBinding, bindingCount, vkVertBuffers.data(), offsets.data());
 }
 
-void vge::CommandBuffer::Bind(const IndexBuffer* idxBuffer, uint32 offset /*= 0*/)
+void vge::CommandBuffer::Bind(const IndexBuffer* idxBuffer, u32 offset /*= 0*/)
 {
 	vkCmdBindIndexBuffer(m_Handle, idxBuffer->Get().Handle, offset, idxBuffer->GetIndexType());
 }
 
-void vge::CommandBuffer::PushConstants(const Pipeline* pipeline, const Shader* shader, uint32 constantSize, const void* constants, uint32 offset /*= 0*/)
+void vge::CommandBuffer::PushConstants(const Pipeline* pipeline, const Shader* shader, u32 constantSize, const void* constants, u32 offset /*= 0*/)
 {
 	vkCmdPushConstants(m_Handle, pipeline->GetLayout(), shader->GetStageFlags(), offset, constantSize, constants);
 }
@@ -139,7 +139,7 @@ void vge::CommandBuffer::SetViewport(const glm::vec2& size, const glm::vec2& pos
 	vkCmdSetViewport(m_Handle, 0, 1, &viewport);
 }
 
-void vge::CommandBuffer::SetScissor(const VkExtent2D& extent, const glm::vec<2, int32>& offset /*= { 0.0f, 0.0f }*/)
+void vge::CommandBuffer::SetScissor(const VkExtent2D& extent, const glm::vec<2, i32>& offset /*= { 0.0f, 0.0f }*/)
 {
 	VkRect2D scissor = {};
 	scissor.offset = { offset.x, offset.y };
@@ -147,12 +147,12 @@ void vge::CommandBuffer::SetScissor(const VkExtent2D& extent, const glm::vec<2, 
 	vkCmdSetScissor(m_Handle, 0, 1, &scissor);
 }
 
-void vge::CommandBuffer::Draw(uint32 vertCount, uint32 instanceCount /*= 1*/, uint32 firstVert /*= 0*/, uint32 firstInstance /*= 0*/)
+void vge::CommandBuffer::Draw(u32 vertCount, u32 instanceCount /*= 1*/, u32 firstVert /*= 0*/, u32 firstInstance /*= 0*/)
 {
 	vkCmdDraw(m_Handle, vertCount, instanceCount, firstVert, firstInstance);
 }
 
-void vge::CommandBuffer::DrawIndexed(uint32 idxCount, uint32 instanceCount /*= 1*/, uint32 firstIdx /*= 0*/, int32 vertOffset /*= 0*/, uint32 firstInstance /*= 0*/)
+void vge::CommandBuffer::DrawIndexed(u32 idxCount, u32 instanceCount /*= 1*/, u32 firstIdx /*= 0*/, i32 vertOffset /*= 0*/, u32 firstInstance /*= 0*/)
 {
 	vkCmdDrawIndexed(m_Handle, idxCount, instanceCount, firstIdx, vertOffset, firstInstance);
 }

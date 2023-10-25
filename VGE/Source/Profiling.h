@@ -17,23 +17,26 @@
 #endif
 
 #if ENABLE_SCOPE_TIMERS
-struct ScopeTimer
+namespace vge
 {
-public:
-	ScopeTimer(std::string_view logPrefix) : m_LogPrefix(logPrefix)
+	struct ScopeTimer
 	{
-		m_StartTime = std::chrono::high_resolution_clock::now();
-	}
+	public:
+		ScopeTimer(std::string_view logPrefix) : m_LogPrefix(logPrefix)
+		{
+			m_StartTime = std::chrono::high_resolution_clock::now();
+		}
 
-	~ScopeTimer()
-	{
-		const auto endTime = std::chrono::high_resolution_clock::now();
-		const float diffTime = std::chrono::duration<float, std::chrono::milliseconds::period>(endTime - m_StartTime).count();
-		LOG(Log, "%s: %.2fms", m_LogPrefix.data(), diffTime);
-	}
+		~ScopeTimer()
+		{
+			const auto endTime = std::chrono::high_resolution_clock::now();
+			const f32 diffTime = std::chrono::duration<f32, std::chrono::milliseconds::period>(endTime - m_StartTime).count();
+			LOG(Log, "%s: %.2fms", m_LogPrefix.data(), diffTime);
+		}
 
-private:
-	std::chrono::steady_clock::time_point m_StartTime;
-	std::string_view m_LogPrefix;
-};
+	private:
+		std::chrono::steady_clock::time_point m_StartTime;
+		std::string_view m_LogPrefix;
+	};
+}
 #endif

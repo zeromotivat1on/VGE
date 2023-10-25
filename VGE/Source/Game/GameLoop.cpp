@@ -19,7 +19,7 @@ void vge::GameLoop::Initialize()
 	RegisterGameSystem();
 }
 
-void vge::GameLoop::Tick(float deltaTime)
+void vge::GameLoop::Tick(f32 deltaTime)
 {
 	GWindow->PollEvents();
 	m_GameSystem->Tick(deltaTime);

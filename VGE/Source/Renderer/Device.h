@@ -10,8 +10,8 @@ namespace vge
 
 	struct QueueFamilyIndices
 	{
-		int32 GraphicsFamily = -1;
-		int32 PresentFamily = -1;
+		i32 GraphicsFamily = -1;
+		i32 PresentFamily = -1;
 
 		inline bool IsValid()
 		{

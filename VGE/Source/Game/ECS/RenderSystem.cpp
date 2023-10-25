@@ -30,7 +30,7 @@ namespace vge
 		{
 			RecordCmdPreSubpass();
 
-			int32 pipelineIdx = 0;
+			i32 pipelineIdx = 0;
 			RecordCmdFirstSubpass(pipelineIdx++, entities);
 			RecordCmdSecondSubpass(pipelineIdx++);
 		}
@@ -44,13 +44,13 @@ namespace vge
 		void RecordCmdPreSubpass()
 		{
 			glm::vec2 viewportSize;
-			viewportSize.x = static_cast<float>(m_Renderer->GetSwapchainExtent().width);
-			viewportSize.y = static_cast<float>(m_Renderer->GetSwapchainExtent().height);
+			viewportSize.x = static_cast<f32>(m_Renderer->GetSwapchainExtent().width);
+			viewportSize.y = static_cast<f32>(m_Renderer->GetSwapchainExtent().height);
 			Cmd->SetViewport(viewportSize);
 			Cmd->SetScissor(m_Renderer->GetSwapchainExtent());
 		}
 
-		void RecordCmdFirstSubpass(int32 pipelineIdx, const std::unordered_set<Entity>& entities)
+		void RecordCmdFirstSubpass(i32 pipelineIdx, const std::unordered_set<Entity>& entities)
 		{
 			Pipeline* pipeline = m_Renderer->FindPipeline(pipelineIdx);
 			if (!pipeline)
@@ -92,17 +92,17 @@ namespace vge
 					}
 
 					std::vector<const VertexBuffer*> vertBuffers = { mesh->GetVertexBuffer() };
-					Cmd->Bind(static_cast<uint32>(vertBuffers.size()), vertBuffers.data(), pipeline->GetShader(ShaderStage::Vertex));
+					Cmd->Bind(static_cast<u32>(vertBuffers.size()), vertBuffers.data(), pipeline->GetShader(ShaderStage::Vertex));
 					Cmd->Bind(mesh->GetIndexBuffer());
 
 					std::vector<VkDescriptorSet> descriptorSets = { m_Renderer->GetCurrentUniformDescriptorSet(), texture->GetDescriptor() };
-					Cmd->Bind(pipeline, static_cast<uint32>(descriptorSets.size()), descriptorSets.data());
-					Cmd->DrawIndexed(static_cast<uint32>(mesh->GetIndexCount()));
+					Cmd->Bind(pipeline, static_cast<u32>(descriptorSets.size()), descriptorSets.data());
+					Cmd->DrawIndexed(static_cast<u32>(mesh->GetIndexCount()));
 				}
 			}
 		}
 
-		void RecordCmdSecondSubpass(int32 pipelineIdx)
+		void RecordCmdSecondSubpass(i32 pipelineIdx)
 		{
 			Pipeline* pipeline = m_Renderer->FindPipeline(pipelineIdx);
 			if (!pipeline)
@@ -114,7 +114,7 @@ namespace vge
 			Cmd->Bind(pipeline);
 
 			std::vector<VkDescriptorSet> descriptorSets = { m_Renderer->GetCurrentInputDescriptorSet() };
-			Cmd->Bind(pipeline, static_cast<uint32>(descriptorSets.size()), descriptorSets.data());
+			Cmd->Bind(pipeline, static_cast<u32>(descriptorSets.size()), descriptorSets.data());
 			Cmd->Draw(3); // fill screen with one big triangle to draw on
 		}
 	};
@@ -126,7 +126,7 @@ void vge::RenderSystem::Initialize(Renderer* renderer, Camera* camera)
 	m_Camera = camera;
 }
 
-void vge::RenderSystem::Tick(float deltaTime)
+void vge::RenderSystem::Tick(f32 deltaTime)
 {
 	m_Renderer->SetView(m_Camera->GetViewMatrix());
 	m_Renderer->SetProjection(m_Camera->GetProjectionMatrix());

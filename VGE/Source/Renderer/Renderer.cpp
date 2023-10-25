@@ -67,7 +67,7 @@ void vge::Renderer::Destroy()
 		//vkFreeMemory(m_Device, m_ModelDynamicUniformBuffersMemory[i], nullptr);
 	}
 
-	for (int32 i = 0; i < GMaxDrawFrames; ++i)
+	for (i32 i = 0; i < GMaxDrawFrames; ++i)
 	{
 		vkDestroyFence(m_Device->GetHandle(), m_DrawFences[i], nullptr);
 		vkDestroySemaphore(m_Device->GetHandle(), m_RenderFinishedSemas[i], nullptr);
@@ -100,7 +100,7 @@ vge::CommandBuffer* vge::Renderer::BeginFrame()
 
 void vge::Renderer::EndFrame()
 {
-	const uint32 imageIndex = m_Swapchain->GetCurrentImageIndex();
+	const u32 imageIndex = m_Swapchain->GetCurrentImageIndex();
 
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 
@@ -276,7 +276,7 @@ void vge::Renderer::CreateRenderPass()
 	subpasses[1].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	subpasses[1].colorAttachmentCount = 1;
 	subpasses[1].pColorAttachments = &swapchainColorAttachmentReference;
-	subpasses[1].inputAttachmentCount = static_cast<uint32>(inputAttachmentReferences.size());
+	subpasses[1].inputAttachmentCount = static_cast<u32>(inputAttachmentReferences.size());
 	subpasses[1].pInputAttachments = inputAttachmentReferences.data();
 
 	// Amount of dependencies = amount of subpasses + 1.
@@ -370,9 +370,9 @@ void vge::Renderer::CreatePipelines()
 		const VertexInputDescription vertexDescription = Vertex::GetDescription();
 		VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo = {};
 		vertexInputCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		vertexInputCreateInfo.vertexBindingDescriptionCount = static_cast<uint32>(vertexDescription.Bindings.size());
+		vertexInputCreateInfo.vertexBindingDescriptionCount = static_cast<u32>(vertexDescription.Bindings.size());
 		vertexInputCreateInfo.pVertexBindingDescriptions = vertexDescription.Bindings.data();
-		vertexInputCreateInfo.vertexAttributeDescriptionCount = static_cast<uint32>(vertexDescription.Attributes.size());
+		vertexInputCreateInfo.vertexAttributeDescriptionCount = static_cast<u32>(vertexDescription.Attributes.size());
 		vertexInputCreateInfo.pVertexAttributeDescriptions = vertexDescription.Attributes.data();
 
 		PipelineCreateInfo pipelineCreateInfo = {};
@@ -429,7 +429,7 @@ void vge::Renderer::CreateFramebuffers()
 		attachments[1] = m_ColorAttachments[i].View;
 		attachments[2] = m_DepthAttachments[i].View;
 
-		m_Swapchain->CreateFramebuffer(&m_RenderPass, static_cast<uint32>(attachments.size()), attachments.data());
+		m_Swapchain->CreateFramebuffer(&m_RenderPass, static_cast<u32>(attachments.size()), attachments.data());
 	}
 }
 
@@ -507,7 +507,7 @@ void vge::Renderer::CreateDescriptorPools()
 	{
 		VkDescriptorPoolSize vpPoolSize = {};
 		vpPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		vpPoolSize.descriptorCount = static_cast<uint32>(m_VpUniformBuffers.size());
+		vpPoolSize.descriptorCount = static_cast<u32>(m_VpUniformBuffers.size());
 
 		//VkDescriptorPoolSize modelPoolSize = {};
 		//modelPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
@@ -517,8 +517,8 @@ void vge::Renderer::CreateDescriptorPools()
 
 		VkDescriptorPoolCreateInfo uniformPoolCreateInfo = {};
 		uniformPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		uniformPoolCreateInfo.maxSets = static_cast<uint32>(m_Swapchain->GetImageCount());
-		uniformPoolCreateInfo.poolSizeCount = static_cast<uint32>(uniformPoolSizes.size());
+		uniformPoolCreateInfo.maxSets = static_cast<u32>(m_Swapchain->GetImageCount());
+		uniformPoolCreateInfo.poolSizeCount = static_cast<u32>(uniformPoolSizes.size());
 		uniformPoolCreateInfo.pPoolSizes = uniformPoolSizes.data();
 
 		VK_ENSURE(vkCreateDescriptorPool(m_Device->GetHandle(), &uniformPoolCreateInfo, nullptr, &m_UniformDescriptorPool));
@@ -527,14 +527,14 @@ void vge::Renderer::CreateDescriptorPools()
 	{
 		VkDescriptorPoolSize samplerPoolSize = {};
 		samplerPoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; // in advanced projects descriptor for image and sampler should be separate
-		samplerPoolSize.descriptorCount = static_cast<uint32>(GMaxSceneObjects);
+		samplerPoolSize.descriptorCount = static_cast<u32>(GMaxSceneObjects);
 
 		const std::array<VkDescriptorPoolSize, 1> samplerPoolSizes = { samplerPoolSize };
 
 		VkDescriptorPoolCreateInfo samplerPoolCreateInfo = {};
 		samplerPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		samplerPoolCreateInfo.maxSets = static_cast<uint32>(GMaxSceneObjects);
-		samplerPoolCreateInfo.poolSizeCount = static_cast<uint32>(samplerPoolSizes.size());
+		samplerPoolCreateInfo.maxSets = static_cast<u32>(GMaxSceneObjects);
+		samplerPoolCreateInfo.poolSizeCount = static_cast<u32>(samplerPoolSizes.size());
 		samplerPoolCreateInfo.pPoolSizes = samplerPoolSizes.data();
 
 		VK_ENSURE(vkCreateDescriptorPool(m_Device->GetHandle(), &samplerPoolCreateInfo, nullptr, &m_SamplerDescriptorPool));
@@ -543,18 +543,18 @@ void vge::Renderer::CreateDescriptorPools()
 	{
 		VkDescriptorPoolSize colorInputPoolSize = {};
 		colorInputPoolSize.type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-		colorInputPoolSize.descriptorCount = static_cast<uint32>(m_ColorAttachments.size());
+		colorInputPoolSize.descriptorCount = static_cast<u32>(m_ColorAttachments.size());
 
 		VkDescriptorPoolSize depthInputPoolSize = {};
 		depthInputPoolSize.type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-		depthInputPoolSize.descriptorCount = static_cast<uint32>(m_DepthAttachments.size());
+		depthInputPoolSize.descriptorCount = static_cast<u32>(m_DepthAttachments.size());
 
 		const std::array<VkDescriptorPoolSize, 2> inputPoolSizes = { colorInputPoolSize, depthInputPoolSize };
 
 		VkDescriptorPoolCreateInfo inputPoolCreateInfo = {};
 		inputPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		inputPoolCreateInfo.maxSets = static_cast<uint32>(m_Swapchain->GetImageCount());
-		inputPoolCreateInfo.poolSizeCount = static_cast<uint32>(inputPoolSizes.size());
+		inputPoolCreateInfo.maxSets = static_cast<u32>(m_Swapchain->GetImageCount());
+		inputPoolCreateInfo.poolSizeCount = static_cast<u32>(inputPoolSizes.size());
 		inputPoolCreateInfo.pPoolSizes = inputPoolSizes.data();
 
 		VK_ENSURE(vkCreateDescriptorPool(m_Device->GetHandle(), &inputPoolCreateInfo, nullptr, &m_InputDescriptorPool));
@@ -587,7 +587,7 @@ void vge::Renderer::CreateSyncObjects()
 	fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 	fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-	for (int32 i = 0; i < GMaxDrawFrames; ++i)
+	for (i32 i = 0; i < GMaxDrawFrames; ++i)
 	{
 		VK_ENSURE(vkCreateSemaphore(m_Device->GetHandle(), &semaphoreCreateInfo, nullptr, &m_ImageAvailableSemas[i]));
 		VK_ENSURE(vkCreateSemaphore(m_Device->GetHandle(), &semaphoreCreateInfo, nullptr, &m_RenderFinishedSemas[i]));
@@ -604,7 +604,7 @@ void vge::Renderer::AllocateUniformDescriptorSet()
 	VkDescriptorSetAllocateInfo setAllocInfo = {};
 	setAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 	setAllocInfo.descriptorPool = m_UniformDescriptorPool;
-	setAllocInfo.descriptorSetCount = static_cast<uint32>(m_Swapchain->GetImageCount());
+	setAllocInfo.descriptorSetCount = static_cast<u32>(m_Swapchain->GetImageCount());
 	setAllocInfo.pSetLayouts = setLayouts.data(); // 1 to 1 relationship with layout and set
 
 	VK_ENSURE(vkAllocateDescriptorSets(m_Device->GetHandle(), &setAllocInfo, m_UniformDescriptorSets.data()));
@@ -619,7 +619,7 @@ void vge::Renderer::AllocateInputDescriptorSet()
 	VkDescriptorSetAllocateInfo setAllocInfo = {};
 	setAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 	setAllocInfo.descriptorPool = m_InputDescriptorPool;
-	setAllocInfo.descriptorSetCount = static_cast<uint32>(m_Swapchain->GetImageCount());
+	setAllocInfo.descriptorSetCount = static_cast<u32>(m_Swapchain->GetImageCount());
 	setAllocInfo.pSetLayouts = setLayouts.data();
 
 	VK_ENSURE(vkAllocateDescriptorSets(m_Device->GetHandle(), &setAllocInfo, m_InputDescriptorSets.data()));
@@ -659,7 +659,7 @@ void vge::Renderer::UpdateUniformDescriptorSet()
 
 		const std::array<VkWriteDescriptorSet, 1> setWrites = { vpSetWrite, /*modelSetWrite*/ };
 
-		vkUpdateDescriptorSets(m_Device->GetHandle(), static_cast<uint32>(setWrites.size()), setWrites.data(), 0, nullptr);
+		vkUpdateDescriptorSets(m_Device->GetHandle(), static_cast<u32>(setWrites.size()), setWrites.data(), 0, nullptr);
 	}
 }
 
@@ -697,11 +697,11 @@ void vge::Renderer::UpdateInputDescriptorSet()
 
 		const std::array<VkWriteDescriptorSet, 2> setWrites = { colorSetWrite, depthSetWrite };
 
-		vkUpdateDescriptorSets(m_Device->GetHandle(), static_cast<uint32>(setWrites.size()), setWrites.data(), 0, nullptr);
+		vkUpdateDescriptorSets(m_Device->GetHandle(), static_cast<u32>(setWrites.size()), setWrites.data(), 0, nullptr);
 	}
 }
 
-void vge::Renderer::UpdateUniformBuffers(uint32 ImageIndex)
+void vge::Renderer::UpdateUniformBuffers(u32 ImageIndex)
 {
 	m_VpUniformBuffers[ImageIndex].TransferToGpuMemory(&m_UboViewProjection, sizeof(UboViewProjection));
 
@@ -771,10 +771,10 @@ void vge::Renderer::DestroyRenderPassDepthAttachments()
 	}
 }
 
-int32 vge::Renderer::CreateTexture(const char* filename)
+vge::i32 vge::Renderer::CreateTexture(const c8* filename)
 {
 	TextureCreateInfo texCreateInfo = {};
-	texCreateInfo.Id = static_cast<int32>(m_Textures.size());
+	texCreateInfo.Id = static_cast<i32>(m_Textures.size());
 	texCreateInfo.Filename = filename;
 	texCreateInfo.Device = m_Device;
 	texCreateInfo.Sampler = m_TextureSampler;
@@ -787,10 +787,10 @@ int32 vge::Renderer::CreateTexture(const char* filename)
 	return texture.GetId();
 }
 
-int32 vge::Renderer::CreateModel(const char* filename)
+vge::i32 vge::Renderer::CreateModel(const c8* filename)
 {
 	ModelCreateInfo modelCreateInfo = {};
-	modelCreateInfo.Id = static_cast<int32>(m_Models.size());
+	modelCreateInfo.Id = static_cast<i32>(m_Models.size());
 	modelCreateInfo.Filename = filename;
 	modelCreateInfo.Device = m_Device;
 

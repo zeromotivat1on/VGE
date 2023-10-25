@@ -2,12 +2,12 @@
 
 glm::mat4 vge::TransformComponent::GetMat4() const
 {
-	const float c1 = glm::cos(glm::radians(Rotation.y));
-	const float s1 = glm::sin(glm::radians(Rotation.y));
-	const float c2 = glm::cos(glm::radians(Rotation.x));
-	const float s2 = glm::sin(glm::radians(Rotation.x));
-	const float c3 = glm::cos(glm::radians(Rotation.z));
-	const float s3 = glm::sin(glm::radians(Rotation.z));
+	const f32 c1 = glm::cos(glm::radians(Rotation.y));
+	const f32 s1 = glm::sin(glm::radians(Rotation.y));
+	const f32 c2 = glm::cos(glm::radians(Rotation.x));
+	const f32 s2 = glm::sin(glm::radians(Rotation.x));
+	const f32 c3 = glm::cos(glm::radians(Rotation.z));
+	const f32 s3 = glm::sin(glm::radians(Rotation.z));
 
 	return glm::mat4
 	{

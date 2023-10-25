@@ -16,8 +16,8 @@ namespace vge
 		void SetViewTarget(const glm::vec3& position, const glm::vec3& target, const glm::vec3& up = glm::vec3(0.0f, -1.0f, 0.0f));
 		void SetViewYXZ(const glm::vec3& position, const glm::vec3& rotation);
 
-		void SetOrthographicProjection(float l, float r, float t, float b, float n, float f);
-		void SetPerspectiveProjection(float fovy, float aspect, float n, float f);
+		void SetOrthographicProjection(f32 l, f32 r, f32 t, f32 b, f32 n, f32 f);
+		void SetPerspectiveProjection(f32 fovy, f32 aspect, f32 n, f32 f);
 
 		inline void ShouldInvertProjectionYAxis(bool invert) { m_InvertProjectionYAxis = invert; }
 		inline const glm::mat4& GetViewMatrix() const { return m_ViewMatrix; }

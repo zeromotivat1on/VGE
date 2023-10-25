@@ -35,14 +35,14 @@ namespace vge
 		void Free();
 
 		void Bind(const Pipeline* pipeline, VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS);
-		void Bind(const IndexBuffer* idxBuffer, uint32 offset = 0);
-		void Bind(uint32 vertBufferCount, const VertexBuffer** vertBuffers, const Shader* shader, uint32 firstBinding = 0);
-		void Bind(const Pipeline* pipeline, uint32 descriptorSetCount, VkDescriptorSet* descriptorSets);
-		void PushConstants(const Pipeline* pipeline, const Shader* shader, uint32 constantSize, const void* constants, uint32 offset = 0);
+		void Bind(const IndexBuffer* idxBuffer, u32 offset = 0);
+		void Bind(u32 vertBufferCount, const VertexBuffer** vertBuffers, const Shader* shader, u32 firstBinding = 0);
+		void Bind(const Pipeline* pipeline, u32 descriptorSetCount, VkDescriptorSet* descriptorSets);
+		void PushConstants(const Pipeline* pipeline, const Shader* shader, u32 constantSize, const void* constants, u32 offset = 0);
 		void SetViewport(const glm::vec2& size, const glm::vec2& pos = { 0.0f, 0.0f });
-		void SetScissor(const VkExtent2D& extent, const glm::vec<2, int32>& offset = { 0, 0 });
-		void Draw(uint32 vertCount, uint32 instanceCount = 1, uint32 firstVert = 0, uint32 firstInstance = 0);
-		void DrawIndexed(uint32 idxCount, uint32 instanceCount = 1, uint32 firstIdx = 0, int32 vertOffset = 0, uint32 firstInstance = 0);
+		void SetScissor(const VkExtent2D& extent, const glm::vec<2, i32>& offset = { 0, 0 });
+		void Draw(u32 vertCount, u32 instanceCount = 1, u32 firstVert = 0, u32 firstInstance = 0);
+		void DrawIndexed(u32 idxCount, u32 instanceCount = 1, u32 firstIdx = 0, i32 vertOffset = 0, u32 firstInstance = 0);
 
 	private:
 		const Device* m_Device = nullptr;

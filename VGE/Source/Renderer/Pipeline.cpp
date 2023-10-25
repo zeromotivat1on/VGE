@@ -56,7 +56,7 @@ void vge::Pipeline::DefaultCreateInfo(PipelineCreateInfo& createInfo)
 	createInfo.DepthStencilInfo.stencilTestEnable = VK_FALSE;
 
 	createInfo.DynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-	createInfo.DynamicStateInfo.dynamicStateCount = static_cast<uint32>(createInfo.DynamicStates.size());
+	createInfo.DynamicStateInfo.dynamicStateCount = static_cast<u32>(createInfo.DynamicStates.size());
 	createInfo.DynamicStateInfo.pDynamicStates = createInfo.DynamicStates.data();
 }
 
@@ -82,7 +82,7 @@ void vge::Pipeline::Initialize(const PipelineCreateInfo& data)
 
 		for (size_t i = 0; i < shaderFilenameCount; ++i)
 		{
-			std::vector<char> shaderCode = file::ReadShader(data.ShaderFilenames[i]);
+			std::vector<c8> shaderCode = file::ReadShader(data.ShaderFilenames[i]);
 
 			ShaderCreateInfo createInfo = {};
 			createInfo.Device = m_Device;
@@ -113,9 +113,9 @@ void vge::Pipeline::Initialize(const PipelineCreateInfo& data)
 
 		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
 		pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayoutCreateInfo.setLayoutCount = static_cast<uint32>(descriptorSetLayouts.size());
+		pipelineLayoutCreateInfo.setLayoutCount = static_cast<u32>(descriptorSetLayouts.size());
 		pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts.data();
-		pipelineLayoutCreateInfo.pushConstantRangeCount = static_cast<uint32>(data.PushConstants.size());
+		pipelineLayoutCreateInfo.pushConstantRangeCount = static_cast<u32>(data.PushConstants.size());
 		pipelineLayoutCreateInfo.pPushConstantRanges = data.PushConstants.data();
 
 		VK_ENSURE(vkCreatePipelineLayout(m_Device->GetHandle(), &pipelineLayoutCreateInfo, nullptr, &m_Layout));
@@ -128,7 +128,7 @@ void vge::Pipeline::Initialize(const PipelineCreateInfo& data)
 
 		VkGraphicsPipelineCreateInfo pipelineCreateInfo = {};
 		pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-		pipelineCreateInfo.stageCount = static_cast<uint32>(shaderStages.size());
+		pipelineCreateInfo.stageCount = static_cast<u32>(shaderStages.size());
 		pipelineCreateInfo.pStages = shaderStages.data();
 		pipelineCreateInfo.pVertexInputState = &data.VertexInfo;
 		pipelineCreateInfo.pInputAssemblyState = &data.InputAssemblyInfo;

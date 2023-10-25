@@ -16,11 +16,11 @@ void vge::RenderPass::Initialize(const RenderPassCreateInfo& data)
 
 	VkRenderPassCreateInfo createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	createInfo.attachmentCount = static_cast<uint32>(data.Attachments->size());
+	createInfo.attachmentCount = static_cast<u32>(data.Attachments->size());
 	createInfo.pAttachments = data.Attachments->data();
-	createInfo.subpassCount = static_cast<uint32>(data.Subpasses->size());
+	createInfo.subpassCount = static_cast<u32>(data.Subpasses->size());
 	createInfo.pSubpasses = data.Subpasses->data();
-	createInfo.dependencyCount = static_cast<uint32>(data.Dependencies->size());
+	createInfo.dependencyCount = static_cast<u32>(data.Dependencies->size());
 	createInfo.pDependencies = data.Dependencies->data();
 
 	VK_ENSURE(vkCreateRenderPass(m_Device->GetHandle(), &createInfo, nullptr, &m_Handle));
@@ -39,7 +39,7 @@ void vge::RenderPass::InitSubpasses(const RenderPassCreateInfo& data)
 {
 	m_Subpasses.resize(data.SubpassCount);
 
-	for (uint32 subpassIdx = 0 ; subpassIdx < data.SubpassCount; ++subpassIdx)
+	for (u32 subpassIdx = 0 ; subpassIdx < data.SubpassCount; ++subpassIdx)
 	{
 		SubpassCreateInfo createInfo = {};
 		createInfo.Index = subpassIdx;

@@ -22,7 +22,7 @@ namespace vge
 		// https://en.wikipedia.org/wiki/Euler_angles#Rotation_matrix.
 		glm::mat4 GetMat4() const;
 
-		inline void ClampRotation(float degrees)
+		inline void ClampRotation(f32 degrees)
 		{
 			Rotation.x = glm::mod(Rotation.x, degrees);
 			Rotation.y = glm::mod(Rotation.y, degrees);

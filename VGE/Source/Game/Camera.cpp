@@ -31,12 +31,12 @@ void vge::Camera::SetViewTarget(const glm::vec3& position, const glm::vec3& targ
 
 void vge::Camera::SetViewYXZ(const glm::vec3& position, const glm::vec3& rotation)
 {
-	const float c1 = glm::cos(glm::radians(rotation.y));
-	const float s1 = glm::sin(glm::radians(rotation.y));
-	const float c2 = glm::cos(glm::radians(rotation.x));
-	const float s2 = glm::sin(glm::radians(rotation.x));
-	const float c3 = glm::cos(glm::radians(rotation.z));
-	const float s3 = glm::sin(glm::radians(rotation.z));
+	const f32 c1 = glm::cos(glm::radians(rotation.y));
+	const f32 s1 = glm::sin(glm::radians(rotation.y));
+	const f32 c2 = glm::cos(glm::radians(rotation.x));
+	const f32 s2 = glm::sin(glm::radians(rotation.x));
+	const f32 c3 = glm::cos(glm::radians(rotation.z));
+	const f32 s3 = glm::sin(glm::radians(rotation.z));
 	
 	const glm::vec3 u = { (c1 * c3 + s1 * s2 * s3), (c2 * s3), (c1 * s2 * s3 - c3 * s1) };
 	const glm::vec3 v = { (c3 * s1 * s2 - c1 * s3), (c2 * c3), (c1 * c3 * s2 + s1 * s3) };
@@ -57,7 +57,7 @@ void vge::Camera::SetViewYXZ(const glm::vec3& position, const glm::vec3& rotatio
 	m_ViewMatrix[3][2] = -glm::dot(w, position);
 }
 
-void vge::Camera::SetOrthographicProjection(float l, float r, float t, float b, float n, float f) 
+void vge::Camera::SetOrthographicProjection(f32 l, f32 r, f32 t, f32 b, f32 n, f32 f) 
 {
 	m_ProjectionMatrix = glm::mat4(1.0f);
 	m_ProjectionMatrix[0][0] = 2.f / (r - l);
@@ -76,11 +76,11 @@ void vge::Camera::SetOrthographicProjection(float l, float r, float t, float b, 
 	}
 }
 
-void vge::Camera::SetPerspectiveProjection(float fovy, float aspect, float n, float f) 
+void vge::Camera::SetPerspectiveProjection(f32 fovy, f32 aspect, f32 n, f32 f) 
 {
 	ASSERT(glm::abs(aspect - FLT_EPSILON) > 0.0f);
 
-	const float tanHalfFovy = std::tan(fovy / 2.f);
+	const f32 tanHalfFovy = std::tan(fovy / 2.f);
 
 	m_ProjectionMatrix = glm::mat4(0.0f);
 	m_ProjectionMatrix[0][0] = 1.f / (aspect * tanHalfFovy);

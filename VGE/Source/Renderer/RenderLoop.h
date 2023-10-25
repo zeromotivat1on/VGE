@@ -10,7 +10,7 @@ namespace vge
 		RenderLoop() = default;
 
 		void Initialize();
-		void Tick(float deltaTime);
+		void Tick(f32 deltaTime);
 		void Destroy();
 
 		inline RenderSystem* GetRenderSystem() { return m_RenderSystem.get(); }

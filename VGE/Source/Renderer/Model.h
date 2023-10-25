@@ -8,8 +8,8 @@ namespace vge
 
 	struct ModelCreateInfo
 	{
-		int32 Id = INDEX_NONE;
-		const char* Filename = nullptr;
+		i32 Id = INDEX_NONE;
+		const c8* Filename = nullptr;
 		const Device* Device = nullptr;
 	};
 
@@ -23,10 +23,10 @@ namespace vge
 
 		void Destroy();
 
-		inline int32 GetId() const { return m_Id; }
+		inline i32 GetId() const { return m_Id; }
 		inline size_t GetMeshCount() const { return m_Meshes.size(); }
 		inline ModelData GetModelData() const { return m_ModelData; }
-		inline const char* GetFilename() const { return m_Filename; }
+		inline const c8* GetFilename() const { return m_Filename; }
 
 		inline const Mesh* GetMesh(size_t index) const { return index < GetMeshCount() ? &m_Meshes[index] : nullptr; }
 		inline 		 Mesh* GetMesh(size_t index)	   { return index < GetMeshCount() ? &m_Meshes[index] : nullptr; }
@@ -35,13 +35,13 @@ namespace vge
 
 	private:
 		// Recursively load all meshes starting from a given node as root.
-		void LoadNode(const Device*, const aiScene* scene, const aiNode* node, const std::vector<int32>& materialToTextureId);
-		void LoadMesh(const Device*, const aiScene* scene, const aiMesh* mesh, const std::vector<int32>& materialToTextureId);
+		void LoadNode(const Device*, const aiScene* scene, const aiNode* node, const std::vector<i32>& materialToTextureId);
+		void LoadMesh(const Device*, const aiScene* scene, const aiMesh* mesh, const std::vector<i32>& materialToTextureId);
 
 	private:
-		int32 m_Id = INDEX_NONE;
+		i32 m_Id = INDEX_NONE;
 		ModelData m_ModelData = {};
-		const char* m_Filename = nullptr;
+		const c8* m_Filename = nullptr;
 		const Device* m_Device = nullptr;
 		std::vector<Mesh> m_Meshes = {};
 	};

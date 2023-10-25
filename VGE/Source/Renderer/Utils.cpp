@@ -5,7 +5,7 @@
 #include "Buffer.h"
 #include "File.h"
 
-const char* vge::GpuTypeToString(VkPhysicalDeviceType gpuType)
+const vge::c8* vge::GpuTypeToString(VkPhysicalDeviceType gpuType)
 {
 	switch (gpuType)
 	{
@@ -22,12 +22,12 @@ const char* vge::GpuTypeToString(VkPhysicalDeviceType gpuType)
 	}
 }
 
-uint32 vge::FindMemoryTypeIndex(VkPhysicalDevice gpu, uint32 allowedTypes, VkMemoryPropertyFlags flags)
+vge::u32 vge::FindMemoryTypeIndex(VkPhysicalDevice gpu, u32 allowedTypes, VkMemoryPropertyFlags flags)
 {
 	VkPhysicalDeviceMemoryProperties memoryProperties = {};
 	vkGetPhysicalDeviceMemoryProperties(gpu, &memoryProperties);
 
-	for (uint32 i = 0; i < memoryProperties.memoryTypeCount; ++i)
+	for (u32 i = 0; i < memoryProperties.memoryTypeCount; ++i)
 	{
 		const bool typeIsAllowed = allowedTypes & (1 << i);
 		const bool propsHaveGivenFlags = (memoryProperties.memoryTypes[i].propertyFlags & flags) == flags;
@@ -69,11 +69,11 @@ void vge::CreateTextureDescriptorSet(VkDevice device, VkSampler sampler, VkDescr
 	vkUpdateDescriptorSets(device, 1, &descriptorSetWrite, 0, nullptr);
 }
 
-void vge::GetTexturesFromMaterials(const aiScene* scene, std::vector<const char*>& outTextures)
+void vge::GetTexturesFromMaterials(const aiScene* scene, std::vector<const c8*>& outTextures)
 {
 	outTextures.resize(scene->mNumMaterials, "");
 
-	for (uint32 i = 0; i < scene->mNumMaterials; ++i)
+	for (u32 i = 0; i < scene->mNumMaterials; ++i)
 	{
 		const aiMaterial* material = scene->mMaterials[i];
 
@@ -89,7 +89,7 @@ void vge::GetTexturesFromMaterials(const aiScene* scene, std::vector<const char*
 			// TODO: retreive all textures from material.
 			if (material->GetTexture(aiTextureType_DIFFUSE, 0, &path) == AI_SUCCESS)
 			{
-				const int32 LastSlashIndex = static_cast<int32>(std::string(path.data).rfind("\\"));
+				const i32 LastSlashIndex = static_cast<i32>(std::string(path.data).rfind("\\"));
 				const std::string filename = std::string(path.data).substr(LastSlashIndex + 1);
 				outTextures[i] = filename.c_str();
 			}
@@ -97,7 +97,7 @@ void vge::GetTexturesFromMaterials(const aiScene* scene, std::vector<const char*
 	}
 }
 
-void vge::ResolveTexturesForDescriptors(Renderer* renderer, const std::vector<const char*>& texturePaths, std::vector<int32>& outTextureToDescriptorSet)
+void vge::ResolveTexturesForDescriptors(Renderer* renderer, const std::vector<const c8*>& texturePaths, std::vector<i32>& outTextureToDescriptorSet)
 {
 	if (!renderer)
 	{

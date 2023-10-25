@@ -10,7 +10,7 @@ namespace vge
 		GameLoop() = default;
 
 		void Initialize();
-		void Tick(float deltaTime);
+		void Tick(f32 deltaTime);
 		void Destroy();
 
 		inline GameSystem* GetGameSystem() { return m_GameSystem.get(); }

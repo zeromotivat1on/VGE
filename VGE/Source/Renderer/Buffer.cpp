@@ -116,12 +116,12 @@ vge::VertexInputDescription vge::Vertex::GetDescription()
 	return description;
 }
 
-vge::IndexBuffer vge::IndexBuffer::Create(const Device* device, const std::vector<uint32>& indices)
+vge::IndexBuffer vge::IndexBuffer::Create(const Device* device, const std::vector<u32>& indices)
 {
 	return Create(device, indices.size(), indices.data());
 }
 
-vge::IndexBuffer vge::IndexBuffer::Create(const Device* device, size_t indexCount, const uint32* indices)
+vge::IndexBuffer vge::IndexBuffer::Create(const Device* device, size_t indexCount, const u32* indices)
 {
 	const VkDeviceSize bufferSize = sizeof(indices[0]) * indexCount;
 

@@ -12,6 +12,6 @@ namespace vge
 		inline static RenderComponent* GetFrom(const Entity& entity) { return GCoordinator->GetComponent<RenderComponent>(entity); }
 
 	public:
-		int32 ModelId = INDEX_NONE;
+		i32 ModelId = INDEX_NONE;
 	};
 }

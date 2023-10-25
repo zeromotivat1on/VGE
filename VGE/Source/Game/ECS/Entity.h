@@ -4,6 +4,6 @@
 
 namespace vge
 {
-	using Entity = uint32;
-	inline constexpr uint32 GMaxEntities = 2048;
+	using Entity = u32;
+	inline constexpr u32 GMaxEntities = 2048;
 }

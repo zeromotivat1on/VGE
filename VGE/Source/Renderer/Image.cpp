@@ -114,13 +114,13 @@ vge::Image vge::Image::Create(const ImageCreateInfo& data)
 	return image;
 }
 
-vge::Image vge::Image::CreateForTexture(const Device* device, const char* filename)
+vge::Image vge::Image::CreateForTexture(const Device* device, const c8* filename)
 {
-	int32 width = 0, height = 0;
+	i32 width = 0, height = 0;
 	VkDeviceSize textureSize = 0;
 	stbi_uc* textureData = file::LoadTexture(filename, width, height, textureSize);
 
-	const VkExtent2D textureExtent = { static_cast<uint32>(width), static_cast<uint32>(height) };
+	const VkExtent2D textureExtent = { static_cast<u32>(width), static_cast<u32>(height) };
 
 	ScopeStageBuffer stageBuffer(device, textureSize);
 	stageBuffer.Get().TransferToGpuMemory(textureData, static_cast<size_t>(textureSize));
