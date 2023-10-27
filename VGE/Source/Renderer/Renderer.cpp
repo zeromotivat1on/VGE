@@ -25,7 +25,6 @@ void vge::Renderer::Initialize()
 	CreateFramebuffers();
 	AllocateCommandBuffers();
 	CreateTextureSampler();
-	//AllocateDynamicBufferTransferSpace();
 	CreateUniformBuffers();
 	CreateDescriptorPools();
 	CreateDescriptorSets();
@@ -51,8 +50,6 @@ void vge::Renderer::Destroy()
 		m_Textures[i].Destroy();
 	}
 
-	//_aligned_free(m_ModelTransferSpace);
-
 	DestroyRenderPassColorAttachments();
 	DestroyRenderPassDepthAttachments();
 
@@ -63,8 +60,6 @@ void vge::Renderer::Destroy()
 	for (size_t i = 0; i < m_Swapchain->GetImageCount(); ++i)
 	{
 		m_VpUniformBuffers[i].Destroy();
-		//vkDestroyBuffer(m_Device, m_ModelDynamicUniformBuffers[i], nullptr);
-		//vkFreeMemory(m_Device, m_ModelDynamicUniformBuffersMemory[i], nullptr);
 	}
 
 	for (i32 i = 0; i < GMaxDrawFrames; ++i)
@@ -79,7 +74,6 @@ void vge::Renderer::Destroy()
 		pipeline.Destroy();
 	}
 
-	//vkDestroyRenderPass(m_Device->GetHandle(), m_RenderPass, nullptr);
 	m_RenderPass.Destroy();
 
 	m_Swapchain->Destroy(m_SwapchainRecreateInfo.get());
@@ -206,7 +200,7 @@ void vge::Renderer::CreateRenderPassDepthAttachments()
 
 void vge::Renderer::CreateRenderPass()
 {
-	std::vector<VkSubpassDescription> subpasses(m_DefaultSubpassCount);
+	std::vector<VkSubpassDescription> subpasses(m_SubpassCount);
 
 	// Attachments and references for 1 subpass.
 	// This subpass will have color and depth ones.
@@ -281,7 +275,7 @@ void vge::Renderer::CreateRenderPass()
 
 	// Amount of dependencies = amount of subpasses + 1.
 	// <dependency1> (subpass1) <dependency2> (subpass2) <dependency3>.
-	std::vector<VkSubpassDependency> dependencies(m_DefaultSubpassCount + 1);
+	std::vector<VkSubpassDependency> dependencies(m_SubpassCount + 1);
 
 	// Start to subpass 1.
 	// Image layout transition must happen after ...
@@ -326,7 +320,7 @@ void vge::Renderer::CreateRenderPass()
 
 	RenderPassCreateInfo createInfo = {};
 	createInfo.Device = m_Device;
-	createInfo.SubpassCount = m_DefaultSubpassCount;
+	createInfo.SubpassCount = m_SubpassCount;
 	createInfo.ColorFormat = m_ColorFormat;
 	createInfo.DepthFormat = m_DepthFormat;
 	createInfo.Subpasses = &subpasses;
@@ -350,7 +344,9 @@ void vge::Renderer::CreatePipelines()
 
 	// TODO: create convenient abstraction for multiple pipelines creation, e.g map with pipeline and its create data.
 
-	// First pipeline creation. Used to render evrything.
+	u32 currentSubpassIdx = 0;
+
+	// First pipeline creation. Used to render everything.
 	// As this pipeline is used for rendering actual data, we need vertex input.
 	{
 		VkDescriptorSetLayoutBinding vpLayoutBinding = {};
@@ -385,7 +381,7 @@ void vge::Renderer::CreatePipelines()
 		pipelineCreateInfo.DescriptorSetLayoutBindings = { { vpLayoutBinding }, { samplerLayoutBinding } };
 		pipelineCreateInfo.RenderPass = &m_RenderPass;
 		pipelineCreateInfo.VertexInfo = vertexInputCreateInfo;
-		pipelineCreateInfo.SubpassIndex = 0;
+		pipelineCreateInfo.SubpassIndex = currentSubpassIdx++;
 
 		m_Pipelines[0].Initialize(pipelineCreateInfo);
 	}
@@ -413,11 +409,13 @@ void vge::Renderer::CreatePipelines()
 		pipelineCreateInfo.ShaderFilenames = { "Shaders/Bin/second_vert.spv", "Shaders/Bin/second_frag.spv" };
 		pipelineCreateInfo.DescriptorSetLayoutBindings = { {}, { colorInputLayoutBinding, depthInputLayoutBinding } };
 		pipelineCreateInfo.RenderPass = &m_RenderPass;
-		pipelineCreateInfo.SubpassIndex = 1;
+		pipelineCreateInfo.SubpassIndex = currentSubpassIdx++;
 		pipelineCreateInfo.DepthStencilInfo.depthWriteEnable = VK_FALSE;
 
 		m_Pipelines[1].Initialize(pipelineCreateInfo);
 	}
+
+	ENSURE(currentSubpassIdx == m_SubpassCount);
 }
 
 void vge::Renderer::CreateFramebuffers()
@@ -467,26 +465,11 @@ void vge::Renderer::CreateTextureSampler()
 	VK_ENSURE(vkCreateSampler(m_Device->GetHandle(), &samplerCreateInfo, nullptr, &m_TextureSampler));
 }
 
-//void vge::Renderer::AllocateDynamicBufferTransferSpace()
-//{
-//	// Calculate proper model alignment to ensure its fit into allocated block of memory.
-//	m_ModelUniformAlignment = (sizeof(ModelData) + m_MinUniformBufferOffset - 1) & ~(m_MinUniformBufferOffset - 1);
-//	m_ModelTransferSpace = (ModelData*)_aligned_malloc(m_ModelUniformAlignment * GMaxSceneObjects, m_ModelUniformAlignment);
-//}
-
 void vge::Renderer::CreateUniformBuffers()
 {
 	constexpr VkDeviceSize vpBufferSize = sizeof(UboViewProjection);
-	//const VkDeviceSize modelBufferSize = m_ModelUniformAlignment * GMaxSceneObjects;
 
 	m_VpUniformBuffers.resize(m_Swapchain->GetImageCount());
-
-	//m_ModelDynamicUniformBuffers.resize(m_Swapchain->GetImageCount());
-	//m_ModelDynamicUniformBuffersMemory.resize(m_Swapchain->GetImageCount());
-
-	//constexpr VkBufferUsageFlags usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-	//constexpr VkMemoryPropertyFlags props = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-	//constexpr VmaMemoryUsage memUsage = VMA_MEMORY_USAGE_CPU_ONLY;
 
 	BufferCreateInfo buffCreateInfo = {};
 	buffCreateInfo.Device = m_Device;
@@ -497,8 +480,6 @@ void vge::Renderer::CreateUniformBuffers()
 	for (size_t i = 0; i < m_Swapchain->GetImageCount(); ++i)
 	{
 		m_VpUniformBuffers[i] = Buffer::Create(buffCreateInfo);
-		//CreateBuffer(m_Device->GetAllocator(), vpBufferSize, usage, memUsage, m_VpUniformBuffers[i]);
-		//CreateBuffer(m_Gpu, m_Device, modelBufferSize, usage, props, m_ModelDynamicUniformBuffers[i], m_ModelDynamicUniformBuffersMemory[i]);
 	}
 }
 
@@ -509,11 +490,7 @@ void vge::Renderer::CreateDescriptorPools()
 		vpPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		vpPoolSize.descriptorCount = static_cast<u32>(m_VpUniformBuffers.size());
 
-		//VkDescriptorPoolSize modelPoolSize = {};
-		//modelPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-		//modelPoolSize.descriptorCount = static_cast<uint32>(m_ModelDynamicUniformBuffers.size());
-
-		const std::array<VkDescriptorPoolSize, 1> uniformPoolSizes = { vpPoolSize, /*modelPoolSize*/ };
+		const std::array<VkDescriptorPoolSize, 1> uniformPoolSizes = { vpPoolSize };
 
 		VkDescriptorPoolCreateInfo uniformPoolCreateInfo = {};
 		uniformPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -643,21 +620,7 @@ void vge::Renderer::UpdateUniformDescriptorSet()
 		vpSetWrite.descriptorCount = 1;
 		vpSetWrite.pBufferInfo = &vpDescriptorBufferInfo;
 
-		//VkDescriptorBufferInfo modelDescriptorBufferInfo = {};
-		//modelDescriptorBufferInfo.buffer = m_ModelDynamicUniformBuffers[i];
-		//modelDescriptorBufferInfo.offset = 0;
-		//modelDescriptorBufferInfo.range = m_ModelUniformAlignment;
-
-		//VkWriteDescriptorSet modelSetWrite = {};
-		//modelSetWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		//modelSetWrite.dstSet = m_DescriptorSets[i];
-		//modelSetWrite.dstBinding = 1;
-		//modelSetWrite.dstArrayElement = 0;
-		//modelSetWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-		//modelSetWrite.descriptorCount = 1;
-		//modelSetWrite.pBufferInfo = &modelDescriptorBufferInfo;
-
-		const std::array<VkWriteDescriptorSet, 1> setWrites = { vpSetWrite, /*modelSetWrite*/ };
+		const std::array<VkWriteDescriptorSet, 1> setWrites = { vpSetWrite };
 
 		vkUpdateDescriptorSets(m_Device->GetHandle(), static_cast<u32>(setWrites.size()), setWrites.data(), 0, nullptr);
 	}
@@ -704,17 +667,6 @@ void vge::Renderer::UpdateInputDescriptorSet()
 void vge::Renderer::UpdateUniformBuffers(u32 ImageIndex)
 {
 	m_VpUniformBuffers[ImageIndex].TransferToGpuMemory(&m_UboViewProjection, sizeof(UboViewProjection));
-
-	// Usage of dynamic uniform buffer example. Costly for frequent actions like model matrix update.
-	//for (size_t i = 0; i < m_Meshes.size(); ++i)
-	//{
-	//	ModelData* meshModelStartAddress = (ModelData*)((ptr_size)m_ModelTransferSpace + (i * m_ModelUniformAlignment));
-	//	*meshModelStartAddress = m_Meshes[i].GetModel();
-	//}
-
-	//vkMapMemory(m_Device, m_ModelDynamicUniformBuffersMemory[ImageIndex], 0, m_ModelUniformAlignment * m_Meshes.size(), 0, &data);
-	//memcpy(data, m_ModelTransferSpace, m_ModelUniformAlignment * m_Meshes.size());
-	//vkUnmapMemory(m_Device, m_ModelDynamicUniformBuffersMemory[ImageIndex]);
 }
 
 void vge::Renderer::RecreateSwapchain()

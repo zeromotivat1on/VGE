@@ -41,7 +41,7 @@ namespace vge
 		CommandBuffer* BeginFrame();
 		void EndFrame();
 
-		// TODO: 1 mesh can have only 1 texture which is cringe (or not, idk for now).
+		// TODO: 1 mesh can have only 1 texture for now.
 		i32 CreateTexture(const c8* filename);
 		i32 CreateModel(const c8* filename);
 
@@ -101,15 +101,8 @@ namespace vge
 
 		std::vector<Buffer> m_VpUniformBuffers = {};
 
-		//std::vector<VkBuffer> m_ModelDynamicUniformBuffers = {};
-		//std::vector<VkDeviceMemory> m_ModelDynamicUniformBuffersMemory = {};
-		//VkDeviceSize m_MinUniformBufferOffset = 0;
-		//size_t m_ModelUniformAlignment = 0;
-		//ModelData* m_ModelTransferSpace = nullptr;
-
 		// Amount of subpasses in render pass and pipelines in it.
-		u32 m_DefaultSubpassCount = 2;
-		//VkRenderPass m_RenderPass = VK_NULL_HANDLE;
+		u32 m_SubpassCount = 2;
 		RenderPass m_RenderPass = {};
 		std::vector<Pipeline> m_Pipelines;
 
@@ -123,7 +116,6 @@ namespace vge
 		void CreateFramebuffers();
 		void AllocateCommandBuffers();
 		void CreateTextureSampler();
-		//void AllocateDynamicBufferTransferSpace();
 		void CreateUniformBuffers();
 		void CreateDescriptorPools();
 		void CreateDescriptorSets();
