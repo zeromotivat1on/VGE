@@ -39,7 +39,7 @@ void vge::RenderPass::InitSubpasses(const RenderPassCreateInfo& data)
 {
 	m_Subpasses.resize(data.SubpassCount);
 
-	for (u32 subpassIdx = 0 ; subpassIdx < data.SubpassCount; ++subpassIdx)
+	for (u32 subpassIdx = 0; subpassIdx < data.SubpassCount; ++subpassIdx)
 	{
 		SubpassCreateInfo createInfo = {};
 		createInfo.Index = subpassIdx;
