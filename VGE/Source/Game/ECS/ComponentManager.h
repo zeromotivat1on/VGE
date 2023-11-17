@@ -45,9 +45,14 @@ namespace vge
 		}
 
 		template<typename T>
-		T& GetComponent(Entity entity)
+		T* GetComponent(Entity entity)
 		{
-			return GetComponentArray<T>()->Get(entity);
+			if (auto compArray = GetComponentArray<T>())
+			{
+				return compArray->Get(entity);
+			}
+
+			return nullptr;
 		}
 
 		void EntityDestroyed(Entity entity)
@@ -68,8 +73,12 @@ namespace vge
 		std::shared_ptr<ComponentArray<T>> GetComponentArray()
 		{
 			const c8* typeName = typeid(T).name();
-			ASSERT(m_ComponentTypes.find(typeName) != m_ComponentTypes.end());
-			return std::static_pointer_cast<ComponentArray<T>>(m_ComponentArrays[typeName]);
+			if (m_ComponentTypes.find(typeName) != m_ComponentTypes.end())
+			{
+				return std::static_pointer_cast<ComponentArray<T>>(m_ComponentArrays[typeName]);
+			}
+
+			return nullptr;
 		}
 	};
 }

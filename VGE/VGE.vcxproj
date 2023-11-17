@@ -179,7 +179,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Game\InputController.h" />
-    <ClInclude Include="Source\Math.h" />
+    <ClInclude Include="Source\VgeMath.h" />
     <ClInclude Include="Source\Renderer\RenderPass.h" />
     <ClInclude Include="Source\Renderer\CommandBuffer.h" />
     <ClInclude Include="Source\Game\ECS\GameSystem.h" />

@@ -46,10 +46,14 @@ namespace vge
 			--m_Size;
 		}
 
-		inline T& Get(Entity entity)
+		inline T* Get(Entity entity)
 		{
-			ASSERT(m_EntityToIndex.find(entity) != m_EntityToIndex.end());
-			return m_Components[m_EntityToIndex[entity]];
+			if (m_EntityToIndex.find(entity) != m_EntityToIndex.end())
+			{
+				return &m_Components[m_EntityToIndex[entity]];
+			}
+
+			return nullptr;
 		}
 
 		inline void EntityDestroyed(Entity entity) override

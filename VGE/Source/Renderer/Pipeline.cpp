@@ -97,7 +97,7 @@ void vge::Pipeline::Initialize(const PipelineCreateInfo& data)
 	// Create pipeline layout.
 	{
 		std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
-		for (size_t i = 0; i < C_ARRAY_NUM(m_Shaders); ++i)
+		for (size_t i = 0; i < (size_t)ShaderStage::Count; ++i)
 		{
 			if (!m_Shaders[i].IsValid())
 			{
@@ -121,7 +121,7 @@ void vge::Pipeline::Initialize(const PipelineCreateInfo& data)
 		VK_ENSURE(vkCreatePipelineLayout(m_Device->GetHandle(), &pipelineLayoutCreateInfo, nullptr, &m_Layout));
 	}
 
-	// Create gfx pipeline.
+	// Create pipeline.
 	{
 		std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
 		GetShaderStageInfos(shaderStages);
@@ -161,7 +161,7 @@ void vge::Pipeline::Destroy()
 
 void vge::Pipeline::GetShaderStageInfos(std::vector<VkPipelineShaderStageCreateInfo>& outStageInfos)
 {
-	for (size_t i = 0; i < C_ARRAY_NUM(m_Shaders); ++i)
+	for (size_t i = 0; i < (size_t)ShaderStage::Count; ++i)
 	{
 		if (!m_Shaders[i].IsValid())
 		{

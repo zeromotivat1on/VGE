@@ -227,7 +227,7 @@
     <ClInclude Include="Source\Game\InputController.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Math.h">
+    <ClInclude Include="Source\VgeMath.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
