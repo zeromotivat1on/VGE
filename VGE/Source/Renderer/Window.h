@@ -27,6 +27,7 @@ namespace vge
 		inline i32 GetWidth() const { return m_Width; }
 		inline i32 GetHeight() const { return m_Height; }
 		inline VkExtent2D GetExtent() const { return { static_cast<u32>(m_Width), static_cast<u32>(m_Height) }; }
+		inline bool IsKeyPressed(i32 key) const { return glfwGetKey(m_Handle, key) == GLFW_PRESS; }
 
 		void GetInstanceExtensions(std::vector<const c8*>& outExtensions) const;
 		void WaitSizeless() const;

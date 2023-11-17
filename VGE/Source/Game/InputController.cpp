@@ -3,8 +3,6 @@
 #include "ECS/Coordinator.h"
 #include "Components/TransformComponent.h"
 
-#define GLFW_KEY_PRESSED(window, key) glfwGetKey(window, key) == GLFW_PRESS
-
 namespace vge
 {
 	void UpdateRotation(vge::TransformComponent* outTransform, f32 deltaTime, f32 speed, const glm::vec3& rotationVector)
@@ -50,10 +48,10 @@ void vge::InputController::MoveInPlaneXZ(f32 deltaTime, const Entity& entity)
 	// Handle rotation.
 	{
 		glm::vec3 rotate(0.0f);
-		if (GLFW_KEY_PRESSED(window, m_KeyboardKeys.LookRight)) rotate.y += 1.0f;
-		if (GLFW_KEY_PRESSED(window, m_KeyboardKeys.LookLeft))	rotate.y -= 1.0f;
-		if (GLFW_KEY_PRESSED(window, m_KeyboardKeys.LookUp))	rotate.x += m_InvertVerticalAxis ? -1.0f : 1.0f;
-		if (GLFW_KEY_PRESSED(window, m_KeyboardKeys.LookDown))	rotate.x -= m_InvertVerticalAxis ? -1.0f : 1.0f;
+		if (m_Window->IsKeyPressed(m_KeyboardKeys.LookRight))	rotate.y += 1.0f;
+		if (m_Window->IsKeyPressed(m_KeyboardKeys.LookLeft))	rotate.y -= 1.0f;
+		if (m_Window->IsKeyPressed(m_KeyboardKeys.LookUp))		rotate.x += m_InvertVerticalAxis ? -1.0f : 1.0f;
+		if (m_Window->IsKeyPressed(m_KeyboardKeys.LookDown))	rotate.x -= m_InvertVerticalAxis ? -1.0f : 1.0f;
 
 		UpdateRotation(transformComponent, deltaTime, m_RotateSpeed, rotate);
 		transformComponent->ClampRotation(glm::degrees(glm::two_pi<f32>()));
@@ -68,12 +66,12 @@ void vge::InputController::MoveInPlaneXZ(f32 deltaTime, const Entity& entity)
 		const glm::vec3 upDir(0.0f, 1.0f, 0.0f);
 
 		glm::vec3 moveDir(0.0f);
-		if (GLFW_KEY_PRESSED(window, m_KeyboardKeys.MoveForward))	moveDir += forwardDir;
-		if (GLFW_KEY_PRESSED(window, m_KeyboardKeys.MoveBackward))	moveDir -= forwardDir;
-		if (GLFW_KEY_PRESSED(window, m_KeyboardKeys.MoveRight))		moveDir += rightDir;
-		if (GLFW_KEY_PRESSED(window, m_KeyboardKeys.MoveLeft))		moveDir -= rightDir;
-		if (GLFW_KEY_PRESSED(window, m_KeyboardKeys.MoveUp))		moveDir += upDir;
-		if (GLFW_KEY_PRESSED(window, m_KeyboardKeys.MoveDown))		moveDir -= upDir;
+		if (m_Window->IsKeyPressed(m_KeyboardKeys.MoveForward))		moveDir += forwardDir;
+		if (m_Window->IsKeyPressed(m_KeyboardKeys.MoveBackward))	moveDir -= forwardDir;
+		if (m_Window->IsKeyPressed(m_KeyboardKeys.MoveRight))		moveDir += rightDir;
+		if (m_Window->IsKeyPressed(m_KeyboardKeys.MoveLeft))		moveDir -= rightDir;
+		if (m_Window->IsKeyPressed(m_KeyboardKeys.MoveUp))			moveDir += upDir;
+		if (m_Window->IsKeyPressed(m_KeyboardKeys.MoveDown))		moveDir -= upDir;
 
 		UpdateTranslation(transformComponent, deltaTime, m_MoveSpeed, moveDir);
 	}
