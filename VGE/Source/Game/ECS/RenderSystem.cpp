@@ -124,23 +124,26 @@ void vge::RenderSystem::Initialize(Renderer* renderer, Camera* camera)
 {
 	m_Renderer = renderer;
 	m_Camera = camera;
+
+	m_Renderer->SetView(m_Camera->GetViewMatrix());
+	m_Renderer->SetProjection(m_Camera->GetProjectionMatrix());
 }
 
 void vge::RenderSystem::Tick(f32 deltaTime)
 {
-	m_Renderer->SetView(m_Camera->GetViewMatrix());
-	m_Renderer->SetProjection(m_Camera->GetProjectionMatrix());
+	//m_Renderer->SetView(m_Camera->GetViewMatrix());
+	//m_Renderer->SetProjection(m_Camera->GetProjectionMatrix());
 
 	// TODO: transfer model data update to separate system etc.
 	for (const Entity& entity : m_Entities)
 	{
-		const auto* renderComponent = RenderComponent::GetFrom(entity);
+		const auto* renderComponent = GCoordinator->GetComponent<RenderComponent>(entity);
 		if (!renderComponent)
 		{
 			continue;
 		}
 
-		const auto* transformComponent = TransformComponent::GetFrom(entity);
+		const auto* transformComponent = GCoordinator->GetComponent<TransformComponent>(entity);
 		if (!transformComponent)
 		{
 			continue;

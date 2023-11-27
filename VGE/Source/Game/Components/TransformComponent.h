@@ -9,9 +9,6 @@ namespace vge
 	struct TransformComponent
 	{
 	public:
-		inline static TransformComponent* GetFrom(const Entity& entity) { return GCoordinator->GetComponent<TransformComponent>(entity); }
-
-	public:
 		glm::vec3 Translation = glm::vec3(0.0f);
 		glm::vec3 Rotation = glm::vec3(0.0f);
 		glm::vec3 Scale = glm::vec3(1.0f);

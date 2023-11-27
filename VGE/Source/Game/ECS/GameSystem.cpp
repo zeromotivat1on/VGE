@@ -15,7 +15,8 @@ void vge::GameSystem::Initialize()
 void vge::GameSystem::Tick(f32 deltaTime)
 {
 	const auto& firstEntity = *m_Entities.begin();
-	auto* transform = TransformComponent::GetFrom(firstEntity);
+	auto* transform = GCoordinator->GetComponent<TransformComponent>(firstEntity);
+	
 	m_InputController.MoveInPlaneXZ(deltaTime, firstEntity);
 	//GCamera->SetViewYXZ(transform->Translation, transform->Rotation);
 }

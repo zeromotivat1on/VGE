@@ -9,9 +9,6 @@ namespace vge
 	struct RenderComponent
 	{
 	public:
-		inline static RenderComponent* GetFrom(const Entity& entity) { return GCoordinator->GetComponent<RenderComponent>(entity); }
-
-	public:
 		i32 ModelId = INDEX_NONE;
 	};
 }

@@ -25,7 +25,7 @@ void vge::RenderLoop::Initialize()
 
 void vge::RenderLoop::Tick(f32 deltaTime)
 {
-	GCamera->SetPerspectiveProjection(glm::radians(45.0f), GRenderer->GetSwapchainAspectRatio(), 0.1f, 1000.0f);
+	//GCamera->SetPerspectiveProjection(glm::radians(45.0f), GRenderer->GetSwapchainAspectRatio(), 0.001f, 100000.0f);
 	m_RenderSystem->Tick(deltaTime);
 }
 
@@ -49,6 +49,7 @@ void vge::RenderLoop::RegisterRenderSystem()
 	{
 		GCamera->ShouldInvertProjectionYAxis(true);
 		GCamera->SetViewDirection(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		GCamera->SetPerspectiveProjection(glm::radians(45.0f), GRenderer->GetSwapchainAspectRatio(), 0.001f, 100000.0f);
 		//GCamera->SetViewTarget(glm::vec3(-30.0f, -30.0f, 30.0f), glm::vec3(0.0f, 0.0f, 0.0f));
 		//GCamera->SetOrthographicProjection(-20.0f, 20.0f, -20.0f, 20.0f, -10000.0f, 10000.0f);
 	}
