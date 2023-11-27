@@ -11,13 +11,13 @@ namespace vge
 	struct ApplicationSpecs
 	{
 		struct {
-			const c8* Name = nullptr;
+			const char* Name = nullptr;
 			u32 Width = 0;
 			u32 Height = 0;
 		} Window;
 
-		const c8* Name = "";
-		const c8* InternalName = "";
+		const char* Name = "";
+		const char* InternalName = "";
 	};
 
 	class Application
@@ -52,5 +52,5 @@ namespace vge
 		return true;
 	}
 
-	i32 Main(int argc, const c8** argv);
+	i32 Main(int argc, const char** argv);
 }

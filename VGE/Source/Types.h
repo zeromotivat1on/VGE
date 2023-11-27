@@ -6,7 +6,6 @@ namespace vge
 {
 	using ptr_size = decltype(sizeof(void*));
 
-	using c8	= char;
 	using f32	= float;
 
 	using i8	= std::int8_t;

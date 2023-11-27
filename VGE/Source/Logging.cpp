@@ -2,7 +2,7 @@
 #include "Color.h"
 
 #if USE_LOGGING
-void vge::Logger::PrintLog(const LogCategory category, const c8* message, ...)
+void vge::Logger::PrintLog(const LogCategory category, const char* message, ...)
 {
 	va_list args;
 	va_start(args, message);
@@ -10,7 +10,7 @@ void vge::Logger::PrintLog(const LogCategory category, const c8* message, ...)
 	va_end(args);
 }
 
-void vge::Logger::PrintLogRaw(const c8* message, ...)
+void vge::Logger::PrintLogRaw(const char* message, ...)
 {
 	va_list args;
 	va_start(args, message);
@@ -18,7 +18,7 @@ void vge::Logger::PrintLogRaw(const c8* message, ...)
 	va_end(args);
 }
 
-void vge::Logger::PrintLog_Implementation(const LogCategory category, const c8* message, va_list args)
+void vge::Logger::PrintLog_Implementation(const LogCategory category, const char* message, va_list args)
 {
 	PaintConsoleText(category);
 	
@@ -29,7 +29,7 @@ void vge::Logger::PrintLog_Implementation(const LogCategory category, const c8* 
 	PaintDefaultConsoleText();
 }
 
-void vge::Logger::PrintLogRaw_Implementation(const c8* message, va_list args)
+void vge::Logger::PrintLogRaw_Implementation(const char* message, va_list args)
 {
 	vprintf(message, args);
 }
@@ -57,17 +57,20 @@ std::string vge::Logger::LogCategoryToString(const LogCategory category)
 	switch (category)
 	{
 	case LogCategory::Warning:
+		std::cout << hue::yellow;
 		return "Warning: ";
 	case LogCategory::Error:
+		std::cout << hue::red;
 		return "Error: ";
 	default:
+		PaintDefaultConsoleText();
 		return "Log: ";
 	}
 }
 
-void vge::NotifyVulkanEnsureFailure(VkResult result, const c8* function, const c8* filename, u32 line, const c8* errMessage)
+void vge::NotifyVulkanEnsureFailure(VkResult result, const char* function, const char* filename, u32 line, const char* errMessage)
 {
-	const c8* resultString = nullptr;
+	const char* resultString = nullptr;
 	switch (result)
 	{
 #define VK_RESULT_CASE(x) case x: resultString = STRING(x)

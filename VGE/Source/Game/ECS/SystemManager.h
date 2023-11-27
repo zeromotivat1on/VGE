@@ -15,7 +15,7 @@ namespace vge
 		template<typename T>
 		std::shared_ptr<T> RegisterSystem()
 		{
-			const c8* typeName = typeid(T).name();
+			const char* typeName = typeid(T).name();
 			ASSERT(m_Systems.find(typeName) == m_Systems.end());
 
 			auto system = std::make_shared<T>();
@@ -27,7 +27,7 @@ namespace vge
 		template<typename T>
 		void SetSignature(Signature signature)
 		{
-			const c8* typeName = typeid(T).name();
+			const char* typeName = typeid(T).name();
 			ASSERT(m_Systems.find(typeName) != m_Systems.end());
 			m_Signatures.insert({ typeName, signature });
 		}
@@ -61,7 +61,7 @@ namespace vge
 		}
 
 	private:
-		std::unordered_map<const c8*, Signature> m_Signatures = {};
-		std::unordered_map<const c8*, std::shared_ptr<System>> m_Systems = {};
+		std::unordered_map<const char*, Signature> m_Signatures = {};
+		std::unordered_map<const char*, std::shared_ptr<System>> m_Systems = {};
 	};
 }

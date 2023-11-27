@@ -1,9 +1,9 @@
 #include "Window.h"
 
-void vge::Window::GetInstanceExtensions(std::vector<const c8*>& outExtensions) const
+void vge::Window::GetInstanceExtensions(std::vector<const char*>& outExtensions) const
 {
 	u32 glfwExtensionCount = 0;
-	const c8** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+	const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
 	for (u32 i = 0; i < glfwExtensionCount; ++i)
 	{
@@ -31,7 +31,7 @@ void vge::Window::FramebufferResizeCallback(GLFWwindow* windowRaw, i32 width, i3
 	// TODO: add clever and beautiful way to recreate swapchain.
 }
 
-vge::Window::Window(const c8* name, const i32 width, const i32 height)
+vge::Window::Window(const char* name, const i32 width, const i32 height)
 	: m_Name(name), m_Width(width), m_Height(height)
 {}
 

@@ -10,7 +10,7 @@ namespace vge
 	class Window
 	{
 	public:
-		Window(const c8* name, const i32 width, const i32 height);
+		Window(const char* name, const i32 width, const i32 height);
 		NOT_COPYABLE(Window);
 
 	public:
@@ -29,7 +29,7 @@ namespace vge
 		inline VkExtent2D GetExtent() const { return { static_cast<u32>(m_Width), static_cast<u32>(m_Height) }; }
 		inline bool IsKeyPressed(i32 key) const { return glfwGetKey(m_Handle, key) == GLFW_PRESS; }
 
-		void GetInstanceExtensions(std::vector<const c8*>& outExtensions) const;
+		void GetInstanceExtensions(std::vector<const char*>& outExtensions) const;
 		void WaitSizeless() const;
 
 	private:
@@ -37,13 +37,13 @@ namespace vge
 
 	private:
 		GLFWwindow* m_Handle = nullptr;
-		const c8* m_Name = nullptr; 
+		const char* m_Name = nullptr; 
 		i32 m_Width = 0; 
 		i32 m_Height = 0;
 		bool m_FramebufferResized = false;
 	};
 
-	inline Window* CreateWindow(const c8* name, const i32 width, const i32 height)
+	inline Window* CreateWindow(const char* name, const i32 width, const i32 height)
 	{
 		if (GWindow) return GWindow;
 		return (GWindow = new Window(name, width, height));

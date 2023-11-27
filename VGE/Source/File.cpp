@@ -1,6 +1,6 @@
 #include "File.h"
 
-std::vector<vge::c8> vge::file::ReadShader(const c8* filename)
+std::vector<char> vge::file::ReadShader(const char* filename)
 {
 	std::ifstream file(filename, std::ios::binary | std::ios::ate);
 
@@ -11,7 +11,7 @@ std::vector<vge::c8> vge::file::ReadShader(const c8* filename)
 	}
 
 	size_t fileSize = static_cast<size_t>(file.tellg());
-	std::vector<c8> fileBuffer(fileSize);
+	std::vector<char> fileBuffer(fileSize);
 
 	file.seekg(0);
 	file.read(fileBuffer.data(), fileSize);
@@ -21,7 +21,7 @@ std::vector<vge::c8> vge::file::ReadShader(const c8* filename)
 	return fileBuffer;
 }
 
-stbi_uc* vge::file::LoadTexture(const c8* filename, i32& outw, i32& outh, VkDeviceSize& outTextureSize)
+stbi_uc* vge::file::LoadTexture(const char* filename, i32& outw, i32& outh, VkDeviceSize& outTextureSize)
 {
 	static constexpr i8 desiredChannelCount = 4; // r g b a
 
@@ -39,7 +39,7 @@ stbi_uc* vge::file::LoadTexture(const c8* filename, i32& outw, i32& outh, VkDevi
 	return image;
 }
 
-const aiScene* vge::file::LoadModel(const c8* filename, Assimp::Importer& outImporter)
+const aiScene* vge::file::LoadModel(const char* filename, Assimp::Importer& outImporter)
 {
 	const aiScene* scene = outImporter.ReadFile(filename, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices);
 

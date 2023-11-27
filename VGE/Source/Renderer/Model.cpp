@@ -8,7 +8,7 @@ vge::Model vge::Model::Create(const ModelCreateInfo& data)
 	Assimp::Importer importer;
 	const aiScene* scene = file::LoadModel(data.Filename, importer);
 
-	std::vector<const c8*> texturePaths;
+	std::vector<const char*> texturePaths;
 	GetTexturesFromMaterials(scene, texturePaths);
 
 	std::vector<i32> textureToDescriptorSet;

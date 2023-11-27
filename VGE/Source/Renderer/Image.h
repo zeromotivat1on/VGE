@@ -29,7 +29,7 @@ namespace vge
 	{
 	public:
 		static Image Create(const ImageCreateInfo& data);
-		static Image CreateForTexture(const Device* device, const c8* filename);
+		static Image CreateForTexture(const Device* device, const char* filename);
 		static VkImageView CreateView(const ImageViewCreateInfo& data);
 		static VkFormat GetBestFormat(const Device* device, const std::vector<VkFormat>& formats, VkFormatFeatureFlags features, VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL);
 

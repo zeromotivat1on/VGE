@@ -114,7 +114,7 @@ vge::Image vge::Image::Create(const ImageCreateInfo& data)
 	return image;
 }
 
-vge::Image vge::Image::CreateForTexture(const Device* device, const c8* filename)
+vge::Image vge::Image::CreateForTexture(const Device* device, const char* filename)
 {
 	i32 width = 0, height = 0;
 	VkDeviceSize textureSize = 0;

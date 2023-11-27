@@ -15,7 +15,7 @@ namespace vge
 		template<typename T>
 		void RegisterComponent()
 		{
-			const c8* typeName = typeid(T).name();
+			const char* typeName = typeid(T).name();
 			ASSERT(m_ComponentTypes.find(typeName) == m_ComponentTypes.end());
 
 			m_ComponentTypes.insert({ typeName, m_NextComponentType });
@@ -27,7 +27,7 @@ namespace vge
 		template<typename T>
 		ComponentType GetComponentType()
 		{
-			const c8* typeName = typeid(T).name();
+			const char* typeName = typeid(T).name();
 			ASSERT(m_ComponentTypes.find(typeName) != m_ComponentTypes.end());
 			return m_ComponentTypes[typeName];
 		}
@@ -66,13 +66,13 @@ namespace vge
 
 	private:
 		ComponentType m_NextComponentType = {};
-		std::unordered_map<const c8*, ComponentType> m_ComponentTypes = {};
-		std::unordered_map<const c8*, std::shared_ptr<IComponentArray>> m_ComponentArrays = {};
+		std::unordered_map<const char*, ComponentType> m_ComponentTypes = {};
+		std::unordered_map<const char*, std::shared_ptr<IComponentArray>> m_ComponentArrays = {};
 
 		template<typename T>
 		std::shared_ptr<ComponentArray<T>> GetComponentArray()
 		{
-			const c8* typeName = typeid(T).name();
+			const char* typeName = typeid(T).name();
 			if (m_ComponentTypes.find(typeName) != m_ComponentTypes.end())
 			{
 				return std::static_pointer_cast<ComponentArray<T>>(m_ComponentArrays[typeName]);

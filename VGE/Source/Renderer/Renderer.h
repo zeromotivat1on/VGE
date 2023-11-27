@@ -42,8 +42,8 @@ namespace vge
 		void EndFrame();
 
 		// TODO: 1 mesh can have only 1 texture for now.
-		i32 CreateTexture(const c8* filename);
-		i32 CreateModel(const c8* filename);
+		i32 CreateTexture(const char* filename);
+		i32 CreateModel(const char* filename);
 
 		void RecreateSwapchain();
 

@@ -1,7 +1,7 @@
 #include "Shader.h"
 #include "Device.h"
 
-const vge::c8* const vge::Shader::DefaultEntryName = "main";
+const char* const vge::Shader::DefaultEntryName = "main";
 
 VkShaderStageFlagBits vge::Shader::GetFlagsFromStage(ShaderStage stage)
 {
@@ -69,7 +69,7 @@ VkPipelineShaderStageCreateInfo vge::Shader::GetStageCreateInfo() const
 	return stageCreateInfo;
 }
 
-void vge::Shader::CreateModule(const std::vector<c8>* SpirvInt8)
+void vge::Shader::CreateModule(const std::vector<char>* SpirvInt8)
 {
 	VkShaderModuleCreateInfo createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;

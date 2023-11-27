@@ -82,7 +82,7 @@ void vge::Pipeline::Initialize(const PipelineCreateInfo& data)
 
 		for (size_t i = 0; i < shaderFilenameCount; ++i)
 		{
-			std::vector<c8> shaderCode = file::ReadShader(data.ShaderFilenames[i]);
+			std::vector<char> shaderCode = file::ReadShader(data.ShaderFilenames[i]);
 
 			ShaderCreateInfo createInfo = {};
 			createInfo.Device = m_Device;

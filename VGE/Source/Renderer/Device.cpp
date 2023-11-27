@@ -79,7 +79,7 @@ namespace vge
 		std::vector<VkLayerProperties> availableLayers(layerCount);
 		vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
-		for (const c8* layerName : vge::GValidationLayers)
+		for (const char* layerName : vge::GValidationLayers)
 		{
 			bool hasLayer = false;
 			for (const auto& layerProperties : availableLayers)
@@ -100,7 +100,7 @@ namespace vge
 		return true;
 	}
 
-	void GetRequriedInstanceExtensions(std::vector<const c8*>& outExtensions)
+	void GetRequriedInstanceExtensions(std::vector<const char*>& outExtensions)
 	{
 		if (vge::GWindow)
 		{
@@ -110,7 +110,7 @@ namespace vge
 		outExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 	}
 
-	bool SupportInstanceExtensions(const std::vector<const c8*>& checkExtensions)
+	bool SupportInstanceExtensions(const std::vector<const char*>& checkExtensions)
 	{
 		u32 extensionCount = 0;
 		vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
@@ -205,7 +205,7 @@ namespace vge
 		return details;
 	}
 
-	static bool SupportDeviceExtensions(VkPhysicalDevice gpu, const std::vector<const c8*>& checkExtensions)
+	static bool SupportDeviceExtensions(VkPhysicalDevice gpu, const std::vector<const char*>& checkExtensions)
 	{
 		u32 extensionCount = 0;
 		vkEnumerateDeviceExtensionProperties(gpu, nullptr, &extensionCount, nullptr);
@@ -246,7 +246,7 @@ namespace vge
 
 		vge::QueueFamilyIndices indices = GetQueueFamilies(gpu, surface);
 
-		std::vector<const c8*> deviceExtensions;
+		std::vector<const char*> deviceExtensions;
 		deviceExtensions.assign(vge::GDeviceExtensions, vge::GDeviceExtensions + C_ARRAY_NUM(vge::GDeviceExtensions));
 
 		vge::SwapchainSupportDetails swapchainDetails = GetSwapchainSupportDetailsInternal(gpu, surface);
@@ -314,7 +314,7 @@ void vge::Device::CreateInstance()
 	appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
 	appInfo.apiVersion = VK_API_VERSION_1_0;
 
-	std::vector<const c8*> instanceExtensions = {};
+	std::vector<const char*> instanceExtensions = {};
 	GetRequriedInstanceExtensions(instanceExtensions);
 
 	ENSURE_MSG(SupportInstanceExtensions(instanceExtensions), "Instance does not support requried extensions.");

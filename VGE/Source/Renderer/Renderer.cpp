@@ -723,7 +723,7 @@ void vge::Renderer::DestroyRenderPassDepthAttachments()
 	}
 }
 
-vge::i32 vge::Renderer::CreateTexture(const c8* filename)
+vge::i32 vge::Renderer::CreateTexture(const char* filename)
 {
 	TextureCreateInfo texCreateInfo = {};
 	texCreateInfo.Id = static_cast<i32>(m_Textures.size());
@@ -739,7 +739,7 @@ vge::i32 vge::Renderer::CreateTexture(const c8* filename)
 	return texture.GetId();
 }
 
-vge::i32 vge::Renderer::CreateModel(const c8* filename)
+vge::i32 vge::Renderer::CreateModel(const char* filename)
 {
 	ModelCreateInfo modelCreateInfo = {};
 	modelCreateInfo.Id = static_cast<i32>(m_Models.size());

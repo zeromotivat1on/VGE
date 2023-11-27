@@ -22,6 +22,10 @@
 	#define LOG_RAW(Message, ...)
 #endif
 
+#ifndef USE_COLORED_LOGS
+	#define USE_COLORED_LOGS 1
+#endif
+
 #if USE_LOGGING
 namespace vge
 {
@@ -36,10 +40,10 @@ namespace vge
 	{
 	public:
 		// Formatted message log.
-		static void PrintLog(const LogCategory category, const c8* message, ...);
+		static void PrintLog(const LogCategory category, const char* message, ...);
 
 		// Log given message with args as given.
-		static void PrintLogRaw(const c8* message, ...);
+		static void PrintLogRaw(const char* message, ...);
 
 		static std::string LogCategoryToString(const LogCategory category);
 
@@ -50,10 +54,10 @@ namespace vge
 		static void PaintDefaultConsoleText();
 
 	private:
-		static void PrintLog_Implementation(const LogCategory category, const c8* message, va_list args);
-		static void PrintLogRaw_Implementation(const c8* message, va_list args);
+		static void PrintLog_Implementation(const LogCategory category, const char* message, va_list args);
+		static void PrintLogRaw_Implementation(const char* message, va_list args);
 	};
 
-	extern void NotifyVulkanEnsureFailure(VkResult result, const c8* function, const c8* filename, u32 line, const c8* errMessage = "");
+	extern void NotifyVulkanEnsureFailure(VkResult result, const char* function, const char* filename, u32 line, const char* errMessage = "");
 }
 #endif

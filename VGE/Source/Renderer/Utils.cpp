@@ -5,7 +5,7 @@
 #include "Buffer.h"
 #include "File.h"
 
-const vge::c8* vge::GpuTypeToString(VkPhysicalDeviceType gpuType)
+const char* vge::GpuTypeToString(VkPhysicalDeviceType gpuType)
 {
 	switch (gpuType)
 	{
@@ -69,7 +69,7 @@ void vge::CreateTextureDescriptorSet(VkDevice device, VkSampler sampler, VkDescr
 	vkUpdateDescriptorSets(device, 1, &descriptorSetWrite, 0, nullptr);
 }
 
-void vge::GetTexturesFromMaterials(const aiScene* scene, std::vector<const c8*>& outTextures)
+void vge::GetTexturesFromMaterials(const aiScene* scene, std::vector<const char*>& outTextures)
 {
 	outTextures.resize(scene->mNumMaterials, "");
 
@@ -97,7 +97,7 @@ void vge::GetTexturesFromMaterials(const aiScene* scene, std::vector<const c8*>&
 	}
 }
 
-void vge::ResolveTexturesForDescriptors(Renderer* renderer, const std::vector<const c8*>& texturePaths, std::vector<i32>& outTextureToDescriptorSet)
+void vge::ResolveTexturesForDescriptors(Renderer* renderer, const std::vector<const char*>& texturePaths, std::vector<i32>& outTextureToDescriptorSet)
 {
 	if (!renderer)
 	{

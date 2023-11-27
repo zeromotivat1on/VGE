@@ -11,7 +11,7 @@ namespace vge
 	struct PipelineCreateInfo
 	{
 		vge::Device* Device = nullptr;
-		std::vector<const c8*> ShaderFilenames = {};
+		std::vector<const char*> ShaderFilenames = {};
 		std::vector<std::vector<VkDescriptorSetLayoutBinding>> DescriptorSetLayoutBindings = {};
 		std::vector<VkDynamicState> DynamicStates = {};
 		std::vector<VkPushConstantRange> PushConstants = {};
