@@ -11,4 +11,6 @@ namespace vge::file
 	inline void FreeTexture(stbi_uc* data) { stbi_image_free(data); }
 
 	const aiScene* LoadModel(const char* filename, Assimp::Importer& outImporter);
+
+	bool SyncReadFile(const char* filePath, u8* buffer, size_t bufferSize, size_t& rBytesRead);
 }

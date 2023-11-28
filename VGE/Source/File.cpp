@@ -51,3 +51,22 @@ const aiScene* vge::file::LoadModel(const char* filename, Assimp::Importer& outI
 
 	return scene;
 }
+
+bool vge::file::SyncReadFile(const char* filePath, u8* buffer, size_t bufferSize, size_t& outBytesRead)
+{
+	FILE* handle = fopen(filePath, "rb");
+	if (handle)
+	{
+		// BLOCK here until all data has been read.
+		size_t bytesRead = fread(buffer, 1, bufferSize, handle);
+		i32 err = ferror(handle); // get error if any
+		fclose(handle);
+		if (err == 0)
+		{
+			outBytesRead = bytesRead;
+			return true;
+		}
+	}
+	outBytesRead = 0;
+	return false;
+}

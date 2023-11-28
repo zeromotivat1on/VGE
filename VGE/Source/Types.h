@@ -4,7 +4,7 @@
 
 namespace vge
 {
-	using ptr_size = decltype(sizeof(void*));
+	using ptr_size = std::uintptr_t;
 
 	using f32	= float;
 
