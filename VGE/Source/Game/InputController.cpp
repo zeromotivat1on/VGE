@@ -36,7 +36,7 @@ namespace vge
 
 void vge::InputController::MoveInPlaneXZ(f32 deltaTime, const Entity& entity)
 {
-	auto* transformComponent = TransformComponent::GetFrom(entity);
+	auto* transformComponent = GCoordinator->GetComponent<TransformComponent>(entity);
 
 	if (!transformComponent)
 	{

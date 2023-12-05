@@ -62,7 +62,7 @@ namespace vge
 
 			for (const Entity& entity : entities)
 			{
-				const auto* renderComponent = RenderComponent::GetFrom(entity);
+				const auto* renderComponent = GCoordinator->GetComponent<RenderComponent>(entity);
 				if (!renderComponent)
 				{
 					continue;

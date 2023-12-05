@@ -54,6 +54,7 @@ const aiScene* vge::file::LoadModel(const char* filename, Assimp::Importer& outI
 
 bool vge::file::SyncReadFile(const char* filePath, u8* buffer, size_t bufferSize, size_t& outBytesRead)
 {
+#pragma warning(suppress : 4996)
 	FILE* handle = fopen(filePath, "rb");
 	if (handle)
 	{

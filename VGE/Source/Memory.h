@@ -36,7 +36,7 @@ namespace vge::memory
 	}
 
 	// Aligned allocation function. IMPORTANT: 'align' must be a power of 2 (typically 4, 8 or 16).
-	void* AllocAligned(size_t bytes, size_t align)
+	inline void* AllocAligned(size_t bytes, size_t align)
 	{
 		// Allocate 'align' more bytes than we need.
 		size_t actualBytes = bytes + align;
@@ -59,7 +59,7 @@ namespace vge::memory
 		return pAlignedMem;
 	}
 
-	void FreeAligned(void* pMem)
+	inline void FreeAligned(void* pMem)
 	{
 		if (pMem)
 		{
