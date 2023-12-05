@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Common.h"
 #include "RenderCommon.h"
 
 namespace vge
@@ -8,7 +9,7 @@ namespace vge
 
 	struct ImageCreateInfo
 	{
-		const Device* Device = nullptr;
+		const vge::Device* Device = nullptr;
 		VkExtent2D Extent = {};
 		VkFormat Format = VkFormat::VK_FORMAT_UNDEFINED;
 		VkImageTiling Tiling = VkImageTiling::VK_IMAGE_TILING_MAX_ENUM;
@@ -16,22 +17,32 @@ namespace vge
 		VmaMemoryUsage MemAllocUsage = VmaMemoryUsage::VMA_MEMORY_USAGE_UNKNOWN;
 	};
 
-	struct Image
+	struct ImageViewCreateInfo
+	{
+		const vge::Device* Device = nullptr;
+		VkImage Image = VK_NULL_HANDLE;
+		VkFormat Format = VK_FORMAT_UNDEFINED; 
+		VkImageAspectFlagBits AspectFlags = VK_IMAGE_ASPECT_NONE;
+	};
+
+	class Image
 	{
 	public:
 		static Image Create(const ImageCreateInfo& data);
 		static Image CreateForTexture(const Device* device, const char* filename);
+		static VkImageView CreateView(const ImageViewCreateInfo& data);
+		static VkFormat GetBestFormat(const Device* device, const std::vector<VkFormat>& formats, VkFormatFeatureFlags features, VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL);
 
 	public:
 		Image() = default;
 		void Destroy();
 
-	public:
-		VkImage Handle = VK_NULL_HANDLE;
-		VmaAllocation Allocation = VK_NULL_HANDLE;
-		VmaAllocationInfo AllocInfo = {};
+		inline VkImage GetHandle() const { return m_Handle; }
 
 	private:
+		VkImage m_Handle = VK_NULL_HANDLE;
+		VmaAllocation m_Allocation = VK_NULL_HANDLE;
+		VmaAllocationInfo m_AllocInfo = {};
 		VmaAllocator m_Allocator = VK_NULL_HANDLE;
 	};
 }

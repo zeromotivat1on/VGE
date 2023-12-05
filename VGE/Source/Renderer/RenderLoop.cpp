@@ -2,54 +2,62 @@
 #include "Application.h"
 #include "Renderer.h"
 #include "Window.h"
+#include "Game/Camera.h"
+#include "ECS/Coordinator.h"
+#include "Components/RenderComponent.h"
+#include "Components/TransformComponent.h"
 
 void vge::RenderLoop::Initialize()
 {
-	const ApplicationSpecs appSpecs = GApplication->Specs;
-
-	CreateWindow(appSpecs.Window.Name, appSpecs.Window.Width, appSpecs.Window.Height);
 	ENSURE(GWindow);
-	GWindow->Initialize();
 
 	CreateDevice(GWindow);
 	ENSURE(GDevice);
 	GDevice->Initialize();
 
-	CreateRenderer(*GDevice);
+	CreateRenderer(GDevice);
 	ENSURE(GRenderer);
 	GRenderer->Initialize();
+
+	RegisterDefaultComponents();
+	RegisterRenderSystem();
 }
 
-void vge::RenderLoop::Tick(float deltaTime)
+void vge::RenderLoop::Tick(f32 deltaTime)
 {
-	static float angle = 0.0f;
-	static const int32 firstModelID = GRenderer->CreateModel("Models/cottage/Cottage_FREE.obj");
-
-	GWindow->PollEvents();
-
-	angle += 30.0f * deltaTime;
-
-	if (angle > 360.0f)
-	{
-		angle -= 360.0f;
-	}
-
-	{
-		glm::mat4 firstModel(1.0f);
-		firstModel = glm::translate(firstModel, glm::vec3(0.0f, 0.0f, -25.0f));
-		//firstModel = glm::rotate(firstModel, glm::radians(30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-		firstModel = glm::rotate(firstModel, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
-		firstModel = glm::scale(firstModel, glm::vec3(1.0f, 1.0f, 1.0f));
-
-		GRenderer->UpdateModelMatrix(firstModelID, firstModel);
-	}
-
-	GRenderer->Draw();
+	//GCamera->SetPerspectiveProjection(glm::radians(45.0f), GRenderer->GetSwapchainAspectRatio(), 0.001f, 100000.0f);
+	m_RenderSystem->Tick(deltaTime);
 }
 
 void vge::RenderLoop::Destroy()
 {
 	DestroyRenderer();
 	DestroyDevice();
-	DestroyWindow();
+}
+
+void vge::RenderLoop::RegisterDefaultComponents() const
+{
+	GCoordinator->RegisterComponent<RenderComponent>();
+}
+
+void vge::RenderLoop::RegisterRenderSystem()
+{
+	m_RenderSystem = GCoordinator->RegisterSystem<RenderSystem>();
+	ENSURE(m_RenderSystem);
+
+	// Initialize default camera.
+	{
+		GCamera->ShouldInvertProjectionYAxis(true);
+		GCamera->SetViewDirection(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		GCamera->SetPerspectiveProjection(glm::radians(45.0f), GRenderer->GetSwapchainAspectRatio(), 0.001f, 100000.0f);
+		//GCamera->SetViewTarget(glm::vec3(-30.0f, -30.0f, 30.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+		//GCamera->SetOrthographicProjection(-20.0f, 20.0f, -20.0f, 20.0f, -10000.0f, 10000.0f);
+	}
+
+	m_RenderSystem->Initialize(GRenderer, GCamera);
+
+	Signature signature;
+	signature.set(GCoordinator->GetComponentType<RenderComponent>());
+	signature.set(GCoordinator->GetComponentType<TransformComponent>());
+	GCoordinator->SetSystemSignature<RenderSystem>(signature);
 }

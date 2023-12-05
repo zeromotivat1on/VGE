@@ -1,65 +1,71 @@
 #include "Swapchain.h"
 #include "Window.h"
 #include "Utils.h"
+#include "RenderPass.h"
 
+namespace vge
+{
 #pragma region Statics
-static VkSurfaceFormatKHR GetBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats)
-{
-	static constexpr VkSurfaceFormatKHR defaultFormat = { VK_FORMAT_R8G8B8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
-
-	if (formats.size() == 1 && formats[0].format == VK_FORMAT_UNDEFINED)
+	static VkSurfaceFormatKHR GetBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats)
 	{
-		LOG(Warning, "Given format is undefined, returning default surface format.");
-		return defaultFormat;
-	}
+		static constexpr VkSurfaceFormatKHR defaultFormat = { VK_FORMAT_R8G8B8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
 
-	for (const VkSurfaceFormatKHR& format : formats)
-	{
-		if ((format.format == VK_FORMAT_R8G8B8A8_UNORM || format.format == VK_FORMAT_B8G8R8A8_UNORM) &&
-			format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+		if (formats.size() == 1 && formats[0].format == VK_FORMAT_UNDEFINED)
 		{
-			return format;
+			LOG(Warning, "Given format is undefined, returning default surface format.");
+			return defaultFormat;
 		}
-	}
 
-	return formats[0];
-}
-
-static VkPresentModeKHR GetBestPresentMode(const std::vector<VkPresentModeKHR>& modes)
-{
-	static constexpr VkPresentModeKHR desiredMode = VK_PRESENT_MODE_MAILBOX_KHR;
-	static constexpr VkPresentModeKHR defaultMode = VK_PRESENT_MODE_FIFO_KHR;
-
-	for (const VkPresentModeKHR& mode : modes)
-	{
-		if (mode == desiredMode)
+		for (const VkSurfaceFormatKHR& format : formats)
 		{
-			return desiredMode;
+			if ((format.format == VK_FORMAT_R8G8B8A8_UNORM || format.format == VK_FORMAT_B8G8R8A8_UNORM) &&
+				format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+			{
+				return format;
+			}
 		}
+
+		return formats[0];
 	}
 
-	return defaultMode;
-}
-
-static VkExtent2D GetBestSwapchainExtent(VkSurfaceCapabilitiesKHR surfaceCapabilities)
-{
-	if (surfaceCapabilities.currentExtent.width != UINT32_MAX)
+	static VkPresentModeKHR GetBestPresentMode(const std::vector<VkPresentModeKHR>& modes)
 	{
-		return surfaceCapabilities.currentExtent;
+		static constexpr VkPresentModeKHR desiredMode = VK_PRESENT_MODE_MAILBOX_KHR;
+		static constexpr VkPresentModeKHR defaultMode = VK_PRESENT_MODE_FIFO_KHR;
+
+		for (const VkPresentModeKHR& mode : modes)
+		{
+			if (mode == desiredMode)
+			{
+				return desiredMode;
+			}
+		}
+
+		return defaultMode;
 	}
 
-	int32 width, height;
-	vge::GWindow->GetFramebufferSize(width, height);
+	static VkExtent2D GetBestSwapchainExtent(VkSurfaceCapabilitiesKHR surfaceCapabilities)
+	{
+		if (surfaceCapabilities.currentExtent.width != UINT32_MAX)
+		{
+			return surfaceCapabilities.currentExtent;
+		}
 
-	VkExtent2D newExtent = {};
-	newExtent.width = std::clamp(static_cast<uint32>(width), surfaceCapabilities.minImageExtent.width, surfaceCapabilities.maxImageExtent.width);
-	newExtent.height = std::clamp(static_cast<uint32>(height), surfaceCapabilities.minImageExtent.height, surfaceCapabilities.maxImageExtent.height);
+		i32 width, height;
+		vge::GWindow->GetFramebufferSize(width, height);
 
-	return newExtent;
-}
+		VkExtent2D newExtent = {};
+		newExtent.width = std::clamp(static_cast<u32>(width), surfaceCapabilities.minImageExtent.width, surfaceCapabilities.maxImageExtent.width);
+		newExtent.height = std::clamp(static_cast<u32>(height), surfaceCapabilities.minImageExtent.height, surfaceCapabilities.maxImageExtent.height);
+
+		return newExtent;
+	}
 #pragma endregion Statics
+}
 
-vge::Swapchain::Swapchain(Device& device) : m_Device(device) {}
+vge::Swapchain::Swapchain(const Device* device) : m_Device(device) 
+{
+}
 
 void vge::Swapchain::Initialize(SwapchainRecreateInfo* recreateInfo /*= nullptr*/)
 {
@@ -70,17 +76,17 @@ void vge::Swapchain::Initialize(SwapchainRecreateInfo* recreateInfo /*= nullptr*
 	}
 	else
 	{
-		m_Device.CreateWindowSurface(m_Surface);
+		m_Device->CreateWindowSurface(m_Surface);
 	}
 
 	SwapchainSupportDetails swapchainDetails = GetSupportDetails();
-	QueueFamilyIndices queueIndices = m_Device.GetQueueIndices();
+	QueueFamilyIndices queueIndices = m_Device->GetQueueIndices();
 
 	VkSurfaceFormatKHR surfaceFormat = GetBestSurfaceFormat(swapchainDetails.SurfaceFormats);
 	VkPresentModeKHR presentMode = GetBestPresentMode(swapchainDetails.PresentModes);
 	VkExtent2D extent = GetBestSwapchainExtent(swapchainDetails.SurfaceCapabilities);
 
-	uint32 imageCount = swapchainDetails.SurfaceCapabilities.minImageCount + 1;
+	u32 imageCount = swapchainDetails.SurfaceCapabilities.minImageCount + 1;
 	if (swapchainDetails.SurfaceCapabilities.maxImageCount > 0 && swapchainDetails.SurfaceCapabilities.maxImageCount < imageCount)
 	{
 		imageCount = swapchainDetails.SurfaceCapabilities.maxImageCount;
@@ -102,10 +108,10 @@ void vge::Swapchain::Initialize(SwapchainRecreateInfo* recreateInfo /*= nullptr*
 
 	if (queueIndices.GraphicsFamily != queueIndices.PresentFamily)
 	{
-		const uint32 queueFamilyIndices[] =
+		const u32 queueFamilyIndices[] =
 		{
-			static_cast<uint32>(queueIndices.GraphicsFamily),
-			static_cast<uint32>(queueIndices.PresentFamily)
+			static_cast<u32>(queueIndices.GraphicsFamily),
+			static_cast<u32>(queueIndices.PresentFamily)
 		};
 
 		swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
@@ -119,21 +125,28 @@ void vge::Swapchain::Initialize(SwapchainRecreateInfo* recreateInfo /*= nullptr*
 		swapchainCreateInfo.pQueueFamilyIndices = nullptr;
 	}
 
-	swapchainCreateInfo.oldSwapchain = recreateInfo->Swapchain;
+	if (recreateInfo && recreateInfo->Swapchain != VK_NULL_HANDLE)
+	{
+		swapchainCreateInfo.oldSwapchain = recreateInfo->Swapchain;
+	}
+	else 
+	{
+		swapchainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
+	}
 
-	VK_ENSURE(vkCreateSwapchainKHR(m_Device.GetHandle(), &swapchainCreateInfo, nullptr, &m_Handle));
+	VK_ENSURE(vkCreateSwapchainKHR(m_Device->GetHandle(), &swapchainCreateInfo, nullptr, &m_Handle));
 
 	if (recreateInfo)
 	{
 		if (recreateInfo->Swapchain != VK_NULL_HANDLE)
 		{
-			vkDestroySwapchainKHR(m_Device.GetHandle(), recreateInfo->Swapchain, nullptr);
+			vkDestroySwapchainKHR(m_Device->GetHandle(), recreateInfo->Swapchain, nullptr);
 			recreateInfo->Swapchain = VK_NULL_HANDLE;
 		}
 
 		if (recreateInfo->Surface != VK_NULL_HANDLE)
 		{
-			vkDestroySurfaceKHR(m_Device.GetInstance(), recreateInfo->Surface, nullptr);
+			vkDestroySurfaceKHR(m_Device->GetInstance(), recreateInfo->Surface, nullptr);
 			recreateInfo->Surface = VK_NULL_HANDLE;
 		}
 	}
@@ -143,17 +156,23 @@ void vge::Swapchain::Initialize(SwapchainRecreateInfo* recreateInfo /*= nullptr*
 
 	LOG(Log, "Dimensions: %dx%d", m_Extent.width, m_Extent.height);
 
-	uint32 swapchainImageCount = 0;
-	vkGetSwapchainImagesKHR(m_Device.GetHandle(), m_Handle, &swapchainImageCount, nullptr);
+	u32 swapchainImageCount = 0;
+	vkGetSwapchainImagesKHR(m_Device->GetHandle(), m_Handle, &swapchainImageCount, nullptr);
 
 	std::vector<VkImage> images(swapchainImageCount);
-	vkGetSwapchainImagesKHR(m_Device.GetHandle(), m_Handle, &swapchainImageCount, images.data());
+	vkGetSwapchainImagesKHR(m_Device->GetHandle(), m_Handle, &swapchainImageCount, images.data());
 
-	for (const auto& image : images)
+	for (const VkImage& image : images)
 	{
+		ImageViewCreateInfo imgViewCreateInfo = {};
+		imgViewCreateInfo.Device = m_Device;
+		imgViewCreateInfo.Format = m_ImageFormat;
+		imgViewCreateInfo.AspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
+		imgViewCreateInfo.Image = image;
+
 		SwapchainImage swapchainImage = {};
 		swapchainImage.Handle = image;
-		CreateImageView(m_Device.GetHandle(), image, m_ImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, swapchainImage.View);
+		swapchainImage.View = Image::CreateView(imgViewCreateInfo);
 
 		m_Images.push_back(swapchainImage);
 	}
@@ -161,14 +180,14 @@ void vge::Swapchain::Initialize(SwapchainRecreateInfo* recreateInfo /*= nullptr*
 
 void vge::Swapchain::Destroy(SwapchainRecreateInfo* recreateInfo /*= nullptr*/)
 {
-	for (VkFramebuffer& framebuffer : m_Framebuffers)
+	for (FrameBuffer& framebuffer : m_Framebuffers)
 	{
-		vkDestroyFramebuffer(m_Device.GetHandle(), framebuffer, nullptr);
+		framebuffer.Destroy();
 	}
 
 	for (SwapchainImage& swapchainImage : m_Images)
 	{
-		vkDestroyImageView(m_Device.GetHandle(), swapchainImage.View, nullptr);
+		vkDestroyImageView(m_Device->GetHandle(), swapchainImage.View, nullptr);
 	}
 
 	if (recreateInfo && recreateInfo->IsValid())
@@ -178,23 +197,19 @@ void vge::Swapchain::Destroy(SwapchainRecreateInfo* recreateInfo /*= nullptr*/)
 	}
 	else
 	{
-		vkDestroySwapchainKHR(m_Device.GetHandle(), m_Handle, nullptr);
-		vkDestroySurfaceKHR(m_Device.GetInstance(), m_Surface, nullptr);
+		vkDestroySwapchainKHR(m_Device->GetHandle(), m_Handle, nullptr);
+		vkDestroySurfaceKHR(m_Device->GetInstance(), m_Surface, nullptr);
 	}
 }
 
-void vge::Swapchain::CreateFramebuffer(VkRenderPass renderPass, uint32 attachmentCount, const VkImageView* attachments)
+void vge::Swapchain::CreateFramebuffer(const RenderPass* renderPass, u32 attachmentCount, const VkImageView* attachments)
 {
-	VkFramebufferCreateInfo framebufferCreateInfo = {};
-	framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-	framebufferCreateInfo.renderPass = renderPass;
-	framebufferCreateInfo.attachmentCount = attachmentCount;
-	framebufferCreateInfo.pAttachments = attachments;
-	framebufferCreateInfo.width = m_Extent.width;
-	framebufferCreateInfo.height = m_Extent.height;
-	framebufferCreateInfo.layers = 1;
+	FrameBufferCreateInfo createInfo = {};
+	createInfo.Device = m_Device;
+	createInfo.RenderPass = renderPass->GetHandle();
+	createInfo.AttachmentCount = attachmentCount;
+	createInfo.Attachments = attachments;
+	createInfo.Extent = m_Extent;
 
-	VkFramebuffer framebuffer = VK_NULL_HANDLE;
-	VK_ENSURE(vkCreateFramebuffer(m_Device.GetHandle(), &framebufferCreateInfo, nullptr, &framebuffer));
-	m_Framebuffers.push_back(framebuffer);
+	m_Framebuffers.push_back(FrameBuffer::Create(createInfo));
 }

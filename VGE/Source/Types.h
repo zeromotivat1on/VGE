@@ -2,13 +2,18 @@
 
 #include <stdint.h>
 
-using ptr_size = decltype(sizeof(void*));
+namespace vge
+{
+	using ptr_size = std::uintptr_t;
 
-using int8		= int8_t;
-using int16		= int16_t;
-using int32		= int32_t;
-using int64		= int64_t;
-using uint8		= uint8_t;
-using uint16	= uint16_t;
-using uint32	= uint32_t;
-using uint64	= uint64_t;
+	using f32	= float;
+
+	using i8	= std::int8_t;
+	using i16	= std::int16_t;
+	using i32	= std::int32_t;
+	using i64	= std::int64_t;
+	using u8	= std::uint8_t;
+	using u16	= std::uint16_t;
+	using u32	= std::uint32_t;
+	using u64	= std::uint64_t;
+}

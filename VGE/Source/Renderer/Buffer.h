@@ -23,11 +23,20 @@ namespace vge
 		VkDeviceSize Size = 0;
 	};
 
+	struct BufferImageCopyInfo
+	{
+		const Device* Device = nullptr;
+		VkBuffer SrcBuffer = VK_NULL_HANDLE;
+		VkImage DstImage = VK_NULL_HANDLE;
+		VkExtent2D Extent = {};
+	};
+
 	struct Buffer
 	{
 	public:
 		static Buffer Create(const BufferCreateInfo& data);
 		static void Copy(const BufferCopyInfo& data);
+		static void CopyToImage(const BufferImageCopyInfo& data);
 
 	public:
 		Buffer() = default;
@@ -42,30 +51,6 @@ namespace vge
 
 	private:
 		VmaAllocator m_Allocator = VK_NULL_HANDLE;
-	};
-
-	//void CreateBuffer(VmaAllocator allocator, VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memAllocUsage, Buffer& outBuffer);
-
-	VkCommandBuffer BeginOneTimeCmdBuffer(const Device* device);
-	void			EndOneTimeCmdBuffer(const Device* device, VkCommandBuffer cmdBuffer);
-
-	//void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags memProps, VkBuffer& outBuffer, VkDeviceMemory& outMemory);
-
-	//void CopyBuffer(VkQueue transferQueue, VkCommandPool transferCmdPool, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
-	void CopyImageBuffer(const Device* device, VkBuffer srcBuffer, VkImage dstImage, VkExtent2D extent);
-
-	// Simple wrapper for BeginOneTimeCmdBuffer (ctor) and EndOneTimeCmdBuffer (dtor) functions.
-	struct ScopeCmdBuffer
-	{
-	public:
-		ScopeCmdBuffer(const Device* device);
-		~ScopeCmdBuffer();
-
-		VkCommandBuffer Get() const { return m_CmdBuffer; }
-
-	private:
-		const Device* m_Device = nullptr;
-		VkCommandBuffer m_CmdBuffer = VK_NULL_HANDLE;
 	};
 
 	// Simple wrapper for scoped stage buffer.
@@ -84,16 +69,20 @@ namespace vge
 	class IndexBuffer
 	{
 	public:
-		static IndexBuffer Create(const Device* device, const std::vector<uint32>& indices);
-		static IndexBuffer Create(const Device* device, size_t indexCount, const uint32* pIndices);
+		static IndexBuffer Create(const Device* device, const std::vector<u32>& indices);
+		static IndexBuffer Create(const Device* device, size_t indexCount, const u32* indices);
 
 	public:
 		IndexBuffer() = default;
-		inline void Destroy() { m_AllocatedBuffer.Destroy(); }
+		inline void Destroy() { m_AllocatedBuffer.Destroy(); m_IndexCount = 0; }
 		inline Buffer Get() const { return m_AllocatedBuffer; }
+		inline size_t GetIndexCount() const { return m_IndexCount; }
+		inline VkIndexType GetIndexType() const { return m_IndexType; }
 
 	private:
 		Buffer m_AllocatedBuffer = {};
+		size_t m_IndexCount = 0;
+		VkIndexType m_IndexType = VK_INDEX_TYPE_UINT32;
 	};
 
 	struct VertexInputDescription
@@ -117,14 +106,43 @@ namespace vge
 	{
 	public:
 		static VertexBuffer Create(const Device* device, const std::vector<Vertex>& vertices);
-		static VertexBuffer Create(const Device* device, size_t vertexCount, const Vertex* pVertices);
+		static VertexBuffer Create(const Device* device, size_t vertexCount, const Vertex* vertices);
 
 	public:
 		VertexBuffer() = default;
-		inline void Destroy() { m_AllocatedBuffer.Destroy(); }
+		inline void Destroy() { m_AllocatedBuffer.Destroy(); m_VertexCount = 0; }
 		inline Buffer Get() const { return m_AllocatedBuffer; }
+		inline size_t GetVertexCount() const { return m_VertexCount; }
 
 	private:
 		Buffer m_AllocatedBuffer = {};
+		size_t m_VertexCount = 0;
+	};
+
+	struct FrameBufferCreateInfo
+	{
+		const Device* Device = nullptr;
+		VkRenderPass RenderPass = VK_NULL_HANDLE;
+		u32 AttachmentCount = 0; 
+		const VkImageView* Attachments = nullptr;
+		VkExtent2D Extent = { 0, 0 };
+	};
+
+	class FrameBuffer
+	{
+	public:
+		static FrameBuffer Create(const FrameBufferCreateInfo& data);
+
+	public:
+		FrameBuffer() = default;
+		void Destroy();
+
+		inline VkFramebuffer GetHandle() const { return m_Handle; }
+		inline VkExtent2D GetExtent() const { return m_Extent; }
+
+	private:
+		const Device* m_Device = nullptr;
+		VkFramebuffer m_Handle = VK_NULL_HANDLE;
+		VkExtent2D m_Extent = { 0, 0 };
 	};
 }

@@ -8,7 +8,7 @@ layout (location = 0) out vec4 outColor;
 void main() 
 {
 	// Apply depth visualization.
-	const bool depthViz = true;
+	const bool depthViz = false;
 
 	if (depthViz)
 	{

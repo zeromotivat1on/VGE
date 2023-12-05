@@ -1,27 +1,11 @@
 #include "Window.h"
-#include "Renderer.h"
-
-vge::Window* vge::CreateWindow(const char* name, const int32 width, const int32 height)
-{
-	if (GWindow) return GWindow;
-	return (GWindow = new Window(name, width, height));
-}
-
-bool vge::DestroyWindow()
-{
-	if (!GWindow) return false;
-	GWindow->Destroy();
-	delete GWindow;
-	GWindow = nullptr;
-	return true;
-}
 
 void vge::Window::GetInstanceExtensions(std::vector<const char*>& outExtensions) const
 {
-	uint32 glfwExtensionCount = 0;
+	u32 glfwExtensionCount = 0;
 	const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
-	for (uint32 i = 0; i < glfwExtensionCount; ++i)
+	for (u32 i = 0; i < glfwExtensionCount; ++i)
 	{
 		outExtensions.push_back(glfwExtensions[i]);
 	}
@@ -35,7 +19,7 @@ void vge::Window::WaitSizeless() const
 	}
 }
 
-void vge::Window::FramebufferResizeCallback(GLFWwindow* windowRaw, int32 width, int32 height)
+void vge::Window::FramebufferResizeCallback(GLFWwindow* windowRaw, i32 width, i32 height)
 {
 	Window* window = reinterpret_cast<Window*>(glfwGetWindowUserPointer(windowRaw));
 	window->m_FramebufferResized = true;
@@ -44,15 +28,10 @@ void vge::Window::FramebufferResizeCallback(GLFWwindow* windowRaw, int32 width, 
 
 	LOG(Log, "Dimensions: %dx%d", width, height);
 
-	// Preserve actual image resize as well.
-	if (GRenderer)
-	{
-		GRenderer->RecreateSwapchain();
-		GRenderer->Draw();
-	}
+	// TODO: add clever and beautiful way to recreate swapchain.
 }
 
-vge::Window::Window(const char* name, const int32 width, const int32 height)
+vge::Window::Window(const char* name, const i32 width, const i32 height)
 	: m_Name(name), m_Width(width), m_Height(height)
 {}
 

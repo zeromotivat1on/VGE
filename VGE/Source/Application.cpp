@@ -2,24 +2,10 @@
 #define VMA_IMPLEMENTATION
 
 #include "Application.h"
+#include "EngineLoop.h"
 #include "Renderer/Window.h"
 #include "Renderer/Device.h"
 #include "Renderer/Renderer.h"
-
-vge::Application* vge::CreateApplication(const ApplicationSpecs& specs)
-{
-	if (GApplication) return GApplication;
-	return (GApplication = new Application(specs));
-}
-
-bool vge::DestroyApplication()
-{
-	if (!GApplication) return false;
-	GApplication->Close();
-	delete GApplication;
-	GApplication = nullptr;
-	return true;
-}
 
 vge::Application::Application(const ApplicationSpecs& specs) : Specs(specs)
 {}
@@ -31,17 +17,20 @@ void vge::Application::Initialize()
 	ENSURE(system("compile_shaders.bat") >= 0);
 	LOG_RAW("\n----- Shader compilation finished -----\n\n");
 #endif
+
+	CreateEngineLoop();
+	ENSURE(GEngineLoop);
+	GEngineLoop->Initialize();
 }
 
 void vge::Application::Run()
 {
-	m_EngineLoop.Initialize();
-	m_EngineLoop.Start();
+	GEngineLoop->Start();
 }
 
 void vge::Application::Close()
 {
-	m_EngineLoop.Destroy();
+	ENSURE(DestroyEngineLoop());
 }
 
 bool vge::Application::ShouldClose() const
@@ -49,7 +38,7 @@ bool vge::Application::ShouldClose() const
 	return GWindow->ShouldClose();
 }
 
-int32 vge::Main(int argc, const char** argv)
+vge::i32 vge::Main(int argc, const char** argv)
 {
 	ApplicationSpecs specs = {};
 	specs.Name = "Vulkan Game Engine";

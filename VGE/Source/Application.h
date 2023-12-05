@@ -1,20 +1,19 @@
 #pragma once
 
 #include "Common.h"
-#include "EngineLoop.h"
 
 namespace vge 
 {
 	inline class Application* GApplication = nullptr;
 
-	inline uint64 GAppFrame = 0;
+	inline u64 GAppFrame = 0;
 
 	struct ApplicationSpecs
 	{
 		struct {
 			const char* Name = nullptr;
-			uint32 Width = 0;
-			uint32 Height = 0;
+			u32 Width = 0;
+			u32 Height = 0;
 		} Window;
 
 		const char* Name = "";
@@ -36,13 +35,22 @@ namespace vge
 
 	public:
 		const ApplicationSpecs Specs = {};
-
-	private:
-		EngineLoop m_EngineLoop = {};
 	};
 
-	Application* CreateApplication(const ApplicationSpecs& specs);
-	bool DestroyApplication();
+	inline Application* CreateApplication(const ApplicationSpecs& specs)
+	{
+		if (GApplication) return GApplication;
+		return (GApplication = new Application(specs));
+	}
 
-	int32 Main(int argc, const char** argv);
+	inline bool DestroyApplication()
+	{
+		if (!GApplication) return false;
+		GApplication->Close();
+		delete GApplication;
+		GApplication = nullptr;
+		return true;
+	}
+
+	i32 Main(int argc, const char** argv);
 }

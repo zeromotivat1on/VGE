@@ -1,51 +1,83 @@
 #include "EngineLoop.h"
 #include "Application.h"
 #include "Profiling.h"
+#include "Game/Camera.h"
+#include "ECS/Coordinator.h"
+#include "Renderer/Renderer.h"
 #include "Renderer/RenderCommon.h"
+#include "Components/RenderComponent.h"
+#include "Components/TransformComponent.h"
 
-static inline void IncrementAppFrame() { ++vge::GAppFrame; }
+static inline void IncrementAppFrame() 
+{ 
+	++vge::GAppFrame; 
+}
 
 void vge::EngineLoop::Initialize()
 {
+	GCamera = new Camera();
+
 	m_GameLoop.Initialize();
 	m_RenderLoop.Initialize();
+
+	// Add 1 test entity.
+	const Entity entity = GCoordinator->CreateEntity();
+
+	{
+		m_GameLoop.GetGameSystem()->Add(entity);
+		GCoordinator->AddComponent(entity, TransformComponent());
+	}
+
+	{
+		m_RenderLoop.GetRenderSystem()->Add(entity);
+
+		RenderComponent renderComponent = {};
+		renderComponent.ModelId = GRenderer->CreateModel("Models/cottage/Cottage_FREE.obj");
+		GCoordinator->AddComponent(entity, renderComponent);
+	}
 }
 
 void vge::EngineLoop::Start()
 {
-	StartTime = static_cast<float>(glfwGetTime());
+	m_StartTime = static_cast<f32>(glfwGetTime());
 
 	while (!GApplication->ShouldClose())
 	{
-		SCOPE_TIMER("Tick");
-		UpdateTime();
+		//SCOPE_TIMER("Tick");
+		UpdateDeltaTime();
 		Tick();
 		IncrementAppFrame();
 	}
 
-	const float loopDurationTime = LastTime - StartTime;
+	const f32 loopDurationTime = m_LastTime - m_StartTime;
 	LOG(Log, "Engine loop stats:");
 	LOG(Log, " Duration: %.2fs", loopDurationTime);
-	LOG(Log, " Iterations: %d", GAppFrame);
-	LOG(Log, " Average FPS: %.2f", static_cast<float>(GAppFrame) / loopDurationTime);
+	LOG(Log, " Frames: %d", GAppFrame);
+	LOG(Log, " Average FPS: %.2f", static_cast<f32>(GAppFrame) / loopDurationTime);
 }
 
 void vge::EngineLoop::Tick()
 {
 	// TODO: make separate threads for game and render.
-	m_GameLoop.Tick(DeltaTime);
-	m_RenderLoop.Tick(DeltaTime);
+	m_GameLoop.Tick(m_DeltaTime);
+	m_RenderLoop.Tick(m_DeltaTime);
+	// TODO: when separate threads are done - implement their sync.
 }
 
 void vge::EngineLoop::Destroy()
 {
 	m_RenderLoop.Destroy();
 	m_GameLoop.Destroy();
+	
+	if (GCamera)
+	{
+		delete GCamera;
+	}
 }
 
-void vge::EngineLoop::UpdateTime()
+void vge::EngineLoop::UpdateDeltaTime()
 {
-	const float nowTime = static_cast<float>(glfwGetTime());
-	DeltaTime = nowTime - LastTime;
-	LastTime = nowTime;
+	const f32 nowTime = static_cast<f32>(glfwGetTime());
+	m_DeltaTime = nowTime - m_LastTime;
+	m_LastTime = nowTime;
 }

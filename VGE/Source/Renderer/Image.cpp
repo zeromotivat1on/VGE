@@ -2,6 +2,7 @@
 #include "Device.h"
 #include "File.h"
 #include "Buffer.h"
+#include "CommandBuffer.h"
 
 namespace 
 {
@@ -55,7 +56,7 @@ namespace
 		}
 
 		vkCmdPipelineBarrier(
-			cmdBuffer.Get(),				// command buffer
+			cmdBuffer.GetHandle(),			// command buffer
 			srcStageFlags, dstStageFlags,	// pipeline stages (match to src/dst Access Masks from barrier)
 			0,								// dependency flags
 			0, nullptr,						// memory barrier
@@ -63,6 +64,27 @@ namespace
 			1, &imageMemoryBarrier			// image memory barrier
 		);
 	}
+}
+
+VkFormat vge::Image::GetBestFormat(const Device* device, const std::vector<VkFormat>& formats, VkFormatFeatureFlags features, VkImageTiling tiling /*= VK_IMAGE_TILING_OPTIMAL*/)
+{
+	for (const VkFormat& format : formats)
+	{
+		VkFormatProperties formatProps;
+		vkGetPhysicalDeviceFormatProperties(device->GetGpu(), format, &formatProps);
+
+		if (tiling == VK_IMAGE_TILING_LINEAR && (formatProps.linearTilingFeatures & features) == features)
+		{
+			return format;
+		}
+		else if (tiling == VK_IMAGE_TILING_OPTIMAL && (formatProps.optimalTilingFeatures & features) == features)
+		{
+			return format;
+		}
+	}
+
+	LOG(Warning, "Failed to find matching format, returning VK_FORMAT_UNDEFINED.");
+	return VK_FORMAT_UNDEFINED;
 }
 
 vge::Image vge::Image::Create(const ImageCreateInfo& data)
@@ -87,18 +109,18 @@ vge::Image vge::Image::Create(const ImageCreateInfo& data)
 
 	Image image = {};
 	image.m_Allocator = data.Device->GetAllocator();
-	VK_ENSURE(vmaCreateImage(image.m_Allocator, &imageCreateInfo, &vmaAllocCreateInfo, &image.Handle, &image.Allocation, &image.AllocInfo));
+	VK_ENSURE(vmaCreateImage(image.m_Allocator, &imageCreateInfo, &vmaAllocCreateInfo, &image.m_Handle, &image.m_Allocation, &image.m_AllocInfo));
 
 	return image;
 }
 
 vge::Image vge::Image::CreateForTexture(const Device* device, const char* filename)
 {
-	int32 width = 0, height = 0;
+	i32 width = 0, height = 0;
 	VkDeviceSize textureSize = 0;
 	stbi_uc* textureData = file::LoadTexture(filename, width, height, textureSize);
 
-	const VkExtent2D textureExtent = { static_cast<uint32>(width), static_cast<uint32>(height) };
+	const VkExtent2D textureExtent = { static_cast<u32>(width), static_cast<u32>(height) };
 
 	ScopeStageBuffer stageBuffer(device, textureSize);
 	stageBuffer.Get().TransferToGpuMemory(textureData, static_cast<size_t>(textureSize));
@@ -117,16 +139,24 @@ vge::Image vge::Image::CreateForTexture(const Device* device, const char* filena
 
 	ImageTransitionInfo transitionInfo = {};
 	transitionInfo.Device = device;
-	transitionInfo.Image = image.Handle;
+	transitionInfo.Image = image.m_Handle;
 
-	// Transition image to be destination for copy operation.
+	// Transition image to have destination for copy operation.
 	{
 		transitionInfo.OldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		transitionInfo.NewLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		TransitionImageLayout(transitionInfo);
 	}
 
-	CopyImageBuffer(device, stageBuffer.Get().Handle, image.Handle, textureExtent);
+	// Copy stage buffer data to image.
+	{
+		BufferImageCopyInfo imageCopyInfo = {};
+		imageCopyInfo.Device = device;
+		imageCopyInfo.SrcBuffer = stageBuffer.Get().Handle;
+		imageCopyInfo.DstImage = image.m_Handle;
+		imageCopyInfo.Extent = textureExtent;
+		Buffer::CopyToImage(imageCopyInfo);
+	}
 
 	// Transition image to be shader readable for shade usage.
 	{
@@ -138,11 +168,34 @@ vge::Image vge::Image::CreateForTexture(const Device* device, const char* filena
 	return image;
 }
 
+VkImageView vge::Image::CreateView(const ImageViewCreateInfo& data)
+{
+	VkImageViewCreateInfo createInfo = {};
+	createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	createInfo.image = data.Image;
+	createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	createInfo.format = data.Format;
+	createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+	createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+	createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+	createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+	createInfo.subresourceRange.aspectMask = data.AspectFlags;
+	createInfo.subresourceRange.baseMipLevel = 0;
+	createInfo.subresourceRange.levelCount = 1;
+	createInfo.subresourceRange.baseArrayLayer = 0;
+	createInfo.subresourceRange.layerCount = 1;
+
+	VkImageView view = VK_NULL_HANDLE;
+	VK_ENSURE(vkCreateImageView(data.Device->GetHandle(), &createInfo, nullptr, &view));
+
+	return view;
+}
+
 void vge::Image::Destroy()
 {
-	vmaDestroyImage(m_Allocator, Handle, Allocation);
-	Handle = VK_NULL_HANDLE;
-	Allocation = VK_NULL_HANDLE;
-	memory::memzero(&AllocInfo, sizeof(VmaAllocationInfo));
+	vmaDestroyImage(m_Allocator, m_Handle, m_Allocation);
+	m_Handle = VK_NULL_HANDLE;
+	m_Allocation = VK_NULL_HANDLE;
+	memory::Memzero(&m_AllocInfo, sizeof(VmaAllocationInfo));
 	m_Allocator = VK_NULL_HANDLE;
 }

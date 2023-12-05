@@ -1,14 +1,25 @@
 #pragma once
 
 #include "Common.h"
-#include "Device.h"
+#include "Shader.h"
 
 namespace vge
 {
+	class Device;
+	class RenderPass;
+
 	struct PipelineCreateInfo
 	{
-		NOT_COPYABLE(PipelineCreateInfo);
+		vge::Device* Device = nullptr;
+		std::vector<const char*> ShaderFilenames = {};
+		std::vector<std::vector<VkDescriptorSetLayoutBinding>> DescriptorSetLayoutBindings = {};
+		std::vector<VkDynamicState> DynamicStates = {};
+		std::vector<VkPushConstantRange> PushConstants = {};
+		u32 SubpassIndex = 0;
+		vge::RenderPass* RenderPass = nullptr;
+		VkPipelineBindPoint BindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 
+		// Can be set by DefaultCreateInfo.
 		VkPipelineViewportStateCreateInfo ViewportInfo = {};
 		VkPipelineVertexInputStateCreateInfo VertexInfo = {};
 		VkPipelineInputAssemblyStateCreateInfo InputAssemblyInfo = {};
@@ -17,38 +28,37 @@ namespace vge
 		VkPipelineColorBlendAttachmentState ColorBlendAttachment = {};
 		VkPipelineColorBlendStateCreateInfo ColorBlendInfo = {};
 		VkPipelineDepthStencilStateCreateInfo DepthStencilInfo = {};
-		std::vector<VkDynamicState> DynamicStates = {};
 		VkPipelineDynamicStateCreateInfo DynamicStateInfo = {};
-		VkPipelineLayout PipelineLayout = VK_NULL_HANDLE;
-		VkRenderPass RenderPass = VK_NULL_HANDLE;
-		int32 SubpassIndex = INDEX_NONE;
 	};
 
 	class Pipeline
 	{
 	public:
+		// NOTE: If you want to use DynamicStates, ensure they are valid before calling this or update dynamic state info manually.
 		static void DefaultCreateInfo(PipelineCreateInfo& createInfo);
 
 	public:
 		Pipeline() = default;
-		Pipeline(Device& device);
-		NOT_COPYABLE(Pipeline);
 
 	public:
-		void Initialize(const char* vertexShader, const char* fragmentShader, const PipelineCreateInfo& data);
+		void Initialize(const PipelineCreateInfo& data);
 		void Destroy();
 
 		inline VkPipeline GetHandle() const { return m_Handle; }
 		inline VkPipelineLayout GetLayout() const { return m_Layout; }
-		
-		inline void Bind(VkCommandBuffer cmdBuffer, VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS) { vkCmdBindPipeline(cmdBuffer, bindPoint, m_Handle); }
+		inline const Shader* GetShader(ShaderStage stage) const { return &m_Shaders[(size_t)stage]; }
+		inline VkPipelineBindPoint GetBindPoint() const { return m_BindPoint; }
 
 	private:
-		Device& m_Device;
+		void GetShaderStageInfos(std::vector<VkPipelineShaderStageCreateInfo>& outStageInfos);
+
+	private:
+		Device* m_Device = nullptr;
+		RenderPass* m_RenderPass = nullptr;
 		VkPipeline m_Handle = VK_NULL_HANDLE;
 		VkPipelineLayout m_Layout = VK_NULL_HANDLE;
-		VkShaderModule m_VertexShaderModule = VK_NULL_HANDLE;
-		VkShaderModule m_FragmentShaderModule = VK_NULL_HANDLE;
-		int32 m_SubpassIndex = INDEX_NONE;
+		i32 m_SubpassIndex = INDEX_NONE;
+		Shader m_Shaders[(size_t)ShaderStage::Count];
+		VkPipelineBindPoint m_BindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	};
 }

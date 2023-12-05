@@ -1,7 +1,7 @@
 #include "Logging.h"
+#include "Color.h"
 
 #if USE_LOGGING
-
 void vge::Logger::PrintLog(const LogCategory category, const char* message, ...)
 {
 	va_list args;
@@ -20,10 +20,13 @@ void vge::Logger::PrintLogRaw(const char* message, ...)
 
 void vge::Logger::PrintLog_Implementation(const LogCategory category, const char* message, va_list args)
 {
+	PaintConsoleText(category);
+	
 	const std::string categoryStr = LogCategoryToString(category);
-	const std::string caller = "[%s]: ";
-
+	const std::string caller = "[%s::%d]: "; // function name + log line
 	vprintf((categoryStr + caller + message + '\n').c_str(), args);
+
+	PaintDefaultConsoleText();
 }
 
 void vge::Logger::PrintLogRaw_Implementation(const char* message, va_list args)
@@ -31,20 +34,41 @@ void vge::Logger::PrintLogRaw_Implementation(const char* message, va_list args)
 	vprintf(message, args);
 }
 
+void vge::Logger::PaintConsoleText(const LogCategory category)
+{
+	switch (category)
+	{
+	case LogCategory::Warning:
+		std::cout << hue::yellow; return;
+	case LogCategory::Error:
+		std::cout << hue::red; return;
+	default:
+		return;
+	}
+}
+
+void vge::Logger::PaintDefaultConsoleText()
+{
+	std::cout << hue::reset;
+}
+
 std::string vge::Logger::LogCategoryToString(const LogCategory category)
 {
 	switch (category)
 	{
 	case LogCategory::Warning:
+		std::cout << hue::yellow;
 		return "Warning: ";
 	case LogCategory::Error:
+		std::cout << hue::red;
 		return "Error: ";
 	default:
+		PaintDefaultConsoleText();
 		return "Log: ";
 	}
 }
 
-void vge::NotifyVulkanEnsureFailure(VkResult result, const char* function, const char* filename, uint32 line, const char* errMessage)
+void vge::NotifyVulkanEnsureFailure(VkResult result, const char* function, const char* filename, u32 line, const char* errMessage)
 {
 	const char* resultString = nullptr;
 	switch (result)
@@ -89,6 +113,6 @@ void vge::NotifyVulkanEnsureFailure(VkResult result, const char* function, const
 		LOG(Error, " User error message: %s", errMessage);
 	}
 
-	abort();
+	DEBUG_BREAK();
 }
 #endif

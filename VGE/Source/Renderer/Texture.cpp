@@ -6,19 +6,25 @@
 
 vge::Texture vge::Texture::Create(const TextureCreateInfo& data)
 {
-	ImageCreateInfo texImgCreateInfo = {};
-	texImgCreateInfo.Device = data.Device;
-
 	Texture tex = {};
 	tex.m_Id = data.Id;
 	tex.m_Filename = data.Filename;
 	tex.m_Device = data.Device;
 	tex.m_Image = Image::CreateForTexture(data.Device, data.Filename);
 
-	CreateImageView(data.Device->GetHandle(), tex.m_Image.Handle, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, tex.m_View);
+	{
+		ImageViewCreateInfo texImgViewCreateInfo = {};
+		texImgViewCreateInfo.Device = data.Device;
+		texImgViewCreateInfo.Format = VK_FORMAT_R8G8B8A8_UNORM;
+		texImgViewCreateInfo.AspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
+		texImgViewCreateInfo.Image = tex.m_Image.GetHandle();
+
+		tex.m_View = Image::CreateView(texImgViewCreateInfo);
+	}
+
 	CreateTextureDescriptorSet(data.Device->GetHandle(), data.Sampler, data.DescriptorPool, data.DescriptorLayout, tex.m_View, tex.m_Descriptor);
 
-	LOG(Log, "New - ID: %d, name: %s", tex.GetId(), tex.GetFilename());
+	LOG(Log, "New - ID: %d, filename: %s", tex.GetId(), tex.GetFilename());
 
 	return tex;
 }

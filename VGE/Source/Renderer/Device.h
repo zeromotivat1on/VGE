@@ -10,8 +10,8 @@ namespace vge
 
 	struct QueueFamilyIndices
 	{
-		int32 GraphicsFamily = -1;
-		int32 PresentFamily = -1;
+		i32 GraphicsFamily = -1;
+		i32 PresentFamily = -1;
 
 		inline bool IsValid()
 		{
@@ -87,6 +87,18 @@ namespace vge
 		void CreateCommandPool();
 	};
 
-	Device* CreateDevice(Window* window);
-	bool DestroyDevice();
+	inline Device* CreateDevice(Window* window)
+	{
+		if (GDevice) return GDevice;
+		return (GDevice = new Device(window));
+	}
+
+	inline bool DestroyDevice()
+	{
+		if (!GDevice) return false;
+		GDevice->Destroy();
+		delete GDevice;
+		GDevice = nullptr;
+		return true;
+	}
 }

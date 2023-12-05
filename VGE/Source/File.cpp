@@ -21,11 +21,11 @@ std::vector<char> vge::file::ReadShader(const char* filename)
 	return fileBuffer;
 }
 
-stbi_uc* vge::file::LoadTexture(const char* filename, int32& outw, int32& outh, VkDeviceSize& outTextureSize)
+stbi_uc* vge::file::LoadTexture(const char* filename, i32& outw, i32& outh, VkDeviceSize& outTextureSize)
 {
-	static constexpr int8 desiredChannelCount = 4; // r g b a
+	static constexpr i8 desiredChannelCount = 4; // r g b a
 
-	int32 channels = 0;
+	i32 channels = 0;
 	stbi_uc* image = stbi_load(filename, &outw, &outh, &channels, STBI_rgb_alpha);
 
 	if (!image)
@@ -50,4 +50,24 @@ const aiScene* vge::file::LoadModel(const char* filename, Assimp::Importer& outI
 	}
 
 	return scene;
+}
+
+bool vge::file::SyncReadFile(const char* filePath, u8* buffer, size_t bufferSize, size_t& outBytesRead)
+{
+#pragma warning(suppress : 4996)
+	FILE* handle = fopen(filePath, "rb");
+	if (handle)
+	{
+		// BLOCK here until all data has been read.
+		size_t bytesRead = fread(buffer, 1, bufferSize, handle);
+		i32 err = ferror(handle); // get error if any
+		fclose(handle);
+		if (err == 0)
+		{
+			outBytesRead = bytesRead;
+			return true;
+		}
+	}
+	outBytesRead = 0;
+	return false;
 }
