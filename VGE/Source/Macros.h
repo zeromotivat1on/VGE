@@ -45,7 +45,7 @@
 #endif
 
 #ifndef CHECK_ENABLED
-	#define CHECK_ENABLED USE_LOGGING && 1
+	#define CHECK_ENABLED 1
 #endif
 
 #if ENSURE_ENABLED
@@ -53,14 +53,10 @@
 		if (expr) {}																							\
 		else																									\
 		{																										\
-			LOG(Error, "Ensure condition failed: %s", #expr);													\
+			LOG(Error, "Ensure condition failed: %s", STRING(expr));											\
 			DEBUG_BREAK();																						\
 		}
-#else
-	#define ENSURE(expr)
-#endif
-
-#if ENSURE_ENABLED
+	
 	#define ENSURE_MSG(expr, msg)																				\
 		if (expr) {}																							\
 		else																									\
@@ -68,8 +64,29 @@
 			LOG(Error, msg);																					\
 			DEBUG_BREAK();																						\
 		}
+
+	#define VK_ENSURE(vkResult)																					\
+	{																											\
+		const VkResult ScopedResult = vkResult;																	\
+		if (ScopedResult != VK_SUCCESS)																			\
+		{																										\
+			vge::NotifyVulkanEnsureFailure(ScopedResult, STRING(vkResult), __FILE__, __LINE__);					\
+		}																										\
+	}
+	
+	#define VK_ENSURE_MSG(vkResult, msg)																		\
+	{																											\
+		const VkResult ScopedResult = vkResult;																	\
+		if (ScopedResult != VK_SUCCESS)																			\
+		{																										\
+			vge::NotifyVulkanEnsureFailure(ScopedResult, STRING(vkResult), __FILE__, __LINE__, msg);			\
+		}																										\
+	}
 #else
-	#define ENSURE_MSG(expr)
+	#define ENSURE(expr)
+	#define ENSURE_MSG(expr, msg)
+	#define VK_ENSURE(vkResult) ENSURE(vkResult == VK_SUCCESS);
+	#define VK_ENSURE_MSG(vkResult, msg) ENSURE_MSG(vkResult == VK_SUCCESS, msg);
 #endif
 
 #if CHECK_ENABLED
@@ -77,13 +94,9 @@
 		if (expr) {}																							\
 		else																									\
 		{																										\
-			LOG(Error, "Check condition failed: %s", #expr);													\
+			LOG(Error, "Check condition failed: %s", STRING(expr));												\
 		}
-#else
-	#define CHECK(expr)
-#endif
-
-#if CHECK_ENABLED
+	
 	#define CHECK_MSG(expr, msg)																				\
 		if (expr) {}																							\
 		else																									\
@@ -91,31 +104,6 @@
 			LOG(Error, msg);																					\
 		}
 #else
+	#define CHECK(expr)
 	#define CHECK_MSG(expr)
-#endif
-
-#if ENSURE_ENABLED
-	#define VK_ENSURE(vkResult)																					\
-	{																											\
-		const VkResult ScopedResult = vkResult;																	\
-		if (ScopedResult != VK_SUCCESS)																			\
-		{																										\
-			vge::NotifyVulkanEnsureFailure(ScopedResult, #vkResult, __FILE__, __LINE__);						\
-		}																										\
-	}
-#else
-	#define VK_ENSURE(vkResult) ENSURE(vkResult == VK_SUCCESS);
-#endif
-
-#if ENSURE_ENABLED
-	#define VK_ENSURE_MSG(vkResult, msg)																		\
-	{																											\
-		const VkResult ScopedResult = vkResult;																	\
-		if (ScopedResult != VK_SUCCESS)																			\
-		{																										\
-			vge::NotifyVulkanEnsureFailure(ScopedResult, #vkResult, __FILE__, __LINE__, msg);					\
-		}																										\
-	}
-#else
-	#define VK_ENSURE_MSG(vkResult, msg) ENSURE(vkResult == VK_SUCCESS);
 #endif

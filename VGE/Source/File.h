@@ -3,6 +3,7 @@
 #include "Common.h"
 #include "Renderer/RenderCommon.h"
 
+// General purpose file operations.
 namespace vge::file
 {
 	std::vector<char> ReadShader(const char* filename);
@@ -12,5 +13,5 @@ namespace vge::file
 
 	const aiScene* LoadModel(const char* filename, Assimp::Importer& outImporter);
 
-	bool SyncReadFile(const char* filePath, u8* buffer, size_t bufferSize, size_t& rBytesRead);
+	bool SyncReadFile(const char* filePath, u8* buffer, size_t bufferSize, size_t& outBytesRead);
 }

@@ -45,14 +45,9 @@ namespace vge
 		}
 
 		template<typename T>
-		T* GetComponent(Entity entity)
+		T& GetComponent(Entity entity)
 		{
-			if (auto compArray = GetComponentArray<T>())
-			{
-				return compArray->Get(entity);
-			}
-
-			return nullptr;
+			return GetComponentArray<T>()->Get(entity);
 		}
 
 		void EntityDestroyed(Entity entity)

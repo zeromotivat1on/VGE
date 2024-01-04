@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ECS/RenderSystem.h"
+#include "ECS/Systems/RenderSystem.h"
 
 namespace vge
 {
@@ -17,7 +17,7 @@ namespace vge
 
 	private:
 		void RegisterDefaultComponents() const;
-		void RegisterRenderSystem();
+		void RegisterSystems();
 
 	private:
 		std::shared_ptr<RenderSystem> m_RenderSystem = nullptr;

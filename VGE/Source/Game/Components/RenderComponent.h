@@ -9,6 +9,10 @@ namespace vge
 	struct RenderComponent
 	{
 	public:
+		RenderComponent() = default;
+		RenderComponent(i32 modelId) : ModelId(modelId) {}
+
+	public:
 		i32 ModelId = INDEX_NONE;
 	};
 }

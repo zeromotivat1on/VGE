@@ -19,22 +19,6 @@ void vge::EngineLoop::Initialize()
 
 	m_GameLoop.Initialize();
 	m_RenderLoop.Initialize();
-
-	// Add 1 test entity.
-	const Entity entity = GCoordinator->CreateEntity();
-
-	{
-		m_GameLoop.GetGameSystem()->Add(entity);
-		GCoordinator->AddComponent(entity, TransformComponent());
-	}
-
-	{
-		m_RenderLoop.GetRenderSystem()->Add(entity);
-
-		RenderComponent renderComponent = {};
-		renderComponent.ModelId = GRenderer->CreateModel("Models/cottage/Cottage_FREE.obj");
-		GCoordinator->AddComponent(entity, renderComponent);
-	}
 }
 
 void vge::EngineLoop::Start()

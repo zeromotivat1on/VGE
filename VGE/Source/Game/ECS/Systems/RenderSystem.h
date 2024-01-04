@@ -1,7 +1,7 @@
 #pragma once
 
+#include "ECS/System.h"
 #include "Renderer/RenderCommon.h"
-#include "System.h"
 
 namespace vge
 {
@@ -19,5 +19,8 @@ namespace vge
 	private:
 		Renderer* m_Renderer = nullptr;
 		Camera* m_Camera = nullptr;
+
+	private:
+		void UpdateViewProjection();
 	};
 }

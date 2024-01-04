@@ -68,7 +68,7 @@ namespace vge
 		}
 
 		template<typename T>
-		T* GetComponent(Entity entity)
+		T& GetComponent(Entity entity)
 		{
 			return m_ComponentManager->GetComponent<T>(entity);
 		}
@@ -112,5 +112,26 @@ namespace vge
 		delete GCoordinator;
 		GCoordinator = nullptr;
 		return true;
+	}
+
+	template<typename T>
+	inline T& GetComponent(Entity entity)
+	{
+		ENSURE(GCoordinator);
+		return GCoordinator->GetComponent<T>(entity);
+	}
+
+	template<typename T>
+	inline void AddComponent(Entity entity, const T& component)
+	{
+		ENSURE(GCoordinator);
+		GCoordinator->AddComponent(entity, component);
+	}
+
+	template<typename T>
+	inline std::shared_ptr<T> RegisterSystem()
+	{
+		ENSURE(GCoordinator);
+		return GCoordinator->RegisterSystem<T>();
 	}
 }

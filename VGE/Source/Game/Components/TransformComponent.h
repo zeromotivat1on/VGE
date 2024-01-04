@@ -1,8 +1,6 @@
 #pragma once
 
 #include "Common.h"
-#include "ECS/Entity.h"
-#include "ECS/Coordinator.h"
 
 namespace vge
 {

@@ -1,5 +1,5 @@
 #include "RenderSystem.h"
-#include "Coordinator.h"
+#include "ECS/Coordinator.h"
 #include "Game/Camera.h"
 #include "Renderer/Renderer.h"
 #include "Components/RenderComponent.h"
@@ -62,13 +62,9 @@ namespace vge
 
 			for (const Entity& entity : entities)
 			{
-				const auto* renderComponent = GCoordinator->GetComponent<RenderComponent>(entity);
-				if (!renderComponent)
-				{
-					continue;
-				}
+				const auto& renderComponent = GetComponent<RenderComponent>(entity);
+				const Model* model = m_Renderer->FindModel(renderComponent.ModelId);
 
-				const Model* model = m_Renderer->FindModel(renderComponent->ModelId);
 				if (!model)
 				{
 					continue;
@@ -125,34 +121,27 @@ void vge::RenderSystem::Initialize(Renderer* renderer, Camera* camera)
 	m_Renderer = renderer;
 	m_Camera = camera;
 
-	m_Renderer->SetView(m_Camera->GetViewMatrix());
-	m_Renderer->SetProjection(m_Camera->GetProjectionMatrix());
+	UpdateViewProjection();
 }
 
 void vge::RenderSystem::Tick(f32 deltaTime)
 {
-	//m_Renderer->SetView(m_Camera->GetViewMatrix());
-	//m_Renderer->SetProjection(m_Camera->GetProjectionMatrix());
+	UpdateViewProjection();
 
-	// TODO: transfer model data update to separate system etc.
-	for (const Entity& entity : m_Entities)
-	{
-		const auto* renderComponent = GCoordinator->GetComponent<RenderComponent>(entity);
-		if (!renderComponent)
+	ForEachEntity([this](Entity entity) 
 		{
-			continue;
-		}
-
-		const auto* transformComponent = GCoordinator->GetComponent<TransformComponent>(entity);
-		if (!transformComponent)
-		{
-			continue;
-		}
-
-		m_Renderer->UpdateModelMatrix(renderComponent->ModelId, transformComponent->GetMat4());
-	}
+			const auto& renderComponent = GetComponent<RenderComponent>(entity);
+			const auto& transform = GetComponent<TransformComponent>(entity);
+			m_Renderer->UpdateModelMatrix(renderComponent.ModelId, transform.GetMat4());
+		});
 
 	ScopeFrameControl scopeFrame(m_Renderer);
 	scopeFrame.RecordCmd(m_Entities);
 	scopeFrame.UpdateUniforms();
+}
+
+void vge::RenderSystem::UpdateViewProjection()
+{
+	m_Renderer->SetView(m_Camera->GetViewMatrix());
+	m_Renderer->SetProjection(m_Camera->GetProjectionMatrix());
 }

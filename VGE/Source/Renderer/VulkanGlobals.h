@@ -4,10 +4,10 @@
 
 namespace vge
 {
-#ifdef NDEBUG
+#ifdef DEBUG
 	inline constexpr bool GEnableValidationLayers = false;
 #else
-	inline constexpr bool GEnableValidationLayers = true;
+	inline constexpr bool GEnableValidationLayers = false;
 #endif
 
 	inline const char* GValidationLayers[] = { "VK_LAYER_KHRONOS_validation" };

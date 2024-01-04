@@ -1,14 +1,14 @@
 #pragma once
 
-#include "System.h"
+#include "ECS/System.h"
 #include "InputController.h"
 
 namespace vge
 {
-	class GameSystem : public System
+	class InputSystem : public System
 	{
 	public:
-		GameSystem() = default;
+		InputSystem() = default;
 
 		void Initialize();
 		void Tick(f32 deltaTime);

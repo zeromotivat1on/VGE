@@ -40,5 +40,9 @@ namespace vge
 		f32 m_MoveSpeed = 0.0f;
 		bool m_InvertVerticalAxis = false;
 		KeyboardMappings m_KeyboardKeys = {};
+
+	private:
+		glm::vec3 GetNormRotation();
+		glm::vec3 GetNormTranslation(const glm::vec3& rotation);
 	};
 }

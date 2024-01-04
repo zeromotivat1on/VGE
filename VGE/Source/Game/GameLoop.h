@@ -1,6 +1,7 @@
 #pragma once
 
-#include "ECS/GameSystem.h"
+#include "ECS/Systems/InputSystem.h"
+#include "ECS/Systems/CameraSystem.h"
 
 namespace vge
 {
@@ -13,13 +14,12 @@ namespace vge
 		void Tick(f32 deltaTime);
 		void Destroy();
 
-		inline GameSystem* GetGameSystem() { return m_GameSystem.get(); }
-
 	private:
 		void RegisterDefaultComponents() const;
-		void RegisterGameSystem();
+		void RegisterSystems();
 
 	private:
-		std::shared_ptr<GameSystem> m_GameSystem = nullptr;
+		std::shared_ptr<InputSystem> m_InputSystem = nullptr;
+		std::shared_ptr<CameraSystem> m_CameraSystem = nullptr;
 	};
 }
