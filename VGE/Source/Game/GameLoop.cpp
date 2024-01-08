@@ -14,9 +14,9 @@ void vge::GameLoop::Initialize()
 	ENSURE(GWindow);
 	GWindow->Initialize();
 
-	CreateCoordinator();
-	ENSURE(GCoordinator);
-	GCoordinator->Initialize();
+	ecs::CreateCoordinator();
+	ENSURE(ecs::GCoordinator);
+	ecs::GCoordinator->Initialize();
 
 	RegisterDefaultComponents();
 	RegisterSystems();
@@ -32,55 +32,53 @@ void vge::GameLoop::Tick(f32 deltaTime)
 
 void vge::GameLoop::Destroy()
 {
-	DestroyCoordinator();
+	ecs::DestroyCoordinator();
 	DestroyWindow();
 }
 
 void vge::GameLoop::RegisterDefaultComponents() const
 {
-	GCoordinator->RegisterComponent<TransformComponent>();
-	GCoordinator->RegisterComponent<CameraComponent>();
-	GCoordinator->RegisterComponent<InputComponent>();
+	ecs::RegisterComponent<TransformComponent>();
+	ecs::RegisterComponent<CameraComponent>();
+	ecs::RegisterComponent<InputComponent>();
 }
 
 void vge::GameLoop::RegisterSystems()
 {
 	// Input system.
 	{
-		m_InputSystem = RegisterSystem<InputSystem>();
+		m_InputSystem = ecs::RegisterSystem<InputSystem>();
 		ENSURE(m_InputSystem);
 
 		Signature signature;
-		signature.set(GCoordinator->GetComponentType<TransformComponent>());
-		signature.set(GCoordinator->GetComponentType<InputComponent>());
-		GCoordinator->SetSystemSignature<InputSystem>(signature);
+		signature.set(ecs::GetComponentType<TransformComponent>());
+		signature.set(ecs::GetComponentType<InputComponent>());
+		ecs::SetSystemSignature<InputSystem>(signature);
 
 		m_InputSystem->Initialize();
 	}
 
 	// Camera system.
 	{
-		m_CameraSystem = RegisterSystem<CameraSystem>();
+		m_CameraSystem = ecs::RegisterSystem<CameraSystem>();
 		ENSURE(m_CameraSystem);
 
 		Signature signature;
-		signature.set(GCoordinator->GetComponentType<TransformComponent>());
-		signature.set(GCoordinator->GetComponentType<CameraComponent>());
-		GCoordinator->SetSystemSignature<CameraSystem>(signature);
+		signature.set(ecs::GetComponentType<TransformComponent>());
+		signature.set(ecs::GetComponentType<CameraComponent>());
+		ecs::SetSystemSignature<CameraSystem>(signature);
 
 		m_CameraSystem->Initialize(GCamera);
 	}
 	
 	// Add 1 camera viewer entity.
 	{
-		const Entity entity = GCoordinator->CreateEntity();
-		AddComponent(entity, TransformComponent());
-		AddComponent(entity, InputComponent(true));
-		AddComponent(entity, CameraComponent(true));
+		const Entity entity = ecs::CreateEntity();
+		ecs::AddComponent(entity, TransformComponent());
+		ecs::AddComponent(entity, InputComponent(true));
+		ecs::AddComponent(entity, CameraComponent(true));
 
-		//m_GameSystem->Add(entity);
 		m_InputSystem->Add(entity);
 		m_CameraSystem->Add(entity);
 	}
-
 }

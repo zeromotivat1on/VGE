@@ -36,12 +36,12 @@ void vge::RenderLoop::Destroy()
 
 void vge::RenderLoop::RegisterDefaultComponents() const
 {
-	GCoordinator->RegisterComponent<RenderComponent>();
+	ecs::RegisterComponent<RenderComponent>();
 }
 
 void vge::RenderLoop::RegisterSystems()
 {
-	m_RenderSystem = RegisterSystem<RenderSystem>();
+	m_RenderSystem = ecs::RegisterSystem<RenderSystem>();
 	ENSURE(m_RenderSystem);
 
 	// Initialize default camera.
@@ -54,15 +54,15 @@ void vge::RenderLoop::RegisterSystems()
 	m_RenderSystem->Initialize(GRenderer, GCamera);
 
 	Signature signature;
-	signature.set(GCoordinator->GetComponentType<RenderComponent>());
-	signature.set(GCoordinator->GetComponentType<TransformComponent>());
-	GCoordinator->SetSystemSignature<RenderSystem>(signature);
+	signature.set(ecs::GetComponentType<RenderComponent>());
+	signature.set(ecs::GetComponentType<TransformComponent>());
+	ecs::SetSystemSignature<RenderSystem>(signature);
 
 	// Add 1 test renderable entity.
 	{
-		const Entity entity = GCoordinator->CreateEntity();
-		AddComponent(entity, TransformComponent());
-		AddComponent(entity, RenderComponent(GRenderer->CreateModel("Models/cottage/Cottage_FREE.obj")));
+		const Entity entity = ecs::CreateEntity();
+		ecs::AddComponent(entity, TransformComponent());
+		ecs::AddComponent(entity, RenderComponent(GRenderer->CreateModel("Models/male.obj")));
 		m_RenderSystem->Add(entity);
 	}
 }

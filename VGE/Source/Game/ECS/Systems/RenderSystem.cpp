@@ -62,7 +62,7 @@ namespace vge
 
 			for (const Entity& entity : entities)
 			{
-				const auto& renderComponent = GetComponent<RenderComponent>(entity);
+				const auto& renderComponent = ecs::GetComponent<RenderComponent>(entity);
 				const Model* model = m_Renderer->FindModel(renderComponent.ModelId);
 
 				if (!model)
@@ -130,8 +130,8 @@ void vge::RenderSystem::Tick(f32 deltaTime)
 
 	ForEachEntity([this](Entity entity) 
 		{
-			const auto& renderComponent = GetComponent<RenderComponent>(entity);
-			const auto& transform = GetComponent<TransformComponent>(entity);
+			const auto& renderComponent = ecs::GetComponent<RenderComponent>(entity);
+			const auto& transform = ecs::GetComponent<TransformComponent>(entity);
 			m_Renderer->UpdateModelMatrix(renderComponent.ModelId, transform.GetMat4());
 		});
 

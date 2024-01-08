@@ -15,7 +15,7 @@ void vge::InputSystem::Tick(f32 deltaTime)
 {
 	ForEachEntity([this, deltaTime](Entity entity) 
 		{
-			const auto& input = GetComponent<InputComponent>(entity);
+			const auto& input = ecs::GetComponent<InputComponent>(entity);
 			if (input.IsControllable())
 			{
 				m_InputController.MoveInPlaneXZ(deltaTime, entity);

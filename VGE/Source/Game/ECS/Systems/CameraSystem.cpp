@@ -15,8 +15,8 @@ void vge::CameraSystem::Tick(f32 deltaTime)
 {
 	ForEachEntity([this, deltaTime](Entity entity)
 		{
-			const auto& camera = GetComponent<CameraComponent>(entity);
-			const auto& transform = GetComponent<TransformComponent>(entity);
+			const auto& camera = ecs::GetComponent<CameraComponent>(entity);
+			const auto& transform = ecs::GetComponent<TransformComponent>(entity);
 
 			if (camera.ShouldObserve())
 			{

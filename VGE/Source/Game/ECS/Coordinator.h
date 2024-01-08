@@ -4,15 +4,15 @@
 #include "EntityManager.h"
 #include "SystemManager.h"
 
-namespace vge
+namespace vge::ecs
 {
-	inline class EcsCoordinator* GCoordinator = nullptr;
+	inline class Coordinator* GCoordinator = nullptr;
 
-	// General class for ECS to use.
-	class EcsCoordinator
+	// General class for ECS usage.
+	class Coordinator
 	{
 	public:
-		EcsCoordinator() = default;
+		Coordinator() = default;
 
 		inline void Initialize()
 		{
@@ -99,10 +99,10 @@ namespace vge
 		std::unique_ptr<SystemManager> m_SystemManager = nullptr;
 	};
 
-	inline EcsCoordinator* CreateCoordinator()
+	inline Coordinator* CreateCoordinator()
 	{
 		if (GCoordinator) return GCoordinator;
-		return (GCoordinator = new EcsCoordinator());
+		return (GCoordinator = new Coordinator());
 	}
 
 	inline bool DestroyCoordinator()
@@ -114,11 +114,23 @@ namespace vge
 		return true;
 	}
 
-	template<typename T>
-	inline T& GetComponent(Entity entity)
+	inline Entity CreateEntity()
 	{
 		ENSURE(GCoordinator);
-		return GCoordinator->GetComponent<T>(entity);
+		return GCoordinator->CreateEntity();
+	}
+
+	inline void DestroyEntity(Entity entity)
+	{
+		ENSURE(GCoordinator);
+		GCoordinator->DestroyEntity(entity);
+	}
+
+	template<typename T>
+	inline void RegisterComponent()
+	{
+		ENSURE(GCoordinator);
+		GCoordinator->RegisterComponent<T>();
 	}
 
 	template<typename T>
@@ -129,9 +141,37 @@ namespace vge
 	}
 
 	template<typename T>
+	inline void RemoveComponent(Entity entity)
+	{
+		ENSURE(GCoordinator);
+		GCoordinator->RemoveComponent(entity);
+	}
+
+	template<typename T>
+	inline T& GetComponent(Entity entity)
+	{
+		ENSURE(GCoordinator);
+		return GCoordinator->GetComponent<T>(entity);
+	}
+
+	template<typename T>
+	inline ComponentType GetComponentType()
+	{
+		ENSURE(GCoordinator);
+		return GCoordinator->GetComponentType<T>();
+	}
+
+	template<typename T>
 	inline std::shared_ptr<T> RegisterSystem()
 	{
 		ENSURE(GCoordinator);
 		return GCoordinator->RegisterSystem<T>();
+	}
+
+	template<typename T>
+	inline void SetSystemSignature(Signature signature)
+	{
+		ENSURE(GCoordinator);
+		return GCoordinator->SetSystemSignature<T>(signature);
 	}
 }

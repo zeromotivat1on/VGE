@@ -6,7 +6,7 @@
 void vge::InputController::MoveInPlaneXZ(f32 deltaTime, const Entity& entity)
 {
 	GLFWwindow* window = m_Window->GetHandle();
-	auto& transform = GetComponent<TransformComponent>(entity);
+	auto& transform = ecs::GetComponent<TransformComponent>(entity);
 
 	// Handle rotation.
 	{
