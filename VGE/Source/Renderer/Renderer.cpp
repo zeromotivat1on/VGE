@@ -381,9 +381,10 @@ void vge::Renderer::CreatePipelines()
 		pipelineCreateInfo.DescriptorSetLayoutBindings = { { vpLayoutBinding }, { samplerLayoutBinding } };
 		pipelineCreateInfo.RenderPass = &m_RenderPass;
 		pipelineCreateInfo.VertexInfo = vertexInputCreateInfo;
-		pipelineCreateInfo.SubpassIndex = currentSubpassIdx++;
+		pipelineCreateInfo.SubpassIndex = currentSubpassIdx;
 
-		m_Pipelines[0].Initialize(pipelineCreateInfo);
+		m_Pipelines[currentSubpassIdx].Initialize(pipelineCreateInfo);
+		currentSubpassIdx++;
 	}
 
 	// Second pipeline creation. Used to present data from previous pipeline.
@@ -409,10 +410,11 @@ void vge::Renderer::CreatePipelines()
 		pipelineCreateInfo.ShaderFilenames = { "Shaders/Bin/second_vert.spv", "Shaders/Bin/second_frag.spv" };
 		pipelineCreateInfo.DescriptorSetLayoutBindings = { {}, { colorInputLayoutBinding, depthInputLayoutBinding } };
 		pipelineCreateInfo.RenderPass = &m_RenderPass;
-		pipelineCreateInfo.SubpassIndex = currentSubpassIdx++;
+		pipelineCreateInfo.SubpassIndex = currentSubpassIdx;
 		pipelineCreateInfo.DepthStencilInfo.depthWriteEnable = VK_FALSE;
 
-		m_Pipelines[1].Initialize(pipelineCreateInfo);
+		m_Pipelines[currentSubpassIdx].Initialize(pipelineCreateInfo);
+		currentSubpassIdx++;
 	}
 
 	ENSURE(currentSubpassIdx == m_SubpassCount);
