@@ -77,8 +77,5 @@ void vge::GameLoop::RegisterSystems()
 		ecs::AddComponent(entity, TransformComponent());
 		ecs::AddComponent(entity, InputComponent(true));
 		ecs::AddComponent(entity, CameraComponent(true));
-
-		m_InputSystem->Add(entity);
-		m_CameraSystem->Add(entity);
 	}
 }
