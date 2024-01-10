@@ -107,11 +107,7 @@ void vge::NotifyVulkanEnsureFailure(VkResult result, const char* function, const
 	}
 
 	LOG(Error, "%s failed with VkResult=%s(%d) in %s:%u.", function, resultString, result, filename, line);
-	
-	if (errMessage)
-	{
-		LOG(Error, " User error message: %s", errMessage);
-	}
+	CLOG(errMessage, Error, "User message: %s", errMessage);
 
 	DEBUG_BREAK();
 }

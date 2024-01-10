@@ -17,9 +17,11 @@
 #if USE_LOGGING
 	#define LOG(Category, Message, ...)	vge::Logger::PrintLog(vge::LogCategory::Category, Message, __FUNCTION__, __LINE__, __VA_ARGS__);
 	#define LOG_RAW(Message, ...)		vge::Logger::PrintLogRaw(Message, __VA_ARGS__);
+	#define CLOG(Condition, Category, Message, ...) if (!Condition) {} else { LOG(Category, Message, __VA_ARGS__) }
 #else
 	#define LOG(Category, Message, ...)
 	#define LOG_RAW(Message, ...)
+	#define CLOG(Condition, Category, Message, ...)
 #endif
 
 #ifndef USE_COLORED_LOGS
@@ -58,6 +60,6 @@ namespace vge
 		static void PrintLogRaw_Implementation(const char* message, va_list args);
 	};
 
-	extern void NotifyVulkanEnsureFailure(VkResult result, const char* function, const char* filename, u32 line, const char* errMessage = "");
+	extern void NotifyVulkanEnsureFailure(VkResult result, const char* function, const char* filename, u32 line, const char* errMessage = nullptr);
 }
 #endif
