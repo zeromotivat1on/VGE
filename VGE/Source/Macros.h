@@ -26,13 +26,15 @@
 #define _STRING(x) #x
 #define STRING(x) _STRING(x)
 
-#define NOT_COPYABLE(userType)																					\
-	userType(const userType&) = delete;																			\
-	userType& operator=(const userType&) = delete;
+#define COPY_CTOR_DEL(T) T(const T&) = delete;
+#define MOVE_CTOR_DEL(T) T(T&&) = delete;
+#define COPY_OP_DEL(T)	 T& operator=(const T&) = delete;
+#define MOVE_OP_DEL(T)	 T& operator=(T&&) = delete;
 
-#define NOT_MOVABLE(userType)																					\
-	userType(userType&&) = delete;																				\
-	userType& operator=(userType&&) = delete;
+#define COPY_CTOR_DEF(T) T(const T&) = default;
+#define MOVE_CTOR_DEF(T) T(T&&) = default;
+#define COPY_OP_DEF(T)	 T& operator=(const T&) = default;
+#define MOVE_OP_DEF(T)	 T& operator=(T&&) = default;
 
 #define ASSERT(expr) assert(expr);
 #define ASSERT_MSG(expr, msg) assert(expr && msg);
