@@ -6,7 +6,7 @@
 #include "Types.h"
 #include "Macros.h"
 
-#if DEBUG
+#if VGE_DEBUG
 	#define USE_LOGGING 1
 #else
 	#define USE_LOGGING 0
@@ -38,6 +38,8 @@ namespace vge
 		Error,
 	};
 
+	extern void NotifyVulkanEnsureFailure(VkResult result, const char* function, const char* filename, u32 line, const char* errMessage = nullptr);
+
 	class Logger final
 	{
 	public:
@@ -59,7 +61,5 @@ namespace vge
 		static void PrintLog_Implementation(const LogCategory category, const char* message, va_list args);
 		static void PrintLogRaw_Implementation(const char* message, va_list args);
 	};
-
-	extern void NotifyVulkanEnsureFailure(VkResult result, const char* function, const char* filename, u32 line, const char* errMessage = nullptr);
 }
 #endif

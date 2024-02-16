@@ -3,9 +3,11 @@
 // Settings
 
 #ifdef NDEBUG
-	#define DEBUG 0
+	#define VGE_DEBUG 0
+	#define VGE_VALIDATION_LAYERS 0
 #else
-	#define DEBUG 1
+	#define VGE_DEBUG 1
+	#define VGE_VALIDATION_LAYERS 1
 #endif
 
 #ifndef COMPILE_SHADERS_ON_INIT
@@ -59,11 +61,11 @@
 			DEBUG_BREAK();																						\
 		}
 	
-	#define ENSURE_MSG(expr, msg)																				\
+	#define ENSURE_MSG(expr, msg, ...)																			\
 		if (expr) {}																							\
 		else																									\
 		{																										\
-			LOG(Error, msg);																					\
+			LOG(Error, msg, __VA_ARGS__);																		\
 			DEBUG_BREAK();																						\
 		}
 
@@ -99,11 +101,11 @@
 			LOG(Error, "Check condition failed: %s", STRING(expr));												\
 		}
 	
-	#define CHECK_MSG(expr, msg)																				\
+	#define CHECK_MSG(expr, msg, ...)																			\
 		if (expr) {}																							\
 		else																									\
 		{																										\
-			LOG(Error, msg);																					\
+			LOG(Error, msg, __VA_ARGS__);																		\
 		}
 #else
 	#define CHECK(expr)

@@ -1,7 +1,6 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
-#include "Macros.h"
+#include "Core/Common.h"
 
 namespace vge
 {

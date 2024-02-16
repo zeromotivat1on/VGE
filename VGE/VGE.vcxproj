@@ -147,6 +147,24 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Renderer\Core\RenderTarget.cpp" />
+    <ClCompile Include="Source\Renderer\Core\CommandPool.cpp" />
+    <ClCompile Include="Source\Renderer\Core\Common.cpp" />
+    <ClCompile Include="Source\Renderer\Core\Sampler.cpp" />
+    <ClCompile Include="Source\Renderer\Core\Image.cpp" />
+    <ClCompile Include="Source\Renderer\Core\ImageView.cpp" />
+    <ClCompile Include="Source\Renderer\Core\ResourceBindingState.cpp" />
+    <ClCompile Include="Source\Renderer\Core\Framebuffer.cpp" />
+    <ClCompile Include="Source\Renderer\Core\DescriptorSetLayout.cpp" />
+    <ClCompile Include="Source\Renderer\Core\RenderPass.cpp" />
+    <ClCompile Include="Source\Renderer\Core\ShaderModule.cpp" />
+    <ClCompile Include="Source\Renderer\Core\PipelineLayout.cpp" />
+    <ClCompile Include="Source\Renderer\Core\PipelineState.cpp" />
+    <ClCompile Include="Source\Renderer\Core\CommandBuffer.cpp" />
+    <ClCompile Include="Source\Renderer\Core\Queue.cpp" />
+    <ClCompile Include="Source\Renderer\Core\Device.cpp" />
+    <ClCompile Include="Source\Renderer\Core\Instance.cpp" />
+    <ClCompile Include="Source\Renderer\Core\PhysicalDevice.cpp" />
     <ClCompile Include="Source\Renderer\Core\Buffer.cpp" />
     <ClCompile Include="Source\Game\ECS\Systems\CameraSystem.cpp" />
     <ClCompile Include="Source\Game\ECS\Systems\InputSystem.cpp" />
@@ -160,10 +178,8 @@
     <ClCompile Include="Source\Game\ECS\Entity.cpp" />
     <ClCompile Include="Source\Renderer\Image.cpp" />
     <ClCompile Include="Source\Renderer\Pipeline.cpp" />
-    <ClCompile Include="Source\Renderer\Device.cpp" />
     <ClCompile Include="Source\Logging.cpp" />
     <ClCompile Include="Source\Renderer\Model.cpp" />
-    <ClCompile Include="Source\Renderer\Buffer.cpp" />
     <ClCompile Include="Source\Renderer\Mesh.cpp" />
     <ClCompile Include="Source\Renderer\RenderLoop.cpp" />
     <ClCompile Include="Source\Renderer\Shader.cpp" />
@@ -179,14 +195,36 @@
     <ClCompile Include="Source\Renderer\Swapchain.cpp" />
     <ClCompile Include="Source\Game\GameLoop.cpp" />
     <ClCompile Include="Source\Renderer\Core\VulkanResource.cpp" />
+    <ClCompile Include="Source\Renderer\Core\Subpass.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Renderer\Core\RenderTarget.h" />
+    <ClInclude Include="Source\GlmCommon.h" />
+    <ClInclude Include="Source\Renderer\Core\CommandPool.h" />
+    <ClInclude Include="Source\Renderer\Core\Sampler.h" />
+    <ClInclude Include="Source\Renderer\Core\Image.h" />
+    <ClInclude Include="Source\Renderer\Core\ImageView.h" />
+    <ClInclude Include="Source\Renderer\Core\ResourceBindingState.h" />
+    <ClInclude Include="Source\Renderer\Core\Framebuffer.h" />
+    <ClInclude Include="Source\Renderer\Core\DescriptorSetLayout.h" />
+    <ClInclude Include="Source\Renderer\Core\RenderPass.h" />
+    <ClInclude Include="Source\Renderer\Core\ShaderModule.h" />
+    <ClInclude Include="Source\Renderer\Core\PipelineLayout.h" />
+    <ClInclude Include="Source\Renderer\Core\PipelineState.h" />
+    <ClInclude Include="Source\Renderer\Core\CommandBuffer.h" />
+    <ClInclude Include="Source\Renderer\Core\Queue.h" />
+    <ClInclude Include="Source\Renderer\Core\Device.h" />
+    <ClInclude Include="Source\Renderer\Core\Helpers.h" />
+    <ClInclude Include="Source\Renderer\Core\Instance.h" />
+    <ClInclude Include="Source\Renderer\Core\Common.h" />
+    <ClInclude Include="Source\Renderer\Core\PhysicalDevice.h" />
     <ClInclude Include="Source\Renderer\Core\Buffer.h" />
     <ClInclude Include="Source\Game\Components\CameraComponent.h" />
     <ClInclude Include="Source\Game\Components\InputComponent.h" />
     <ClInclude Include="Source\Game\ECS\Systems\CameraSystem.h" />
     <ClInclude Include="Source\Game\ECS\Systems\InputSystem.h" />
     <ClInclude Include="Source\Game\InputController.h" />
+    <ClInclude Include="Source\Renderer\Core\StringHelpers.h" />
     <ClInclude Include="Source\VgeMath.h" />
     <ClInclude Include="Source\Renderer\RenderPass.h" />
     <ClInclude Include="Source\Renderer\CommandBuffer.h" />
@@ -206,11 +244,9 @@
     <ClInclude Include="Source\Renderer\Image.h" />
     <ClInclude Include="Source\Renderer\Pipeline.h" />
     <ClInclude Include="Source\Memory.h" />
-    <ClInclude Include="Source\Renderer\Device.h" />
     <ClInclude Include="Source\Renderer\Model.h" />
     <ClInclude Include="Source\Renderer\Mesh.h" />
     <ClInclude Include="Source\Profiling.h" />
-    <ClInclude Include="Source\Renderer\Buffer.h" />
     <ClInclude Include="Source\Renderer\RenderCommon.h" />
     <ClInclude Include="Source\Renderer\RenderLoop.h" />
     <ClInclude Include="Source\Renderer\Shader.h" />
@@ -228,6 +264,8 @@
     <ClInclude Include="Source\Renderer\Texture.h" />
     <ClInclude Include="Source\Renderer\Swapchain.h" />
     <ClInclude Include="Source\Renderer\Core\VulkanResource.h" />
+    <ClInclude Include="Source\Renderer\Core\Subpass.h" />
+    <ClInclude Include="Vendor\volk.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="compile_shaders.bat" />

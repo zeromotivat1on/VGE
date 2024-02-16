@@ -1,8 +1,5 @@
 #pragma once
 
-#include <vector>
-#include <vk_mem_alloc.h>
-#include "Types.h"
 #include "Core/VulkanResource.h"
 
 namespace vge

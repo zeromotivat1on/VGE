@@ -22,18 +22,18 @@ vge::Buffer::Buffer(
 		bufferInfo.pQueueFamilyIndices = queueFamilyIndices.data();
 	}
 
-	VmaAllocationCreateInfo memory_info{};
-	memory_info.flags = flags;
-	memory_info.usage = memoryUsage;
+	VmaAllocationCreateInfo memoryInfo{};
+	memoryInfo.flags = flags;
+	memoryInfo.usage = memoryUsage;
 
-	VmaAllocationInfo allocation_info{};
-	VK_ENSURE(vmaCreateBuffer(device.GetMemoryAllocator(), &bufferInfo, &memory_info, &_Handle, &_Allocation, &allocation_info));
+	VmaAllocationInfo allocationInfo{};
+	VK_ENSURE(vmaCreateBuffer(device.GetMemoryAllocator(), &bufferInfo, &memoryInfo, &_Handle, &_Allocation, &allocationInfo));
 
-	_Memory = allocation_info.deviceMemory;
+	_Memory = allocationInfo.deviceMemory;
 
 	if (_Persistent)
 	{
-		_MappedData = static_cast<uint8_t*>(allocation_info.pMappedData);
+		_MappedData = static_cast<uint8_t*>(allocationInfo.pMappedData);
 	}
 }
 
