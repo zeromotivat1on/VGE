@@ -1,6 +1,7 @@
 #include "RenderTarget.h"
+#include "Device.h"
 
-namespace vkb
+namespace vge
 {
 namespace
 {
@@ -12,86 +13,76 @@ struct CompareExtent2D
 	}
 };
 }	// namespace
-}	// namespace vkb
+}	// namespace vge
 
-const vge::RenderTarget::CreateFunc vge::RenderTarget::DefaultCreateFunction = [](Image&& swapchain_image) -> std::unique_ptr<RenderTarget> 
+const vge::RenderTarget::CreateFunc vge::RenderTarget::DefaultCreateFunction = [](Image&& swapchainImage) -> std::unique_ptr<RenderTarget> 
 {
-	VkFormat depth_format = get_suitable_depth_format(swapchain_image.get_device().get_gpu().get_handle());
+	VkFormat depthFormat = GetSuitableDepthFormat(swapchainImage.GetDevice().GetGpu().GetHandle());
 
-	Image depth_image{ swapchain_image.get_device(), swapchain_image.get_extent(),
-							depth_format,
+	Image depthImage = Image(swapchainImage.GetDevice(), swapchainImage.GetExtent(), depthFormat,
 							VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,
-							VMA_MEMORY_USAGE_GPU_ONLY };
+							VMA_MEMORY_USAGE_GPU_ONLY);
 
 	std::vector<Image> images;
-	images.push_back(std::move(swapchain_image));
-	images.push_back(std::move(depth_image));
+	images.push_back(std::move(swapchainImage));
+	images.push_back(std::move(depthImage));
 
 	return std::make_unique<RenderTarget>(std::move(images));
 };
 
 vge::RenderTarget::RenderTarget(std::vector<Image>&& images) 
-	: device(images.back().get_device()), images(std::move(images))
+	: _Device(images.back().GetDevice()), _Images(std::move(images))
 {
 	ASSERT_MSG(images.empty(), "Should specify at least 1 image.");
 
-	std::set<VkExtent2D, CompareExtent2D> unique_extent;
+	std::set<VkExtent2D, CompareExtent2D> uniqueExtent;
 
-	// Returns the image extent as a VkExtent2D structure from a VkExtent3D
-	auto get_image_extent = [](const Image& image) { return VkExtent2D{ image.get_extent().width, image.get_extent().height }; };
+	// Returns the image extent as a VkExtent2D structure from a VkExtent3D.
+	auto getImageExtent2D = [](const Image& image) { return VkExtent2D{ image.GetExtent().width, image.GetExtent().height }; };
 
 	// Constructs a set of unique image extents given a vector of images
-	std::transform(this->images.begin(), this->images.end(), std::inserter(unique_extent, unique_extent.end()), get_image_extent);
+	std::transform(_Images.begin(), _Images.end(), std::inserter(uniqueExtent, uniqueExtent.end()), getImageExtent2D);
 
 	// Allow only one extent size for a render target
-	if (unique_extent.size() != 1)
+	ENSURE_MSG(uniqueExtent.size() == 1, "Extent size is not unique.");
+
+	_Extent = *uniqueExtent.begin();
+
+	for (auto& image : _Images)
 	{
-		throw VulkanException{ VK_ERROR_INITIALIZATION_FAILED, "Extent size is not unique" };
-	}
+		ENSURE_MSG(image.GetType() == VK_IMAGE_TYPE_2D, "Image type is not 2D.")
 
-	extent = *unique_extent.begin();
-
-	for (auto& image : this->images)
-	{
-		if (image.get_type() != VK_IMAGE_TYPE_2D)
-		{
-			throw VulkanException{ VK_ERROR_INITIALIZATION_FAILED, "Image type is not 2D" };
-		}
-
-		views.emplace_back(image, VK_IMAGE_VIEW_TYPE_2D);
-
-		attachments.emplace_back(Attachment{ image.get_format(), image.get_sample_count(), image.get_usage() });
+		_Views.emplace_back(image, VK_IMAGE_VIEW_TYPE_2D);
+		_Attachments.emplace_back(Attachment(image.GetFormat(), image.GetSampleCount(), image.GetUsage()));
 	}
 }
 
-vge::RenderTarget::RenderTarget(std::vector<ImageView>&& image_views) :
-	device{ const_cast<Image&>(image_views.back().get_image()).get_device() },
-	images{},
-	views{ std::move(image_views) }
+vge::RenderTarget::RenderTarget(std::vector<ImageView>&& imageViews) 
+	: _Device(const_cast<Image&>(imageViews.back().GetImage()).GetDevice()), _Images(), _Views(std::move(imageViews))
 {
-	assert(!views.empty() && "Should specify at least 1 image view");
+	assert(!_Views.empty() && "Should specify at least 1 image view");
 
-	std::set<VkExtent2D, CompareExtent2D> unique_extent;
+	std::set<VkExtent2D, CompareExtent2D> uniqueExtent;
 
-	// Returns the extent of the base mip level pointed at by a view
-	auto get_view_extent = [](const ImageView& view) {
-		const VkExtent3D mip0_extent = view.get_image().get_extent();
-		const uint32_t   mip_level = view.get_subresource_range().baseMipLevel;
-		return VkExtent2D{ mip0_extent.width >> mip_level, mip0_extent.height >> mip_level };
+	// Returns the extent of the base mip level pointed at by a view.
+	auto getViewExtent = [](const ImageView& view) 
+	{
+		const VkExtent3D mip0Extent = view.GetImage().GetExtent();
+		const u32 mipLevel = view.GetSubresourceRange().baseMipLevel;
+		return VkExtent2D{ mip0Extent.width >> mipLevel, mip0Extent.height >> mipLevel };
 	};
 
-	// Constructs a set of unique image extents given a vector of image views;
-	// allow only one extent size for a render target
-	std::transform(views.begin(), views.end(), std::inserter(unique_extent, unique_extent.end()), get_view_extent);
-	if (unique_extent.size() != 1)
-	{
-		throw VulkanException{ VK_ERROR_INITIALIZATION_FAILED, "Extent size is not unique" };
-	}
-	extent = *unique_extent.begin();
+	// Constructs a set of unique image extents given a vector of image views,
+	// allow only one extent size for a render target.
+	std::transform(_Views.begin(), _Views.end(), std::inserter(uniqueExtent, uniqueExtent.end()), getViewExtent);
 
-	for (auto& view : views)
+	ENSURE_MSG(uniqueExtent.size() == 1, "Extent size is not unique.");
+	
+	_Extent = *uniqueExtent.begin();
+
+	for (auto& view : _Views)
 	{
-		const auto& image = view.get_image();
-		attachments.emplace_back(Attachment{ image.get_format(), image.get_sample_count(), image.get_usage() });
+		const auto& image = view.GetImage();
+		_Attachments.emplace_back(Attachment(image.GetFormat(), image.GetSampleCount(), image.GetUsage()));
 	}
 }

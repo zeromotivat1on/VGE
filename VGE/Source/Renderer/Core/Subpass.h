@@ -2,6 +2,7 @@
 
 #include "Core/Common.h"
 #include "Core/ShaderModule.h"
+#include "Core/RenderTarget.h"
 #include "Core/PipelineState.h"
 
 namespace vge

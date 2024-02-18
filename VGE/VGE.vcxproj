@@ -147,6 +147,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Renderer\Core\RenderContext.cpp" />
+    <ClCompile Include="Source\Renderer\Core\ResourceRecord.cpp" />
+    <ClCompile Include="Source\Renderer\Core\DescriptorSet.cpp" />
+    <ClCompile Include="Source\Renderer\Core\DescriptorPool.cpp" />
+    <ClCompile Include="Source\Renderer\Core\SemaphorePool.cpp" />
+    <ClCompile Include="Source\Renderer\Core\BufferPool.cpp" />
+    <ClCompile Include="Source\Renderer\Core\FencePool.cpp" />
+    <ClCompile Include="Source\Renderer\Core\RenderFrame.cpp" />
     <ClCompile Include="Source\Renderer\Core\RenderTarget.cpp" />
     <ClCompile Include="Source\Renderer\Core\CommandPool.cpp" />
     <ClCompile Include="Source\Renderer\Core\Common.cpp" />
@@ -198,6 +206,15 @@
     <ClCompile Include="Source\Renderer\Core\Subpass.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Renderer\Core\RenderContext.h" />
+    <ClInclude Include="Source\Renderer\Core\ResourceRecord.h" />
+    <ClInclude Include="Source\Renderer\Common\ResourceCaching.h" />
+    <ClInclude Include="Source\Renderer\Core\DescriptorSet.h" />
+    <ClInclude Include="Source\Renderer\Core\DescriptorPool.h" />
+    <ClInclude Include="Source\Renderer\Core\SemaphorePool.h" />
+    <ClInclude Include="Source\Renderer\Core\BufferPool.h" />
+    <ClInclude Include="Source\Renderer\Core\FencePool.h" />
+    <ClInclude Include="Source\Renderer\Core\RenderFrame.h" />
     <ClInclude Include="Source\Renderer\Core\RenderTarget.h" />
     <ClInclude Include="Source\GlmCommon.h" />
     <ClInclude Include="Source\Renderer\Core\CommandPool.h" />

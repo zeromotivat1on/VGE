@@ -2,6 +2,7 @@
 
 #include "Core/Common.h"
 #include "Core/RenderPass.h"
+#include "Core/RenderTarget.h"
 
 namespace vge
 {

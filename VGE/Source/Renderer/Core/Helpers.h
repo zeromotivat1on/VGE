@@ -30,4 +30,65 @@ inline std::string ToString(const T& value)
 	ss << std::fixed << value;
 	return ss.str();
 }
+
+template <class T>
+inline void HashCombine(size_t& seed, const T& v)
+{
+	std::hash<T> hasher;
+	glm::detail::HashCombine(seed, hasher(v));
 }
+
+template <typename T>
+inline void Write(std::ostringstream& os, const T& value)
+{
+	os.Write(reinterpret_cast<const char*>(&value), sizeof(T));
+}
+
+inline void Write(std::ostringstream& os, const std::string& value)
+{
+	Write(os, value.size());
+	os.Write(value.data(), value.size());
+}
+
+template <class T>
+inline void Write(std::ostringstream& os, const std::set<T>& value)
+{
+	Write(os, value.size());
+	for (const T& item : value)
+	{
+		os.Write(reinterpret_cast<const char*>(&item), sizeof(T));
+	}
+}
+
+template <class T>
+inline void Write(std::ostringstream& os, const std::vector<T>& value)
+{
+	Write(os, value.size());
+	os.Write(reinterpret_cast<const char*>(value.data()), value.size() * sizeof(T));
+}
+
+template <class T, class S>
+inline void Write(std::ostringstream& os, const std::map<T, S>& value)
+{
+	Write(os, value.size());
+
+	for (const std::pair<T, S>& item : value)
+	{
+		Write(os, item.first);
+		Write(os, item.second);
+	}
+}
+
+template <class T, u32 N>
+inline void Write(std::ostringstream& os, const std::array<T, N>& value)
+{
+	os.Write(reinterpret_cast<const char*>(value.data()), N * sizeof(T));
+}
+
+template <typename T, typename... Args>
+inline void Write(std::ostringstream& os, const T& firstArg, const Args &... args)
+{
+	Write(os, firstArg);
+	Write(os, args...);
+}
+}	// namespace vge

@@ -96,8 +96,8 @@ std::vector<T> GetAttachmentDescriptions(const std::vector<Attachment>& attachme
 		T attachment{};
 		SetStructureType(attachment);
 
-		attachment.format = attachments[i].format;
-		attachment.samples = attachments[i].samples;
+		attachment.format = attachments[i].Format;
+		attachment.samples = attachments[i].Samples;
 		attachment.initialLayout = attachments[i].InitialLayout;
 		attachment.finalLayout = IsDepthFormat(attachment.format) ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
@@ -359,7 +359,7 @@ void vge::RenderPass::CreateRenderpass(const std::vector<Attachment>& attachment
 		if (!subpass.DisableDepthStencilAttachment)
 		{
 			// Assumption: depth stencil attachment appears in the list before any depth stencil resolve attachment.
-			auto it = find_if(attachments.begin(), attachments.end(), [](const Attachment attachment) { return IsDepthFormat(attachment.format); });
+			auto it = find_if(attachments.begin(), attachments.end(), [](const Attachment attachment) { return IsDepthFormat(attachment.Format); });
 			if (it != attachments.end())
 			{
 				auto i_depth_stencil = ToU32(std::distance(attachments.begin(), it));
@@ -432,7 +432,7 @@ void vge::RenderPass::CreateRenderpass(const std::vector<Attachment>& attachment
 
 		for (u32 k = 0U; k < ToU32(attachmentDescriptions.size()); ++k)
 		{
-			if (IsDepthFormat(attachments[k].format))
+			if (IsDepthFormat(attachments[k].Format))
 			{
 				if (defaultDepthStencilAttachment == VK_ATTACHMENT_UNUSED)
 				{

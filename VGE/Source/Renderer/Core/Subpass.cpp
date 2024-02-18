@@ -24,6 +24,6 @@ vge::Subpass::Subpass(RenderContext& renderContext, ShaderSource&& vertexSource,
 
 void vge::Subpass::UpdateRenderTargetAttachments(RenderTarget& renderTarget)
 {
-	renderTarget.set_input_attachments(_InputAttachments);
-	renderTarget.set_output_attachments(_OutputAttachments);
+	renderTarget.SetInputAttachments(_InputAttachments);
+	renderTarget.SetOutputAttachments(_OutputAttachments);
 }

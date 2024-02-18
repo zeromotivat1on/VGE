@@ -2,7 +2,7 @@
 #include "Device.h"
 
 vge::Framebuffer::Framebuffer(Device& device, const RenderTarget& renderTarget, const RenderPass& renderPass)
-	: _Device(device), _Extent(renderTarget.get_extent())
+	: _Device(device), _Extent(renderTarget.GetExtent())
 {
 	std::vector<VkImageView> attachments;
 

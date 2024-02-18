@@ -139,4 +139,35 @@ void ImageLayoutTransition(VkCommandBuffer commandBuffer, const std::vector<std:
 		ToU32(imageMemoryBarriers.size()),
 		imageMemoryBarriers.data());
 }
+
+VkFormat GetSuitableDepthFormat(VkPhysicalDevice physicalDevice, bool depthOnly, const std::vector<VkFormat>& depthFormatPriorityList)
+{
+	VkFormat depthFormat = VK_FORMAT_UNDEFINED;
+
+	for (auto& format : depthFormatPriorityList)
+	{
+		if (depthOnly && !IsDepthOnlyFormat(format))
+		{
+			continue;
+		}
+
+		VkFormatProperties properties;
+		vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &properties);
+
+		// Format must support depth stencil attachment for optimal tiling
+		if (properties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
+		{
+			depthFormat = format;
+			break;
+		}
+	}
+
+	if (depthFormat != VK_FORMAT_UNDEFINED)
+	{
+		LOG(Log, "Depth format selected: %s.", ToString(depthFormat));
+		return depthFormat;
+	}
+
+	ENSURE_MSG(false, "No suitable depth format could be determined");
+}
 }	// namespace vge

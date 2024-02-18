@@ -5,6 +5,7 @@
 #include <array>
 #include <memory>
 #include <string>
+#include <set>
 #include <map>
 #include <unordered_map>
 #include <functional>
@@ -80,4 +81,8 @@ void ImageLayoutTransition(
 void ImageLayoutTransition(VkCommandBuffer commandBuffer, VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout, const VkImageSubresourceRange& subresourceRange);
 void ImageLayoutTransition(VkCommandBuffer commandBuffer, VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout);
 void ImageLayoutTransition(VkCommandBuffer commandBuffer, const std::vector<std::pair<VkImage, VkImageSubresourceRange>>& imagesAndRanges, VkImageLayout oldLayout, VkImageLayout newLayout);
+
+VkFormat GetSuitableDepthFormat(
+	VkPhysicalDevice physicalDevice, bool depthOnly = false,
+	const std::vector<VkFormat>& depthFormatPriorityList = { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D16_UNORM });
 }	// namespace vge
