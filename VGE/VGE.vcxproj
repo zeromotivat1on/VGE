@@ -177,6 +177,7 @@
     <ClCompile Include="Source\Game\ECS\Systems\CameraSystem.cpp" />
     <ClCompile Include="Source\Game\ECS\Systems\InputSystem.cpp" />
     <ClCompile Include="Source\Game\InputController.cpp" />
+    <ClCompile Include="Source\Renderer\Core\Swapchain.cpp" />
     <ClCompile Include="Source\Renderer\RenderPass.cpp" />
     <ClCompile Include="Source\Renderer\CommandBuffer.cpp" />
     <ClCompile Include="Source\Game\Camera.cpp" />
@@ -242,6 +243,7 @@
     <ClInclude Include="Source\Game\ECS\Systems\InputSystem.h" />
     <ClInclude Include="Source\Game\InputController.h" />
     <ClInclude Include="Source\Renderer\Core\StringHelpers.h" />
+    <ClInclude Include="Source\Renderer\Core\Swapchain.h" />
     <ClInclude Include="Source\VgeMath.h" />
     <ClInclude Include="Source\Renderer\RenderPass.h" />
     <ClInclude Include="Source\Renderer\CommandBuffer.h" />

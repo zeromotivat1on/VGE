@@ -1,9 +1,11 @@
 #pragma once
 
 #include "Core/Common.h"
+#include "Core/BufferPool.h"
 #include "Core/ShaderModule.h"
 #include "Core/RenderTarget.h"
 #include "Core/PipelineState.h"
+#include "Core/RenderContext.h"
 
 namespace vge
 {
@@ -140,7 +142,7 @@ public:
 		std::copy(_LightingState.PointLights.begin(), _LightingState.PointLights.end(), lightInfo.PointLights);
 		std::copy(_LightingState.SpotLights.begin(), _LightingState.SpotLights.end(), lightInfo.SpotLights);
 
-		auto& renderFrame = GetRenderContext().get_active_frame();
+		auto& renderFrame = GetRenderContext().GetActiveFrame();
 		_LightingState.LightBuffer = renderFrame.allocate_buffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(T));
 		_LightingState.LightBuffer.Update(lightInfo);
 	}
