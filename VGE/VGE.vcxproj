@@ -147,6 +147,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Renderer\Platform\GlfwWindow.cpp" />
     <ClCompile Include="Source\Renderer\Core\RenderContext.cpp" />
     <ClCompile Include="Source\Renderer\Core\ResourceRecord.cpp" />
     <ClCompile Include="Source\Renderer\Core\DescriptorSet.cpp" />
@@ -205,8 +206,10 @@
     <ClCompile Include="Source\Game\GameLoop.cpp" />
     <ClCompile Include="Source\Renderer\Core\VulkanResource.cpp" />
     <ClCompile Include="Source\Renderer\Core\Subpass.cpp" />
+    <ClCompile Include="Source\Renderer\Platform\Window.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Renderer\Platform\GlfwWindow.h" />
     <ClInclude Include="Source\Renderer\Core\RenderContext.h" />
     <ClInclude Include="Source\Renderer\Core\ResourceRecord.h" />
     <ClInclude Include="Source\Renderer\Common\ResourceCaching.h" />
@@ -285,6 +288,7 @@
     <ClInclude Include="Source\Renderer\Core\VulkanResource.h" />
     <ClInclude Include="Source\Renderer\Core\Subpass.h" />
     <ClInclude Include="Vendor\volk.h" />
+    <ClInclude Include="Source\Renderer\Platform\Window.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="compile_shaders.bat" />

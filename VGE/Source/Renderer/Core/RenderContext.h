@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/Common.h"
+#include "Core/Swapchain.h"
 #include "Core/RenderFrame.h"
 #include "Core/RenderTarget.h"
 
@@ -54,7 +55,7 @@ public:
 	inline VkSemaphore RequestSemaphore() { return GetActiveFrame().RequestSemaphore(); }
 	inline VkSemaphore RequestSemaphoreWithOwnership() { return GetActiveFrame().RequestSemaphoreWithOwnership(); }
 	inline VkFormat GetFormat() const { return _Swapchain ? _Swapchain->GetFormat() : DefaultVkFormat; }
-	inline const Swapchain& GetSwapchain() const { ASSERT(_Swapchain); return _Swapchain; }
+	inline const Swapchain& GetSwapchain() const { ASSERT(_Swapchain); return *_Swapchain; }
 	inline const VkExtent2D& GetSurfaceExtent() const { return _SurfaceExtent; }
 	inline std::vector<std::unique_ptr<RenderFrame>>& GetRenderFrames() { return _Frames; }
 	inline bool HasSwapchain() const { return _Swapchain != nullptr; }

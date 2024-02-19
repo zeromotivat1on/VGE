@@ -9,6 +9,7 @@
 #include <map>
 #include <unordered_map>
 #include <functional>
+#include <optional>
 #include <assert.h>
 
 #include "vk_mem_alloc.h"

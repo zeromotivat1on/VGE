@@ -56,7 +56,7 @@ inline VkPresentModeKHR ChoosePresentMode(
 
 	if (presentModeIt == availablePresentModes.end())
 	{
-		// If nothing found, always default to FIFO
+		// If nothing found, always default to FIFO.
 		VkPresentModeKHR chosenPresentMode = VK_PRESENT_MODE_FIFO_KHR;
 
 		for (auto& present_mode : presentModePriorityList)
@@ -83,9 +83,9 @@ inline VkSurfaceFormatKHR ChooseSurfaceFormat(
 	const std::vector<VkSurfaceFormatKHR>& availableSurfaceFormats,
 	const std::vector<VkSurfaceFormatKHR>& surfaceFormatPriorityList)
 {
-	// Try to find the requested surface format in the supported surface formats
+	// Try to find the requested surface format in the supported surface formats.
 	auto surfaceFormatIt = std::find_if(availableSurfaceFormats.begin(), availableSurfaceFormats.end(),
-		[&requestedSurfaceFormat](const VkSurfaceFormatKHR& surface) 
+		[&requestedSurfaceFormat](const VkSurfaceFormatKHR& surface)
 		{
 			if (surface.format == requestedSurfaceFormat.format &&
 				surface.colorSpace == requestedSurfaceFormat.colorSpace)
@@ -96,7 +96,7 @@ inline VkSurfaceFormatKHR ChooseSurfaceFormat(
 			return false;
 		});
 
-	// If the requested surface format isn't found, then try to request a format from the priority list
+	// If the requested surface format isn't found, then try to request a format from the priority list.
 	if (surfaceFormatIt == availableSurfaceFormats.end())
 	{
 		for (auto& surfaceFormat : surfaceFormatPriorityList)
@@ -119,7 +119,7 @@ inline VkSurfaceFormatKHR ChooseSurfaceFormat(
 			}
 		}
 
-		// If nothing found, default the first supporte surface format
+		// If nothing found, default the first supporte surface format.
 		surfaceFormatIt = availableSurfaceFormats.begin();
 		LOG(Warning, "Surface format %s not supported, selecting %s.", ToString(requestedSurfaceFormat), ToString(*surfaceFormatIt));
 	}
@@ -150,12 +150,12 @@ inline VkCompositeAlphaFlagBitsKHR ChooseCompositeAlpha(VkCompositeAlphaFlagBits
 		return requestCompositeAlpha;
 	}
 
-	static const std::vector<VkCompositeAlphaFlagBitsKHR> compositeAlphaFlags = 
+	static const std::vector<VkCompositeAlphaFlagBitsKHR> compositeAlphaFlags =
 	{
 		VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
 		VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR,
 		VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR,
-		VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR 
+		VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR
 	};
 
 	for (VkCompositeAlphaFlagBitsKHR compositeAlpha : compositeAlphaFlags)
@@ -245,190 +245,179 @@ inline VkImageUsageFlags CompositeImageFlags(std::set<VkImageUsageFlagBits>& ima
 }	// namespace
 }	// namespace vge
 
-vge::Swapchain::Swapchain(Swapchain& oldSwapchain, const VkExtent2D& extent) 
-	:
-	Swapchain{ oldSwapchain,
-			  oldSwapchain.device,
-			  oldSwapchain.surface,
-			  oldSwapchain.properties.present_mode,
-			  oldSwapchain.present_mode_priority_list,
-			  oldSwapchain.surface_format_priority_list,
-			  extent,
-			  oldSwapchain.properties.image_count,
-			  oldSwapchain.properties.pre_transform,
-			  oldSwapchain.image_usage_flags }
+vge::Swapchain::Swapchain(Swapchain& oldSwapchain, const VkExtent2D& extent)
+	: Swapchain(oldSwapchain,
+		oldSwapchain._Device,
+		oldSwapchain._Surface,
+		oldSwapchain._Properties.PresentMode,
+		oldSwapchain._PresentModePriorityList,
+		oldSwapchain._SurfaceFormatPriorityList,
+		extent,
+		oldSwapchain._Properties.ImageCount,
+		oldSwapchain._Properties.PreTransform,
+		oldSwapchain._ImageUsageFlags)
 {}
 
-vge::Swapchain::Swapchain(Swapchain& oldSwapchain, const uint32_t image_count)
-	:
-	Swapchain{ oldSwapchain,
-			  oldSwapchain.device,
-			  oldSwapchain.surface,
-			  oldSwapchain.properties.present_mode,
-			  oldSwapchain.present_mode_priority_list,
-			  oldSwapchain.surface_format_priority_list,
-			  oldSwapchain.properties.extent,
-			  image_count,
-			  oldSwapchain.properties.pre_transform,
-			  oldSwapchain.image_usage_flags }
+vge::Swapchain::Swapchain(Swapchain& oldSwapchain, const u32 imageCount)
+	: Swapchain(oldSwapchain,
+		oldSwapchain._Device,
+		oldSwapchain._Surface,
+		oldSwapchain._Properties.PresentMode,
+		oldSwapchain._PresentModePriorityList,
+		oldSwapchain._SurfaceFormatPriorityList,
+		oldSwapchain._Properties.Extent,
+		imageCount,
+		oldSwapchain._Properties.PreTransform,
+		oldSwapchain._ImageUsageFlags)
 {}
 
-vge::Swapchain::Swapchain(Swapchain& oldSwapchain, const std::set<VkImageUsageFlagBits>& image_usage_flags)
-	:
-	Swapchain{ oldSwapchain,
-			  oldSwapchain.device,
-			  oldSwapchain.surface,
-			  oldSwapchain.properties.present_mode,
-			  oldSwapchain.present_mode_priority_list,
-			  oldSwapchain.surface_format_priority_list,
-			  oldSwapchain.properties.extent,
-			  oldSwapchain.properties.image_count,
-			  oldSwapchain.properties.pre_transform,
-			  image_usage_flags }
+vge::Swapchain::Swapchain(Swapchain& oldSwapchain, const std::set<VkImageUsageFlagBits>& imageUsageFlags)
+	: Swapchain(oldSwapchain,
+		oldSwapchain._Device,
+		oldSwapchain._Surface,
+		oldSwapchain._Properties.PresentMode,
+		oldSwapchain._PresentModePriorityList,
+		oldSwapchain._SurfaceFormatPriorityList,
+		oldSwapchain._Properties.Extent,
+		oldSwapchain._Properties.ImageCount,
+		oldSwapchain._Properties.PreTransform,
+		imageUsageFlags)
 {}
 
 vge::Swapchain::Swapchain(Swapchain& oldSwapchain, const VkExtent2D& extent, const VkSurfaceTransformFlagBitsKHR transform)
-	:
-	Swapchain{ oldSwapchain,
-			  oldSwapchain.device,
-			  oldSwapchain.surface,
-			  oldSwapchain.properties.present_mode,
-			  oldSwapchain.present_mode_priority_list,
-			  oldSwapchain.surface_format_priority_list,
-			  extent,
-			  oldSwapchain.properties.image_count,
-			  transform,
-			  oldSwapchain.image_usage_flags }
+	: Swapchain(oldSwapchain,
+		oldSwapchain._Device,
+		oldSwapchain._Surface,
+		oldSwapchain._Properties.PresentMode,
+		oldSwapchain._PresentModePriorityList,
+		oldSwapchain._SurfaceFormatPriorityList,
+		extent,
+		oldSwapchain._Properties.ImageCount,
+		transform,
+		oldSwapchain._ImageUsageFlags)
 {}
 
-vge::Swapchain::Swapchain(Device& device,
-	VkSurfaceKHR                           surface,
-	const VkPresentModeKHR                 present_mode,
-	std::vector<VkPresentModeKHR> const& present_mode_priority_list,
-	const std::vector<VkSurfaceFormatKHR>& surface_format_priority_list,
-	const VkExtent2D& extent,
-	const uint32_t                         image_count,
-	const VkSurfaceTransformFlagBitsKHR    transform,
-	const std::set<VkImageUsageFlagBits>& image_usage_flags) 
-	:
-	Swapchain{ *this, device, surface, present_mode, present_mode_priority_list, surface_format_priority_list, extent, image_count, transform, image_usage_flags }
-{
-}
-
-vge::Swapchain::Swapchain(Swapchain& oldSwapchain,
+vge::Swapchain::Swapchain(
 	Device& device,
-	VkSurfaceKHR                           surface,
-	const VkPresentModeKHR                 present_mode,
-	std::vector<VkPresentModeKHR> const& present_mode_priority_list,
-	const std::vector<VkSurfaceFormatKHR>& surface_format_priority_list,
+	VkSurfaceKHR surface,
+	const VkPresentModeKHR presentMode,
+	const std::vector<VkPresentModeKHR>& presentModePriorityList,
+	const std::vector<VkSurfaceFormatKHR>& surfaceFormatPriorityList,
 	const VkExtent2D& extent,
-	const uint32_t                         image_count,
-	const VkSurfaceTransformFlagBitsKHR    transform,
-	const std::set<VkImageUsageFlagBits>& image_usage_flags) 
+	const u32 imageCount,
+	const VkSurfaceTransformFlagBitsKHR transform,
+	const std::set<VkImageUsageFlagBits>& imageUsageFlags)
 	:
-	device{ device },
-	surface{ surface }
+	Swapchain(*this, device, surface, presentMode, presentModePriorityList, surfaceFormatPriorityList, extent, imageCount, transform, imageUsageFlags)
+{}
+
+vge::Swapchain::Swapchain(
+	Swapchain& oldSwapchain,
+	Device& device,
+	VkSurfaceKHR surface,
+	const VkPresentModeKHR presentMode,
+	std::vector<VkPresentModeKHR> const& presentModePriorityList,
+	const std::vector<VkSurfaceFormatKHR>& surfaceFormatPriorityList,
+	const VkExtent2D& extent,
+	const u32 imageCount,
+	const VkSurfaceTransformFlagBitsKHR transform,
+	const std::set<VkImageUsageFlagBits>& imageUsageFlags)
+	:
+	_Device(device), _Surface(surface)
 {
-	this->present_mode_priority_list = present_mode_priority_list;
-	this->surface_format_priority_list = surface_format_priority_list;
+	_PresentModePriorityList = presentModePriorityList;
+	_SurfaceFormatPriorityList = surfaceFormatPriorityList;
 
-	VkSurfaceCapabilitiesKHR surface_capabilities{};
-	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(this->device.get_gpu().GetHandle(), surface, &surface_capabilities);
+	VkSurfaceCapabilitiesKHR surfaceCapabilities = {};
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(_Device.GetGpu().GetHandle(), surface, &surfaceCapabilities);
 
-	uint32_t surface_format_count{ 0U };
-	VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(this->device.get_gpu().GetHandle(), surface, &surface_format_count, nullptr));
-	surface_formats.resize(surface_format_count);
-	VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(this->device.get_gpu().GetHandle(), surface, &surface_format_count, surface_formats.data()));
+	u32 surfaceFormatCount = 0;
+	VK_ENSURE(vkGetPhysicalDeviceSurfaceFormatsKHR(_Device.GetGpu().GetHandle(), surface, &surfaceFormatCount, nullptr));
+	_SurfaceFormats.resize(surfaceFormatCount);
+	VK_ENSURE(vkGetPhysicalDeviceSurfaceFormatsKHR(_Device.GetGpu().GetHandle(), surface, &surfaceFormatCount, _SurfaceFormats.data()));
 
 	LOG(Log, "Surface supports the following surface formats:");
-	for (auto& surface_format : surface_formats)
+	for (auto& surface_format : _SurfaceFormats)
 	{
-		LOG(Log, "  \t{}", ToString(surface_format));
+		LOG(Log, "  \t%s", ToString(surface_format));
 	}
 
-	uint32_t present_mode_count{ 0U };
-	VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(this->device.get_gpu().GetHandle(), surface, &present_mode_count, nullptr));
-	present_modes.resize(present_mode_count);
-	VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(this->device.get_gpu().GetHandle(), surface, &present_mode_count, present_modes.data()));
+	u32 presentModeCount = 0;
+	VK_ENSURE(vkGetPhysicalDeviceSurfacePresentModesKHR(_Device.GetGpu().GetHandle(), surface, &presentModeCount, nullptr));
+	_PresentModes.resize(presentModeCount);
+	VK_ENSURE(vkGetPhysicalDeviceSurfacePresentModesKHR(_Device.GetGpu().GetHandle(), surface, &presentModeCount, _PresentModes.data()));
 
 	LOG(Log, "Surface supports the following present modes:");
-	for (auto& present_mode : present_modes)
+	for (auto& present_mode : _PresentModes)
 	{
-		LOG(Log, "  \t{}", ToString(present_mode));
+		LOG(Log, "  \t%s", ToString(present_mode));
 	}
 
-	// Chose best properties based on surface capabilities
-	properties.image_count = ChooseImageCount(image_count, surface_capabilities.minImageCount, surface_capabilities.maxImageCount);
-	properties.extent = ChooseExtent(extent, surface_capabilities.minImageExtent, surface_capabilities.maxImageExtent, surface_capabilities.currentExtent);
-	properties.array_layers = ChooseImageArrayLayers(1U, surface_capabilities.maxImageArrayLayers);
-	properties.surface_format = ChooseSurfaceFormat(properties.surface_format, surface_formats, surface_format_priority_list);
-	VkFormatProperties format_properties;
-	vkGetPhysicalDeviceFormatProperties(this->device.get_gpu().GetHandle(), properties.surface_format.format, &format_properties);
-	this->image_usage_flags = ChooseImageUsage(image_usage_flags, surface_capabilities.supportedUsageFlags, format_properties.optimalTilingFeatures);
-	properties.image_usage = CompositeImageFlags(this->image_usage_flags);
-	properties.pre_transform = ChooseTransform(transform, surface_capabilities.supportedTransforms, surface_capabilities.currentTransform);
-	properties.composite_alpha = ChooseCompositeAlpha(VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR, surface_capabilities.supportedCompositeAlpha);
+	// Chose best properties based on surface capabilities.
+	_Properties.ImageCount = ChooseImageCount(imageCount, surfaceCapabilities.minImageCount, surfaceCapabilities.maxImageCount);
+	_Properties.Extent = ChooseExtent(extent, surfaceCapabilities.minImageExtent, surfaceCapabilities.maxImageExtent, surfaceCapabilities.currentExtent);
+	_Properties.ArrayLayers = ChooseImageArrayLayers(1U, surfaceCapabilities.maxImageArrayLayers);
+	_Properties.SurfaceFormat = ChooseSurfaceFormat(_Properties.SurfaceFormat, _SurfaceFormats, surfaceFormatPriorityList);
+	VkFormatProperties formatProperties;
+	vkGetPhysicalDeviceFormatProperties(_Device.GetGpu().GetHandle(), _Properties.SurfaceFormat.format, &formatProperties);
+	_ImageUsageFlags = ChooseImageUsage(imageUsageFlags, surfaceCapabilities.supportedUsageFlags, formatProperties.optimalTilingFeatures);
+	_Properties.ImageUsage = CompositeImageFlags(_ImageUsageFlags);
+	_Properties.PreTransform = ChooseTransform(transform, surfaceCapabilities.supportedTransforms, surfaceCapabilities.currentTransform);
+	_Properties.CompositeAlpha = ChooseCompositeAlpha(VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR, surfaceCapabilities.supportedCompositeAlpha);
 
-	// Pass through defaults to the create function
-	properties.oldSwapchain = oldSwapchain.GetHandle();
-	properties.present_mode = present_mode;
+	// Pass through defaults to the create function.
+	_Properties.OldSwapchain = oldSwapchain.GetHandle();
+	_Properties.PresentMode = presentMode;
 
-	properties.present_mode = ChoosePresentMode(properties.present_mode, present_modes, present_mode_priority_list);
-	properties.surface_format = ChooseSurfaceFormat(properties.surface_format, surface_formats, surface_format_priority_list);
+	_Properties.PresentMode = ChoosePresentMode(_Properties.PresentMode, _PresentModes, presentModePriorityList);
+	_Properties.SurfaceFormat = ChooseSurfaceFormat(_Properties.SurfaceFormat, _SurfaceFormats, surfaceFormatPriorityList);
 
-	VkSwapchainCreateInfoKHR create_info{ VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR };
-	create_info.minImageCount = properties.image_count;
-	create_info.imageExtent = properties.extent;
-	create_info.presentMode = properties.present_mode;
-	create_info.imageFormat = properties.surface_format.format;
-	create_info.imageColorSpace = properties.surface_format.colorSpace;
-	create_info.imageArrayLayers = properties.array_layers;
-	create_info.imageUsage = properties.image_usage;
-	create_info.preTransform = properties.pre_transform;
-	create_info.compositeAlpha = properties.composite_alpha;
-	create_info.oldSwapchain = properties.oldSwapchain;
-	create_info.surface = surface;
+	VkSwapchainCreateInfoKHR createInfo = { VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR };
+	createInfo.minImageCount = _Properties.ImageCount;
+	createInfo.imageExtent = _Properties.Extent;
+	createInfo.presentMode = _Properties.PresentMode;
+	createInfo.imageFormat = _Properties.SurfaceFormat.format;
+	createInfo.imageColorSpace = _Properties.SurfaceFormat.colorSpace;
+	createInfo.imageArrayLayers = _Properties.ArrayLayers;
+	createInfo.imageUsage = _Properties.ImageUsage;
+	createInfo.preTransform = _Properties.PreTransform;
+	createInfo.compositeAlpha = _Properties.CompositeAlpha;
+	createInfo.oldSwapchain = _Properties.OldSwapchain;
+	createInfo.surface = surface;
 
-	VkResult result = vkCreateSwapchainKHR(device.GetHandle(), &create_info, nullptr, &handle);
+	VK_ENSURE(vkCreateSwapchainKHR(device.GetHandle(), &createInfo, nullptr, &_Handle));
 
-	if (result != VK_SUCCESS)
-	{
-		throw VulkanException{ result, "Cannot create Swapchain" };
-	}
-
-	uint32_t image_available{ 0u };
-	VK_CHECK(vkGetSwapchainImagesKHR(device.GetHandle(), handle, &image_available, nullptr));
-
-	images.resize(image_available);
-
-	VK_CHECK(vkGetSwapchainImagesKHR(device.GetHandle(), handle, &image_available, images.data()));
+	u32 swapchainImageCount = 0;
+	VK_ENSURE(vkGetSwapchainImagesKHR(device.GetHandle(), _Handle, &swapchainImageCount, nullptr));
+	_Images.resize(swapchainImageCount);
+	VK_ENSURE(vkGetSwapchainImagesKHR(device.GetHandle(), _Handle, &swapchainImageCount, _Images.data()));
 }
 
 vge::Swapchain::~Swapchain()
 {
-	if (handle)
+	if (_Handle)
 	{
-		vkDestroySwapchainKHR(device.GetHandle(), handle, nullptr);
+		vkDestroySwapchainKHR(_Device.GetHandle(), _Handle, nullptr);
 	}
 }
 
 vge::Swapchain::Swapchain(Swapchain&& other)
 	:
-	device{ other.device },
-	surface{ std::exchange(other.surface, VK_NULL_HANDLE) },
-	handle{ std::exchange(other.handle, VK_NULL_HANDLE) },
-	images{ std::exchange(other.images, {}) },
-	surface_formats{ std::exchange(other.surface_formats, {}) },
-	present_modes{ std::exchange(other.present_modes, {}) },
-	properties{ std::exchange(other.properties, {}) },
-	present_mode_priority_list{ std::exchange(other.present_mode_priority_list, {}) },
-	surface_format_priority_list{ std::exchange(other.surface_format_priority_list, {}) },
-	image_usage_flags{ std::move(other.image_usage_flags) }
+	_Device(other._Device),
+	_Surface(std::exchange(other._Surface, VK_NULL_HANDLE)),
+	_Handle(std::exchange(other._Handle, VK_NULL_HANDLE)),
+	_Images(std::exchange(other._Images, {})),
+	_SurfaceFormats(std::exchange(other._SurfaceFormats, {})),
+	_PresentModes(std::exchange(other._PresentModes, {})),
+	_Properties(std::exchange(other._Properties, {})),
+	_PresentModePriorityList(std::exchange(other._PresentModePriorityList, {})),
+	_SurfaceFormatPriorityList(std::exchange(other._SurfaceFormatPriorityList, {})),
+	_ImageUsageFlags(std::move(other._ImageUsageFlags))
 {
 }
 
 VkResult vge::Swapchain::AcquireNextImage(u32& imageIndex, VkSemaphore imageAcquiredSemaphore, VkFence fence /*= VK_NULL_HANDLE*/) const
 {
-	return vkAcquireNextImageKHR(device.GetHandle(), handle, std::numeric_limits<uint64_t>::max(), imageAcquiredSemaphore, fence, &imageIndex);
+	return vkAcquireNextImageKHR(_Device.GetHandle(), _Handle, std::numeric_limits<uint64_t>::max(), imageAcquiredSemaphore, fence, &imageIndex);
 }
 

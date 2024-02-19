@@ -1,4 +1,5 @@
 #include "RenderContext.h"
+#include "Platform/Window.h"
 
 VkFormat vge::RenderContext::DefaultVkFormat = VK_FORMAT_R8G8B8A8_SRGB;
 
@@ -13,7 +14,7 @@ vge::RenderContext::RenderContext(
 	_Device(device), 
 	_Window(window), 
 	_Queue(device.GetSuitableGraphicsQueue()), 
-	_SurfaceExtent(window.GetExtent().width, window.GetExtent().height)
+	_SurfaceExtent({ window.GetExtent().width, window.GetExtent().height })
 {
 	if (surface)
 	{
@@ -43,7 +44,7 @@ void vge::RenderContext::Prepare(size_t threadCount, RenderTarget::CreateFunc cr
 
 		for (auto& imageHandle : _Swapchain->GetImages())
 		{
-			auto swapchainImage = Image(_Device, imageHandle, extent, _Swapchain->GetFormat(), _Swapchain->get_usage());
+			auto swapchainImage = Image(_Device, imageHandle, extent, _Swapchain->GetFormat(), _Swapchain->GetUsage());
 			auto renderTarget = createRenderTargetFunc(std::move(swapchainImage));
 			_Frames.emplace_back(std::make_unique<RenderFrame>(_Device, std::move(renderTarget), threadCount));
 		}
@@ -147,9 +148,9 @@ void vge::RenderContext::Recreate()
 
 	auto frameIt = _Frames.begin();
 
-	for (auto& imageHandle : _Swapchain->get_images())
+	for (auto& imageHandle : _Swapchain->GetImages())
 	{
-		Image swapchainImage = Image(_Device, imageHandle, extent, _Swapchain->GetFormat(), _Swapchain->get_usage());
+		Image swapchainImage = Image(_Device, imageHandle, extent, _Swapchain->GetFormat(), _Swapchain->GetUsage());
 
 		auto renderTarget = _CreateRenderTargetFunc(std::move(swapchainImage));
 
@@ -178,7 +179,7 @@ bool vge::RenderContext::HandleSurfaceChanges(bool forceUpdate)
 	}
 
 	VkSurfaceCapabilitiesKHR surfaceProperties;
-	VK_ENSURE(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(_Device.GetGpu().GetHandle(), _Swapchain->get_surface(), &surfaceProperties));
+	VK_ENSURE(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(_Device.GetGpu().GetHandle(), _Swapchain->GetSurface(), &surfaceProperties));
 
 	if (surfaceProperties.currentExtent.width == 0xFFFFFFFF)
 	{
@@ -259,7 +260,7 @@ void vge::RenderContext::BeginFrame()
 
 	if (_Swapchain)
 	{
-		auto result = _Swapchain->acquire_next_image(_ActiveFrameIndex, _AcquiredSemaphore, VK_NULL_HANDLE);
+		auto result = _Swapchain->AcquireNextImage(_ActiveFrameIndex, _AcquiredSemaphore, VK_NULL_HANDLE);
 
 		if (result == VK_SUBOPTIMAL_KHR || result == VK_ERROR_OUT_OF_DATE_KHR)
 		{
@@ -267,7 +268,7 @@ void vge::RenderContext::BeginFrame()
 
 			if (swapchainUpdated)
 			{
-				result = _Swapchain->acquire_next_image(_ActiveFrameIndex, _AcquiredSemaphore, VK_NULL_HANDLE);
+				result = _Swapchain->AcquireNextImage(_ActiveFrameIndex, _AcquiredSemaphore, VK_NULL_HANDLE);
 			}
 		}
 
@@ -337,7 +338,7 @@ void vge::RenderContext::EndFrame(VkSemaphore semaphore)
 
 	if (_Swapchain)
 	{
-		VkSwapchainKHR vkSwapchain = _Swapchain->get_handle();
+		VkSwapchainKHR vkSwapchain = _Swapchain->GetHandle();
 
 		VkPresentInfoKHR presentInfo = { VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
 		presentInfo.waitSemaphoreCount = 1;
