@@ -22,7 +22,7 @@ struct LightingState;
 class CommandBuffer : public VulkanResource<VkCommandBuffer, VK_OBJECT_TYPE_COMMAND_BUFFER>
 {
 public:
-	enum class ResetMode
+	enum class ResetMode : u8
 	{
 		ResetPool,
 		ResetIndividually,
@@ -134,11 +134,11 @@ public:
 
 	inline void SetUpdateAfterBind(bool updateAfterBind) { _UpdateAfterBind = updateAfterBind; }
 
-	void ResetQueryPool(const QueryPool& queryPool, u32 firstQuery, u32 queryCount);
-	void BeginQuery(const QueryPool& queryPool, u32 query, VkQueryControlFlags flags);
-	void EndQuery(const QueryPool& queryPool, u32 query);
+	//void ResetQueryPool(const QueryPool& queryPool, u32 firstQuery, u32 queryCount);
+	//void BeginQuery(const QueryPool& queryPool, u32 query, VkQueryControlFlags flags);
+	//void EndQuery(const QueryPool& queryPool, u32 query);
 
-	void WriteTimestamp(VkPipelineStageFlagBits pipelineStage, const QueryPool& queryPool, u32 query);
+	//void WriteTimestamp(VkPipelineStageFlagBits pipelineStage, const QueryPool& queryPool, u32 query);
 
 	VkResult Reset(ResetMode resetMode);
 

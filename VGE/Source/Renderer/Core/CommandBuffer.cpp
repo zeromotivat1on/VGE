@@ -659,25 +659,25 @@ const bool vge::CommandBuffer::IsRenderSizeOptimal(const VkExtent2D& framebuffer
 		&& ((renderArea.extent.height % renderAreaGranularity.height == 0) || (renderArea.offset.y + renderArea.extent.height == framebufferExtent.height)));
 }
 
-void vge::CommandBuffer::ResetQueryPool(const QueryPool& queryPool, u32 firstQuery, u32 queryCount)
-{
-	vkCmdResetQueryPool(GetHandle(), queryPool.GetHandle(), firstQuery, queryCount);
-}
-
-void vge::CommandBuffer::BeginQuery(const QueryPool& queryPool, u32 query, VkQueryControlFlags flags)
-{
-	vkCmdBeginQuery(GetHandle(), queryPool.GetHandle(), query, flags);
-}
-
-void vge::CommandBuffer::EndQuery(const QueryPool& queryPool, u32 query)
-{
-	vkCmdEndQuery(GetHandle(), queryPool.GetHandle(), query);
-}
-
-void vge::CommandBuffer::WriteTimestamp(VkPipelineStageFlagBits pipelineStage, const QueryPool& queryPool, u32 query)
-{
-	vkCmdWriteTimestamp(GetHandle(), pipelineStage, queryPool.GetHandle(), query);
-}
+//void vge::CommandBuffer::ResetQueryPool(const QueryPool& queryPool, u32 firstQuery, u32 queryCount)
+//{
+//	vkCmdResetQueryPool(GetHandle(), queryPool.GetHandle(), firstQuery, queryCount);
+//}
+//
+//void vge::CommandBuffer::BeginQuery(const QueryPool& queryPool, u32 query, VkQueryControlFlags flags)
+//{
+//	vkCmdBeginQuery(GetHandle(), queryPool.GetHandle(), query, flags);
+//}
+//
+//void vge::CommandBuffer::EndQuery(const QueryPool& queryPool, u32 query)
+//{
+//	vkCmdEndQuery(GetHandle(), queryPool.GetHandle(), query);
+//}
+//
+//void vge::CommandBuffer::WriteTimestamp(VkPipelineStageFlagBits pipelineStage, const QueryPool& queryPool, u32 query)
+//{
+//	vkCmdWriteTimestamp(GetHandle(), pipelineStage, queryPool.GetHandle(), query);
+//}
 
 VkResult vge::CommandBuffer::Reset(ResetMode resetMode)
 {

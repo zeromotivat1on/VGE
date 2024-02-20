@@ -2,6 +2,9 @@
 
 #include "Core/VulkanResource.h"
 #include "Core/PhysicalDevice.h"
+#include "Core/ResourceCache.h"
+#include "Core/CommandPool.h"
+#include "Core/FencePool.h"
 #include "Core/Instance.h"
 #include "Core/Buffer.h"
 #include "Core/Queue.h"
@@ -33,7 +36,7 @@ public:
 	inline const PhysicalDevice& GetGpu() const { return _Gpu; }
 	inline VmaAllocator GetMemoryAllocator() const { return _MemoryAllocator; }
 	inline CommandPool& GetCommandPool() const { return *_CommandPool; }
-	inline CommandPool& GetFencePool() const { return *_FencePool; }
+	inline FencePool& GetFencePool() const { return *_FencePool; }
 	inline const Queue& GetQueue(u32 queueFamilyIndex, u32 queueIndex) const { return _Queues[queueFamilyIndex][queueIndex]; }
 	inline ResourceCache& GetResourceCache() { return _ResourceCache; }
 	inline CommandBuffer& RequestCommandBuffer() const { return _CommandPool->RequestCommandBuffer(); }

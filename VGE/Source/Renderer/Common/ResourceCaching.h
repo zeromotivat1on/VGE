@@ -665,7 +665,7 @@ T& RequestResource(Device& device, ResourceRecord* recorder, std::unordered_map<
 		return resIt->second;
 	}
 
-	// If we do not have it already, create and cache it
+	// If we do not have it already, create and cache it.
 	const char* resType = typeid(T).name();
 	size_t resId = resources.size();
 

@@ -1,7 +1,7 @@
 #include "Device.h"
 
 vge::Device::Device(PhysicalDevice& gpu, VkSurfaceKHR surface, /*std::unique_ptr<DebugUtils>&& debug_utils,*/ std::unordered_map<const char*, bool> requestedExtensions /*= {}*/)
-	: VulkanResource(VK_NULL_HANDLE, this), _Gpu(gpu)
+	: VulkanResource(VK_NULL_HANDLE, this), _Gpu(gpu), _ResourceCache(*this)
 {
 	LOG(Log, "Selected GPU: %s", gpu.GetProperties().deviceName);
 
@@ -188,7 +188,7 @@ vge::Device::Device(PhysicalDevice& gpu, VkSurfaceKHR surface, /*std::unique_ptr
 		vmaVulkanFuncs.vkGetImageMemoryRequirements2KHR = vkGetImageMemoryRequirements2KHR;
 	}
 
-	if (IsExtensionSupported(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME) && IsEnabled(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME))
+	if (IsExtensionSupported(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME) && IsExtensionEnabled(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME))
 	{
 		allocatorInfo.flags |= VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
 	}
@@ -201,24 +201,25 @@ vge::Device::Device(PhysicalDevice& gpu, VkSurfaceKHR surface, /*std::unique_ptr
 	_FencePool = std::make_unique<FencePool>(*this);
 }
 
-vge::Device::Device(PhysicalDevice& gpu, VkDevice& vulkanDevice, VkSurfaceKHR surface) : _Gpu(gpu)
+vge::Device::Device(PhysicalDevice& gpu, VkDevice& vulkanDevice, VkSurfaceKHR surface) 
+	: _Gpu(gpu), _ResourceCache(*this)
 {
 	_Handle = vulkanDevice;
 }
 
 vge::Device::~Device()
 {
-	//_ResourceCache.Clear();
+	_ResourceCache.Clear();
 
 	_CommandPool.reset();
 	_FencePool.reset();
 
 	if (_MemoryAllocator)
 	{
-		VmaStats stats;
-		vmaCalculateStats(_MemoryAllocator, &stats);
-
-		LOG(Log, "Total device memory leaked: %d bytes.", stats.total.usedBytes);
+		//VmaStats stats;
+		//vmaCalculateStats(_MemoryAllocator, &stats);
+		//
+		//LOG(Log, "Total device memory leaked: %d bytes.", stats.total.usedBytes);
 
 		vmaDestroyAllocator(_MemoryAllocator);
 	}
@@ -287,7 +288,7 @@ bool vge::Device::IsImageFormatSupported(VkFormat format) const
 	return result != VK_ERROR_FORMAT_NOT_SUPPORTED;
 }
 
-const Queue& vge::Device::GetQueueByFlags(VkQueueFlags requiedQueueFlags, u32 queueIndex) const
+const vge::Queue& vge::Device::GetQueueByFlags(VkQueueFlags requiedQueueFlags, u32 queueIndex) const
 {
 	for (u32 queueFamilyIndex = 0U; queueFamilyIndex < _Queues.size(); ++queueFamilyIndex)
 	{
@@ -304,7 +305,7 @@ const Queue& vge::Device::GetQueueByFlags(VkQueueFlags requiedQueueFlags, u32 qu
 	ENSURE_MSG(false, "Queue not found.")
 }
 
-const Queue& vge::Device::GetQueueByPresent(u32 queueIndex) const
+const vge::Queue& vge::Device::GetQueueByPresent(u32 queueIndex) const
 {
 	for (u32 queueFamilyIndex = 0U; queueFamilyIndex < _Queues.size(); ++queueFamilyIndex)
 	{
@@ -320,7 +321,7 @@ const Queue& vge::Device::GetQueueByPresent(u32 queueIndex) const
 	ENSURE_MSG(false, "Queue not found.")
 }
 
-const Queue& vge::Device::GetSuitableGraphicsQueue() const
+const vge::Queue& vge::Device::GetSuitableGraphicsQueue() const
 {
 	for (u32 queueFamilyIndex = 0U; queueFamilyIndex < _Queues.size(); ++queueFamilyIndex)
 	{

@@ -114,7 +114,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;VK_NO_PROTOTYPES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)Source;$(ProjectDir)Source\Game;$(ProjectDir)Source\Renderer;$(ProjectDir)Vendor;$(ProjectDir)Vendor\glm;$(ProjectDir)Vendor\GLFW\include;$(ProjectDir)Vendor\assimp\include;C:\VulkanSDK\1.3.250.1\Include;C:\VulkanSDK\1.3.243.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
@@ -123,7 +123,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(ProjectDir)Vendor\GLFW\lib-vc2022;$(ProjectDir)Vendor\assimp\lib\RelWithDebInfo;C:\VulkanSDK\1.3.250.1\Lib;C:\VulkanSDK\1.3.243.0\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>glfw3.lib;assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -132,7 +132,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;VK_NO_PROTOTYPES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)Source;$(ProjectDir)Source\Game;$(ProjectDir)Vendor;$(ProjectDir)Vendor\glm;$(ProjectDir)Vendor\GLFW\include;$(ProjectDir)Vendor\assimp\include;C:\VulkanSDK\1.3.250.1\Include;C:\VulkanSDK\1.3.243.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
@@ -147,7 +147,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Source\Renderer\Platform\GlfwWindow.cpp" />
+    <ClCompile Include="Source\Renderer\Core\ResourceReplay.cpp" />
+    <ClCompile Include="Source\Renderer\Core\Pipeline.cpp" />
+    <ClCompile Include="Source\Renderer\Core\ResourceCache.cpp" />
+    <ClCompile Include="Source\Platform\Application.cpp" />
+    <ClCompile Include="Source\Platform\Platform.cpp" />
+    <ClCompile Include="Source\Platform\GlfwWindow.cpp" />
     <ClCompile Include="Source\Renderer\Core\RenderContext.cpp" />
     <ClCompile Include="Source\Renderer\Core\ResourceRecord.cpp" />
     <ClCompile Include="Source\Renderer\Core\DescriptorSet.cpp" />
@@ -206,10 +211,16 @@
     <ClCompile Include="Source\Game\GameLoop.cpp" />
     <ClCompile Include="Source\Renderer\Core\VulkanResource.cpp" />
     <ClCompile Include="Source\Renderer\Core\Subpass.cpp" />
-    <ClCompile Include="Source\Renderer\Platform\Window.cpp" />
+    <ClCompile Include="Source\Platform\Window.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Source\Renderer\Platform\GlfwWindow.h" />
+    <ClInclude Include="Source\Renderer\Core\ResourceReplay.h" />
+    <ClInclude Include="Source\Renderer\Core\Pipeline.h" />
+    <ClInclude Include="Source\Renderer\Core\ResourceCache.h" />
+    <ClInclude Include="Source\Platform\Application.h" />
+    <ClInclude Include="Source\Platform\InputEvens.h" />
+    <ClInclude Include="Source\Platform\Platform.h" />
+    <ClInclude Include="Source\Platform\GlfwWindow.h" />
     <ClInclude Include="Source\Renderer\Core\RenderContext.h" />
     <ClInclude Include="Source\Renderer\Core\ResourceRecord.h" />
     <ClInclude Include="Source\Renderer\Common\ResourceCaching.h" />
@@ -287,8 +298,9 @@
     <ClInclude Include="Source\Renderer\Swapchain.h" />
     <ClInclude Include="Source\Renderer\Core\VulkanResource.h" />
     <ClInclude Include="Source\Renderer\Core\Subpass.h" />
+    <ClInclude Include="Source\Timer.h" />
     <ClInclude Include="Vendor\volk.h" />
-    <ClInclude Include="Source\Renderer\Platform\Window.h" />
+    <ClInclude Include="Source\Platform\Window.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="compile_shaders.bat" />

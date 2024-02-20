@@ -4,7 +4,7 @@
 #include "Logging.h"
 #include "Macros.h"
 
-#if DEBUG
+#if VGE_DEBUG
 	#define ENABLE_SCOPE_TIMERS (USE_LOGGING && 1)
 #else
 	#define ENABLE_SCOPE_TIMERS (USE_LOGGING && 0)
@@ -16,27 +16,27 @@
 	#define SCOPE_TIMER(LogPrefix)
 #endif
 
-#if ENABLE_SCOPE_TIMERS
 namespace vge
 {
-	struct ScopeTimer
+#if ENABLE_SCOPE_TIMERS
+struct ScopeTimer
+{
+public:
+	ScopeTimer(std::string_view logPrefix) : m_LogPrefix(logPrefix)
 	{
-	public:
-		ScopeTimer(std::string_view logPrefix) : m_LogPrefix(logPrefix)
-		{
-			m_StartTime = std::chrono::high_resolution_clock::now();
-		}
+		m_StartTime = std::chrono::high_resolution_clock::now();
+	}
 
-		~ScopeTimer()
-		{
-			const auto endTime = std::chrono::high_resolution_clock::now();
-			const f32 diffTime = std::chrono::duration<f32, std::chrono::milliseconds::period>(endTime - m_StartTime).count();
-			LOG(Log, "%s: %.2fms", m_LogPrefix.data(), diffTime);
-		}
+	~ScopeTimer()
+	{
+		const auto endTime = std::chrono::high_resolution_clock::now();
+		const f32 diffTime = std::chrono::duration<f32, std::chrono::milliseconds::period>(endTime - m_StartTime).count();
+		LOG(Log, "%s: %.2fms", m_LogPrefix.data(), diffTime);
+	}
 
-	private:
-		std::chrono::steady_clock::time_point m_StartTime;
-		std::string_view m_LogPrefix;
-	};
-}
+private:
+	std::chrono::steady_clock::time_point m_StartTime;
+	std::string_view m_LogPrefix;
+};
 #endif
+}	// namespace vge

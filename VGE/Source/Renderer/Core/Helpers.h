@@ -2,6 +2,7 @@
 
 #include "Types.h"
 #include "Macros.h"
+#include "GlmCommon.h"
 #include <sstream>
 
 namespace vge
@@ -36,6 +37,71 @@ inline void HashCombine(size_t& seed, const T& v)
 {
 	std::hash<T> hasher;
 	glm::detail::HashCombine(seed, hasher(v));
+}
+
+template <typename T>
+inline void Read(std::istringstream& is, T& value)
+{
+	is.Read(reinterpret_cast<char*>(&value), sizeof(T));
+}
+
+inline void Read(std::istringstream& is, std::string& value)
+{
+	size_t size;
+	Read(is, size);
+	value.resize(size);
+	is.Read(const_cast<char*>(value.data()), size);
+}
+
+template <class T>
+inline void Read(std::istringstream& is, std::set<T>& value)
+{
+	size_t size;
+	Read(is, size);
+	for (u32 i = 0; i < size; i++)
+	{
+		T item;
+		is.Read(reinterpret_cast<char*>(&item), sizeof(T));
+		value.insert(std::move(item));
+	}
+}
+
+template <class T>
+inline void Read(std::istringstream& is, std::vector<T>& value)
+{
+	size_t size;
+	Read(is, size);
+	value.resize(size);
+	is.Read(reinterpret_cast<char*>(value.data()), value.size() * sizeof(T));
+}
+
+template <class T, class S>
+inline void Read(std::istringstream& is, std::map<T, S>& value)
+{
+	size_t size;
+	Read(is, size);
+
+	for (u32 i = 0; i < size; i++)
+	{
+		std::pair<T, S> item;
+		Read(is, item.first);
+		Read(is, item.second);
+
+		value.insert(std::move(item));
+	}
+}
+
+template <class T, u32 N>
+inline void Read(std::istringstream& is, std::array<T, N>& value)
+{
+	is.Read(reinterpret_cast<char*>(value.data()), N * sizeof(T));
+}
+
+template <typename T, typename... Args>
+inline void Read(std::istringstream& is, T& firstArg, Args &... args)
+{
+	Read(is, firstArg);
+	Read(is, args...);
 }
 
 template <typename T>
