@@ -1,5 +1,5 @@
 #include "InputSystem.h"
-#include "Renderer/Window.h"
+#include "Render/Window.h"
 #include "ECS/Coordinator.h"
 #include "Components/InputComponent.h"
 

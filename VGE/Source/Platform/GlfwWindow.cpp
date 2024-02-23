@@ -245,7 +245,7 @@ vge::GlfwWindow::GlfwWindow(Platform* platform, const Window::Properties& proper
 	{
 		GLFWmonitor* monitor = glfwGetPrimaryMonitor();
 		const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-		handle = glfwCreateWindow(mode->width, mode->height, properties.title.c_str(), monitor, NULL);
+		_Handle = glfwCreateWindow(mode->width, mode->height, properties.title.c_str(), monitor, NULL);
 		break;
 	}
 
@@ -257,7 +257,7 @@ vge::GlfwWindow::GlfwWindow(Platform* platform, const Window::Properties& proper
 		glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
 		glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
 		glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
-		handle = glfwCreateWindow(mode->width, mode->height, properties.title.c_str(), monitor, NULL);
+		_Handle = glfwCreateWindow(mode->width, mode->height, properties.title.c_str(), monitor, NULL);
 		break;
 	}
 
@@ -268,25 +268,25 @@ vge::GlfwWindow::GlfwWindow(Platform* platform, const Window::Properties& proper
 	}
 
 	default:
-		handle = glfwCreateWindow(properties.extent.width, properties.extent.height, properties.title.c_str(), NULL, NULL);
+		_Handle = glfwCreateWindow(properties.extent.width, properties.extent.height, properties.title.c_str(), NULL, NULL);
 		break;
 	}
 
 	Resize(Extent{ properties.extent.width, properties.extent.height });
 
-	ENSURE_MSG(handle, "Couldn't create glfw window.");
+	ENSURE_MSG(_Handle, "Couldn't create glfw window.");
 
-	glfwSetWindowUserPointer(handle, platform);
+	glfwSetWindowUserPointer(_Handle, platform);
 
-	glfwSetWindowCloseCallback(handle, WindowCloseCallback);
-	glfwSetWindowSizeCallback(handle, WindowSizeCallback);
-	glfwSetWindowFocusCallback(handle, WindowFocusCallback);
-	glfwSetKeyCallback(handle, KeyCallback);
-	glfwSetCursorPosCallback(handle, CursorPositionCallback);
-	glfwSetMouseButtonCallback(handle, MouseButtonCallback);
+	glfwSetWindowCloseCallback(_Handle, WindowCloseCallback);
+	glfwSetWindowSizeCallback(_Handle, WindowSizeCallback);
+	glfwSetWindowFocusCallback(_Handle, WindowFocusCallback);
+	glfwSetKeyCallback(_Handle, KeyCallback);
+	glfwSetCursorPosCallback(_Handle, CursorPositionCallback);
+	glfwSetMouseButtonCallback(_Handle, MouseButtonCallback);
 
-	glfwSetInputMode(handle, GLFW_STICKY_KEYS, 1);
-	glfwSetInputMode(handle, GLFW_STICKY_MOUSE_BUTTONS, 1);
+	glfwSetInputMode(_Handle, GLFW_STICKY_KEYS, 1);
+	glfwSetInputMode(_Handle, GLFW_STICKY_MOUSE_BUTTONS, 1);
 }
 
 vge::GlfwWindow::~GlfwWindow()
@@ -301,14 +301,14 @@ VkSurfaceKHR vge::GlfwWindow::CreateSurface(Instance& instance)
 
 VkSurfaceKHR vge::GlfwWindow::CreateSurface(VkInstance instance, VkPhysicalDevice)
 {
-	if (!instance || !handle)
+	if (!instance || !_Handle)
 	{
 		return VK_NULL_HANDLE;
 	}
 
 	VkSurfaceKHR surface;
 
-	VkResult result = glfwCreateWindowSurface(instance, handle, NULL, &surface);
+	VkResult result = glfwCreateWindowSurface(instance, _Handle, NULL, &surface);
 
 	if (result != VK_SUCCESS)
 	{
@@ -320,7 +320,7 @@ VkSurfaceKHR vge::GlfwWindow::CreateSurface(VkInstance instance, VkPhysicalDevic
 
 bool vge::GlfwWindow::ShouldClose()
 {
-	return glfwWindowShouldClose(handle);
+	return glfwWindowShouldClose(_Handle);
 }
 
 void vge::GlfwWindow::ProcessEvents()
@@ -330,7 +330,7 @@ void vge::GlfwWindow::ProcessEvents()
 
 void vge::GlfwWindow::Close()
 {
-	glfwSetWindowShouldClose(handle, GLFW_TRUE);
+	glfwSetWindowShouldClose(_Handle, GLFW_TRUE);
 }
 
 // Calculates the dpi factor using the density from GLFW physical size.
@@ -355,9 +355,9 @@ float vge::GlfwWindow::GetDpiFactor() const
 float vge::GlfwWindow::GetContentScaleFactor() const
 {
 	int fbWidth, fbHeight;
-	glfwGetFramebufferSize(handle, &fbWidth, &fbHeight);
+	glfwGetFramebufferSize(_Handle, &fbWidth, &fbHeight);
 	int winWidth, winHeight;
-	glfwGetWindowSize(handle, &winWidth, &winHeight);
+	glfwGetWindowSize(_Handle, &winWidth, &winHeight);
 
 	// We could return a 2D result here instead of a scalar, but non-uniform scaling is very unlikely,
 	// and would require significantly more changes in the IMGUI integration.

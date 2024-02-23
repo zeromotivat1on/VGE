@@ -2,7 +2,7 @@
 
 #include "Common.h"
 #include "ECS/Entity.h"
-#include "Renderer/RenderCommon.h"
+#include "Render/RenderCommon.h"
 
 namespace vge
 {

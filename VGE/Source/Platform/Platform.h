@@ -1,7 +1,9 @@
 #pragma once
 
-#include "Core/Common.h"
+#include "Core/VkCommon.h"
+#include "AppInfo.h"
 #include "Platform/Window.h"
+#include "Platform/Context.h"
 #include "Platform/Application.h"
 #include "Timer.h"
 

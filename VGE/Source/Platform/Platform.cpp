@@ -7,10 +7,10 @@ std::string vge::Platform::_TempDirectory = "";
 
 vge::Platform::Platform(const vge::PlatformContext& context)
 {
-	_Arguments = context._Arguments();
+	_Arguments = context.GetArguments();
 
-	_ExternalStorageDirectory = context._ExternalStorageDirectory();
-	_TempDirectory = context._TempDirectory();
+	_ExternalStorageDirectory = context.GetExternalStorageDirectory();
+	_TempDirectory = context.GetTempDirectory();
 }
 
 vge::ExitCode vge::Platform::Initialize(/*const std::vector<Plugin*>& plugins*/)
@@ -231,7 +231,7 @@ bool vge::Platform::StartApp()
 	}
 
 	_ActiveApp = requestedAppInfo->Create();
-	_ActiveApp->SetName(requestedAppInfo->id);
+	_ActiveApp->SetName(requestedAppInfo->Id);
 
 	if (!_ActiveApp)
 	{

@@ -32,8 +32,8 @@ void vge::Application::ConsumeInputEvent(const InputEvent& inputEvent)
 {
 }
 
-void vge::Application::Update(float delta_time)
+void vge::Application::Update(float deltaTime)
 {
-	_Fps = 1.0f / delta_time;
-	_FrameTime = delta_time * 1000.0f;
+	_Fps = 1.0f / deltaTime;
+	_FrameTime = deltaTime * 1000.0f;
 }

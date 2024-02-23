@@ -4,7 +4,6 @@
 #define VMA_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
 #define VOLK_IMPLEMENTATION 
-#define VK_NO_PROTOTYPES 
 
 #include "Application.h"
 #include "EngineLoop.h"

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ECS/System.h"
-#include "Renderer/RenderCommon.h"
+#include "Core/VkCommon.h"
 
 namespace vge
 {

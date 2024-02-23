@@ -1,4 +1,8 @@
 #include "File.h"
+#include <fstream>
+#include <stb_image.h>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 
 std::vector<char> vge::file::ReadShader(const char* filename)
 {
@@ -21,23 +25,28 @@ std::vector<char> vge::file::ReadShader(const char* filename)
 	return fileBuffer;
 }
 
-stbi_uc* vge::file::LoadTexture(const char* filename, i32& outw, i32& outh, VkDeviceSize& outTextureSize)
-{
-	static constexpr i8 desiredChannelCount = 4; // r g b a
-
-	i32 channels = 0;
-	stbi_uc* image = stbi_load(filename, &outw, &outh, &channels, STBI_rgb_alpha);
-
-	if (!image)
-	{
-		LOG(Error, "Failed to load a texture: %s", filename);
-		return nullptr;
-	}
-
-	outTextureSize = outw * outh * desiredChannelCount;
-
-	return image;
-}
+// stbi_uc* vge::file::LoadTexture(const char* filename, i32& outw, i32& outh, VkDeviceSize& outTextureSize)
+// {
+// 	static constexpr i8 desiredChannelCount = 4; // r g b a
+//
+// 	i32 channels = 0;
+// 	stbi_uc* image = stbi_load(filename, &outw, &outh, &channels, STBI_rgb_alpha);
+//
+// 	if (!image)
+// 	{
+// 		LOG(Error, "Failed to load a texture: %s", filename);
+// 		return nullptr;
+// 	}
+//
+// 	outTextureSize = outw * outh * desiredChannelCount;
+//
+// 	return image;
+// }
+//
+// void vge::file::FreeTexture(stbi_uc* data)
+// {
+// 	stbi_image_free(data);
+// }
 
 const aiScene* vge::file::LoadModel(const char* filename, Assimp::Importer& outImporter)
 {

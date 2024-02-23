@@ -1,7 +1,7 @@
 #include "CameraSystem.h"
 #include "ECS/Coordinator.h"
 #include "Game/Camera.h"
-#include "Renderer/Window.h"
+#include "Render/Window.h"
 #include "Components/CameraComponent.h"
 #include "Components/TransformComponent.h"
 

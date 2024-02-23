@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/Common.h"
+#include "..\Render\Core\VkCommon.h"
 #include "Platform/Window.h"
 
 struct GLFWwindow;
@@ -14,19 +14,19 @@ class GlfwWindow : public Window
 public:
 	GlfwWindow(Platform* platform, const Window::Properties& properties);
 
-	virtual ~GlfwWindow();
+	~GlfwWindow() override;
 
 public:
-	virtual VkSurfaceKHR CreateSurface(Instance& instance) override;
-	virtual VkSurfaceKHR CreateSurface(VkInstance instance, VkPhysicalDevice physicalDevice) override;
-	virtual bool ShouldClose() override;
-	virtual void ProcessEvents() override;
-	virtual void Close() override;
-	virtual float GetDpiFactor() const override;
-	virtual float GetContentScaleFactor() const override;
-	virtual std::vector<const char*> GetRequiredSurfaceExtensions() const override;
+	VkSurfaceKHR CreateSurface(Instance& instance) override;
+	VkSurfaceKHR CreateSurface(VkInstance instance, VkPhysicalDevice physicalDevice) override;
+	bool ShouldClose() override;
+	void ProcessEvents() override;
+	void Close() override;
+	float GetDpiFactor() const override;
+	float GetContentScaleFactor() const override;
+	std::vector<const char*> GetRequiredSurfaceExtensions() const override;
 
 private:
-	GLFWwindow* handle = nullptr;
+	GLFWwindow* _Handle = nullptr;
 };
 }	// namespace vge
