@@ -7,11 +7,11 @@ vge::Window::Window(const Properties& properties)
 
 vge::Window::Extent vge::Window::Resize(const Extent& extent)
 {
-	if (_Properties.resizable)
+	if (_Properties.Resizable)
 	{
-		_Properties.extent.width = extent.width;
-		_Properties.extent.height = extent.height;
+		_Properties.Extent.width = extent.width;
+		_Properties.Extent.height = extent.height;
 	}
 
-	return _Properties.extent;
+	return _Properties.Extent;
 }

@@ -63,10 +63,7 @@ struct ShaderResource
 	std::string Name;
 };
 
-/**
-	* @brief Adds support for C style preprocessor macros to glsl shaders
-	*        enabling you to define or undefine certain symbols
-	*/
+// Adds support for C style preprocessor macros to glsl shaders enabling you to define or undefine certain symbols.
 class ShaderVariant
 {
 public:

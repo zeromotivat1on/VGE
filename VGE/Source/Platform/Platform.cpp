@@ -201,12 +201,12 @@ void vge::Platform::Close()
 
 void vge::Platform::SetWindowProperties(const Window::OptionalProperties& properties)
 {
-	_WindowProperties.title = properties.title.has_value() ? properties.title.value() : _WindowProperties.title;
-	_WindowProperties.mode = properties.mode.has_value() ? properties.mode.value() : _WindowProperties.mode;
-	_WindowProperties.resizable = properties.resizable.has_value() ? properties.resizable.value() : _WindowProperties.resizable;
-	_WindowProperties.vsync = properties.vsync.has_value() ? properties.vsync.value() : _WindowProperties.vsync;
-	_WindowProperties.extent.width = properties.extent.width.has_value() ? properties.extent.width.value() : _WindowProperties.extent.width;
-	_WindowProperties.extent.height = properties.extent.height.has_value() ? properties.extent.height.value() : _WindowProperties.extent.height;
+	_WindowProperties.Title = properties.Title.has_value() ? properties.Title.value() : _WindowProperties.Title;
+	_WindowProperties.Mode = properties.Mode.has_value() ? properties.Mode.value() : _WindowProperties.Mode;
+	_WindowProperties.Resizable = properties.Resizable.has_value() ? properties.Resizable.value() : _WindowProperties.Resizable;
+	_WindowProperties.Vsync = properties.Vsync.has_value() ? properties.Vsync.value() : _WindowProperties.Vsync;
+	_WindowProperties.Extent.width = properties.Extent.width.has_value() ? properties.Extent.width.value() : _WindowProperties.Extent.width;
+	_WindowProperties.Extent.height = properties.Extent.height.has_value() ? properties.Extent.height.value() : _WindowProperties.Extent.height;
 }
 
 //std::vector<spdlog::sink_ptr> vge::Platform::get_vge::Platform_sinks()

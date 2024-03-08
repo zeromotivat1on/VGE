@@ -4,18 +4,18 @@
 #include "Core/RenderContext.h"
 
 vge::RenderFrame::RenderFrame(Device& device, std::unique_ptr<RenderTarget>&& renderTarget, size_t threadCount) 
-	: _Device(device), _FencePool(device), _SemaphorePool(device), _SwapchainRenderTarget(std::move(renderTarget)), _ThreadCount(threadCount)
+	: _Device(device), _FencePool(device), _SemaphorePool(device), _ThreadCount(threadCount), _SwapchainRenderTarget(std::move(renderTarget))
 {
-	for (auto& usageIt : SupportedUsageMap)
+	for (const auto& [bufferUsage, multiplier] : SupportedUsageMap)
 	{
 		std::vector<std::pair<BufferPool, BufferBlock*>> usageBufferPools;
 		for (size_t i = 0; i < threadCount; ++i)
 		{
-			usageBufferPools.push_back(std::make_pair(BufferPool(device, BufferPoolBlockSize * 1024 * usageIt.second, usageIt.first), nullptr));
+			usageBufferPools.emplace_back(BufferPool(device, BufferPoolBlockSize * 1024 * multiplier, bufferUsage), nullptr);
 		}
 
-		auto insertedIt = _BufferPools.emplace(usageIt.first, std::move(usageBufferPools));
-		ENSURE_MSG(insertedIt.second, "Failed to insert buffer pool.");
+		const auto [it, success] = _BufferPools.emplace(bufferUsage, std::move(usageBufferPools));
+		ENSURE_MSG(success, "Failed to insert buffer pool.");
 	}
 
 	for (size_t i = 0; i < threadCount; ++i)
@@ -31,20 +31,20 @@ void vge::RenderFrame::Reset()
 
 	_FencePool.Reset();
 
-	for (auto& commandPoolsPerQueue : _CommandPools)
+	for (const auto& [queueFamilyIdx, commandPools] : _CommandPools)
 	{
-		for (auto& commandPool : commandPoolsPerQueue.second)
+		for (const auto& commandPool : commandPools)
 		{
 			commandPool->ResetPool();
 		}
 	}
 
-	for (auto& bufferPoolsPerUsage : _BufferPools)
+	for (auto& [bufferUsage, bufferPools] : _BufferPools)
 	{
-		for (auto& bufferPool : bufferPoolsPerUsage.second)
+		for (auto& [bufferPool, bufferBlock] : bufferPools)
 		{
-			bufferPool.first.Reset();
-			bufferPool.second = nullptr;
+			bufferPool.Reset();
+			bufferBlock = nullptr;
 		}
 	}
 
@@ -80,10 +80,10 @@ std::vector<std::unique_ptr<vge::CommandPool>>& vge::RenderFrame::GetCommandPool
 		queueCommandPools.push_back(std::make_unique<CommandPool>(_Device, queue.GetFamilyIndex(), this, i, resetMode));
 	}
 
-	auto insertedIt = _CommandPools.emplace(queue.GetFamilyIndex(), std::move(queueCommandPools));
-	ENSURE_MSG(insertedIt.second, "Failed to insert command pool.")
+	const auto [it, success] = _CommandPools.emplace(queue.GetFamilyIndex(), std::move(queueCommandPools));
+	ENSURE_MSG(success, "Failed to insert command pool.")
 
-	commandPoolIt = insertedIt.first;
+	commandPoolIt = it;
 
 	return commandPoolIt->second;
 }
@@ -151,7 +151,7 @@ VkDescriptorSet vge::RenderFrame::RequestDescriptorSet(const DescriptorSetLayout
 	else
 	{
 		// Request a descriptor pool, allocate a descriptor set, write buffer and image data to it.
-		DescriptorSet descriptorSet = DescriptorSet(_Device, descriptorSetLayout, descriptorPool, bufferInfos, imageInfos);
+		const auto descriptorSet = DescriptorSet(_Device, descriptorSetLayout, descriptorPool, bufferInfos, imageInfos);
 		descriptorSet.ApplyWrites();
 
 		return descriptorSet.GetHandle();
@@ -171,16 +171,16 @@ void vge::RenderFrame::UpdateDescriptorSets(size_t threadIndex)
 
 void vge::RenderFrame::ClearDescriptors()
 {
-	for (auto& descSetsPerThread : _DescriptorSets)
+	for (const auto& descSetsPerThread : _DescriptorSets)
 	{
 		descSetsPerThread->clear();
 	}
 
 	for (auto& descPoolsPerThread : _DescriptorPools)
 	{
-		for (auto& descPool : *descPoolsPerThread)
+		for (auto& [hash, descriptorPool] : *descPoolsPerThread)
 		{
-			descPool.second.Reset();
+			descriptorPool.Reset();
 		}
 	}
 }
@@ -190,7 +190,7 @@ vge::BufferAllocation vge::RenderFrame::AllocateBuffer(const VkBufferUsageFlags 
 	ASSERT_MSG(threadIndex < _ThreadCount, "Thread index is out of bounds.");
 
 	// Find a pool for this usage
-	auto bufferPoolIt = _BufferPools.find(usage);
+	const auto bufferPoolIt = _BufferPools.find(usage);
 	if (bufferPoolIt == _BufferPools.end())
 	{
 		LOG(Error, "No buffer pool for buffer usage %s.", ToString(usage));
@@ -202,7 +202,7 @@ vge::BufferAllocation vge::RenderFrame::AllocateBuffer(const VkBufferUsageFlags 
 	auto& bufferPool = bufferPoolIt->second[threadIndex].first;
 	auto& bufferBlock = bufferPoolIt->second[threadIndex].second;
 
-	bool wantMinimalBlock = _BufferAllocationStrategy == BufferAllocationStrategy::OneAllocationPerBuffer;
+	const bool wantMinimalBlock = _BufferAllocationStrategy == BufferAllocationStrategy::OneAllocationPerBuffer;
 
 	if (wantMinimalBlock || !bufferBlock || !bufferBlock->CanAllocate(size))
 	{

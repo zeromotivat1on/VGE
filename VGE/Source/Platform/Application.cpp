@@ -1,4 +1,5 @@
 #include "Platform/Application.h"
+#include "Core/Error.h"
 
 vge::Application::Application() 
 	:_Name("Sample Name")

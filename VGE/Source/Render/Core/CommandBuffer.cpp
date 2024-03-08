@@ -377,7 +377,7 @@ void vge::CommandBuffer::ImageMemoryBarrier(const ImageView& imageView, const vg
 {
 	// Adjust barrier's subresource range for depth images.
 	auto subresourceRange = imageView.GetSubresourceRange();
-	auto format = imageView.GetFormat();
+	const auto format = imageView.GetFormat();
 
 	if (IsDepthOnlyFormat(format))
 	{
@@ -388,7 +388,8 @@ void vge::CommandBuffer::ImageMemoryBarrier(const ImageView& imageView, const vg
 		subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
 	}
 
-	ImageLayoutTransition(GetHandle(),
+	ImageLayoutTransition(
+		GetHandle(),
 		imageView.GetImage().GetHandle(),
 		memoryBarrier.SrcStageMask,
 		memoryBarrier.DstStageMask,

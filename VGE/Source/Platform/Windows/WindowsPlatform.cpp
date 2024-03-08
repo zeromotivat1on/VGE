@@ -8,7 +8,7 @@ vge::WindowsPlatform::WindowsPlatform(const PlatformContext& context)
 
 void vge::WindowsPlatform::CreateWindow(const Window::Properties& properties)
 {
-    if (properties.mode == Window::Mode::Headless)
+    if (properties.Mode == Window::Mode::Headless)
     {
         //_Window = std::make_unique<HeadlessWindow>(properties);
     }

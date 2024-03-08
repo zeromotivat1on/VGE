@@ -1,8 +1,11 @@
 #include "File.h"
+#include "Core/Error.h"
 #include <fstream>
-#include <stb_image.h>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 
 std::vector<char> vge::file::ReadShader(const char* filename)
 {

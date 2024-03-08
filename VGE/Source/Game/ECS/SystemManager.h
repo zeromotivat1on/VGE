@@ -4,6 +4,7 @@
 #include "System.h"
 #include "Entity.h"
 #include "Component.h"
+#include "Core/Error.h"
 
 namespace vge
 {
@@ -15,11 +16,11 @@ namespace vge
 		template<typename T>
 		std::shared_ptr<T> RegisterSystem()
 		{
-			const char* typeName = typeid(T).name();
-			ASSERT(m_Systems.find(typeName) == m_Systems.end());
+			const auto typeIndex = std::type_index(typeid(T));
+			ASSERT(m_Systems.find(typeIndex) == m_Systems.end());
 
 			auto system = std::make_shared<T>();
-			m_Systems.insert({ typeName, system });
+			m_Systems.insert({ typeIndex, system });
 
 			return system;
 		}
@@ -27,9 +28,9 @@ namespace vge
 		template<typename T>
 		void SetSignature(Signature signature)
 		{
-			const char* typeName = typeid(T).name();
-			ASSERT(m_Systems.find(typeName) != m_Systems.end());
-			m_Signatures.insert({ typeName, signature });
+			const auto typeIndex = std::type_index(typeid(T));
+			ASSERT(m_Systems.find(typeIndex) != m_Systems.end());
+			m_Signatures.insert({ typeIndex, signature });
 		}
 
 		inline void EntityDestroyed(Entity entity)
@@ -61,7 +62,7 @@ namespace vge
 		}
 
 	private:
-		std::unordered_map<const char*, Signature> m_Signatures = {};
-		std::unordered_map<const char*, std::shared_ptr<System>> m_Systems = {};
+		std::unordered_map<std::type_index, Signature> m_Signatures = {};
+		std::unordered_map<std::type_index, std::shared_ptr<System>> m_Systems = {};
 	};
 }

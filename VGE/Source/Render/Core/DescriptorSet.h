@@ -8,7 +8,7 @@ class Device;
 class DescriptorSetLayout;
 class DescriptorPool;
 
-// A descriptor set handle allocated from a \ref DescriptorPool.
+// A descriptor set handle allocated from a DescriptorPool.
 // Destroying the handle has no effect, as the pool manages the lifecycle of its descriptor sets.
 // Keeps track of what bindings were written to prevent a double write.
 class DescriptorSet
@@ -39,10 +39,10 @@ public:
 	// Resets the DescriptorSet state. Optionally prepares a new set of buffer infos and/or image infos.
 	void Reset(const BindingMap<VkDescriptorBufferInfo>& newBufferInfos = {}, const BindingMap<VkDescriptorImageInfo>& newImageInfos = {});
 
-	// Updates the contents of the DescriptorSet by performing the write operations
+	// Updates the contents of the DescriptorSet by performing the write operations.
 	void Update(const std::vector<uint32_t>& bindingsToUpdate = {});
 
-	// Applies pending write operations without updating the state
+	// Applies pending write operations without updating the state.
 	void ApplyWrites() const;
 
 protected:
@@ -58,7 +58,7 @@ private:
 	BindingMap<VkDescriptorBufferInfo> _BufferInfos;
 	BindingMap<VkDescriptorImageInfo> _ImageInfos;
 	std::vector<VkWriteDescriptorSet> _WriteDescriptorSets; // the list of write operations for the descriptor set
-	// The bindings of the write descriptors that have had vkUpdateDescriptorSets since the last call to update().
+	// The bindings of the write descriptors that have had vkUpdateDescriptorSets since the last call to Update().
 	// Each binding number is mapped to a hash of the binding description that it will be updated to.
 	std::unordered_map<uint32_t, size_t> _UpdatedBindings;
 };

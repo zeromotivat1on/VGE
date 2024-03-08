@@ -34,8 +34,8 @@ enum class DescriptorManagementStrategy : u8
 * The RenderFrame is responsible for creating a RenderTarget using RenderTarget::CreateFunc. 
 * A custom RenderTarget::CreateFunc can be provided if a different render target is required.
 *
-* A RenderFrame cannot be destroyed individually since frames are managed by the RenderContext,
-* the whole context must be destroyed. This is because each RenderFrame holds Vulkan objects, such as the swapchain image.
+* A RenderFrame cannot be destroyed individually since frames are managed by the RenderContext, the whole context must be destroyed.
+* This is because each RenderFrame holds Vulkan objects, such as the swapchain image.
 */
 class RenderFrame
 {
@@ -82,27 +82,27 @@ public:
 
 	// Frame should be active at the moment of the command buffer request.
 	CommandBuffer& RequestCommandBuffer(
-		const Queue& queue, CommandBuffer::ResetMode resetMode = CommandBuffer::ResetMode::ResetPool,
-		VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY, size_t threadIndex = 0);
+		const Queue&, CommandBuffer::ResetMode = CommandBuffer::ResetMode::ResetPool,
+		VkCommandBufferLevel = VK_COMMAND_BUFFER_LEVEL_PRIMARY, size_t threadIndex = 0);
 
 	VkDescriptorSet RequestDescriptorSet(
-		const DescriptorSetLayout& descriptorSetLayout, const BindingMap<VkDescriptorBufferInfo>& bufferInfos,
-		const BindingMap<VkDescriptorImageInfo>& imageInfos, bool updateAfterBind, size_t threadIndex = 0);
+		const DescriptorSetLayout&, const BindingMap<VkDescriptorBufferInfo>&,
+		const BindingMap<VkDescriptorImageInfo>&, bool updateAfterBind, size_t threadIndex = 0);
 
 	void ClearDescriptors();
 
-	BufferAllocation AllocateBuffer(VkBufferUsageFlags usage, VkDeviceSize size, size_t threadIndex = 0);
+	BufferAllocation AllocateBuffer(VkBufferUsageFlags, VkDeviceSize, size_t threadIndex = 0);
 
 	void UpdateDescriptorSets(size_t threadIndex = 0);
 
 private:
-	static std::vector<u32> CollectBindingsToUpdate(const DescriptorSetLayout& descriptorSetLayout, const BindingMap<VkDescriptorBufferInfo>& bufferInfos, const BindingMap<VkDescriptorImageInfo>& imageInfos);
+	static std::vector<u32> CollectBindingsToUpdate(const DescriptorSetLayout&, const BindingMap<VkDescriptorBufferInfo>&, const BindingMap<VkDescriptorImageInfo>&);
 
-	std::vector<std::unique_ptr<CommandPool>>& GetCommandPools(const Queue& queue, CommandBuffer::ResetMode reset_mode);
+	std::vector<std::unique_ptr<CommandPool>>& GetCommandPools(const Queue&, CommandBuffer::ResetMode);
 
 private:
 	Device& _Device;
-	std::map<u32, std::vector<std::unique_ptr<CommandPool>>> _CommandPools;
+	std::map<u32, std::vector<std::unique_ptr<CommandPool>>> _CommandPools; // command pools for eqch family index
 	std::vector<std::unique_ptr<std::unordered_map<size_t, DescriptorPool>>> _DescriptorPools;
 	std::vector<std::unique_ptr<std::unordered_map<size_t, DescriptorSet>>> _DescriptorSets;
 	FencePool _FencePool;

@@ -3,6 +3,7 @@
 #include "Common.h"
 #include "ECS/Entity.h"
 #include "Render/RenderCommon.h"
+#include "Core/Error.h"
 
 namespace vge
 {

@@ -55,8 +55,8 @@ vge::Image::Image(
 	VkImageTiling tiling /*= VK_IMAGE_TILING_OPTIMAL*/, VkImageCreateFlags flags /*= 0*/,
 	u32 numQueueFamilies /*= 0*/, const u32* queueFamilies /*= nullptr*/)
 	: VulkanResource(VK_NULL_HANDLE, &device), _Type(find_image_type(extent)),
-	_Extent(extent), _Format(format), _SampleCount(_SampleCount),
-	_Usage(imageUsage), _ArrayLayerCount(arrayLayers), _Tiling(tiling)
+	_Extent(extent), _Format(format), _Usage(imageUsage), 
+	_SampleCount(sampleCount), _Tiling(tiling), _ArrayLayerCount(arrayLayers)
 {
 	ASSERT_MSG(mipLevels > 0, "Image should have at least one level.");
 	ASSERT_MSG(arrayLayers > 0, "Image should have at least one layer.");
@@ -71,7 +71,7 @@ vge::Image::Image(
 	imageInfo.extent = extent;
 	imageInfo.mipLevels = mipLevels;
 	imageInfo.arrayLayers = arrayLayers;
-	imageInfo.samples = _SampleCount;
+	imageInfo.samples = sampleCount;
 	imageInfo.tiling = tiling;
 	imageInfo.usage = imageUsage;
 
@@ -97,7 +97,7 @@ vge::Image::Image(
 	const Device& device, VkImage handle, const VkExtent3D& extent,
 	VkFormat format, VkImageUsageFlags image_usage, VkSampleCountFlagBits sample_count) 
 	: VulkanResource(handle, &device), _Type(find_image_type(extent)), _Extent(extent),
-	_Format(format), _SampleCount(sample_count), _Usage(image_usage)
+	_Format(format), _Usage(image_usage), _SampleCount(sample_count)
 {
 	_Subresource.mipLevel = 1;
 	_Subresource.arrayLayer = 1;
@@ -129,7 +129,7 @@ vge::Image::~Image()
 	}
 }
 
-uint8_t* vge::Image::Map()
+vge::u8* vge::Image::Map()
 {
 	if (!_MappedData && !_Mapped)
 	{

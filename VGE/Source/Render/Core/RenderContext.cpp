@@ -12,10 +12,10 @@ vge::RenderContext::RenderContext(
 	const std::vector<VkPresentModeKHR>& presentModePriorityList,
 	const std::vector<VkSurfaceFormatKHR>& surfaceFormatPriorityList) 
 	: 
+	_SurfaceExtent({ window.GetExtent().width, window.GetExtent().height }),
 	_Device(device), 
 	_Window(window), 
-	_Queue(device.GetSuitableGraphicsQueue()), 
-	_SurfaceExtent({ window.GetExtent().width, window.GetExtent().height })
+	_Queue(device.GetSuitableGraphicsQueue())
 {
 	if (surface)
 	{
@@ -134,7 +134,7 @@ void vge::RenderContext::UpdateSwapchain(const VkExtent2D& extent, const VkSurfa
 
 	_Swapchain = std::make_unique<Swapchain>(*_Swapchain, VkExtent2D{ width, height }, transform);
 
-	// Save the preTransform attribute for future rotations.
+	// Save the PreTransform attribute for future rotations.
 	_PreTransform = transform;
 
 	Recreate();
@@ -215,16 +215,13 @@ vge::CommandBuffer& vge::RenderContext::Begin(CommandBuffer::ResetMode resetMode
 		BeginFrame();
 	}
 
-	if (_AcquiredSemaphore == VK_NULL_HANDLE)
-	{
-		throw std::runtime_error("Couldn't begin frame");
-	}
+	ENSURE(_AcquiredSemaphore);
 
 	const auto& queue = _Device.GetQueueByFlags(VK_QUEUE_GRAPHICS_BIT, 0);
 	return GetActiveFrame().RequestCommandBuffer(queue, resetMode);
 }
 
-void vge::RenderContext::Submit(const std::vector<CommandBuffer*>& commandBuffers)
+void vge::RenderContext::Submit(const std::vector<CommandBuffer*>& cmds)
 {
 	ASSERT_MSG(_FrameActive, "RenderContext is inactive, cannot submit command buffer, call Begin().");
 
@@ -233,14 +230,60 @@ void vge::RenderContext::Submit(const std::vector<CommandBuffer*>& commandBuffer
 	if (_Swapchain)
 	{
 		ASSERT_MSG(_AcquiredSemaphore, "We do not have acquired semaphore, it was probably consumed?");
-		renderSemaphore = Submit(_Queue, commandBuffers, _AcquiredSemaphore, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+		renderSemaphore = Submit(_Queue, cmds, _AcquiredSemaphore, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 	}
 	else
 	{
-		Submit(_Queue, commandBuffers);
+		Submit(_Queue, cmds);
 	}
 
 	EndFrame(renderSemaphore);
+}
+
+VkSemaphore vge::RenderContext::Submit(const Queue& queue, const std::vector<CommandBuffer*>& cmds, VkSemaphore waitSemaphore, VkPipelineStageFlags waitPipelineStage)
+{
+	std::vector<VkCommandBuffer> cmdBufHandles(cmds.size(), VK_NULL_HANDLE);
+	std::transform(cmds.begin(), cmds.end(), cmdBufHandles.begin(), [](const CommandBuffer* cmdBuf) { return cmdBuf->GetHandle(); });
+
+	RenderFrame& frame = GetActiveFrame();
+
+	VkSemaphore signalSemaphore = frame.RequestSemaphore();
+
+	VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
+	submitInfo.commandBufferCount = ToU32(cmdBufHandles.size());
+	submitInfo.pCommandBuffers = cmdBufHandles.data();
+
+	if (waitSemaphore)
+	{
+		submitInfo.waitSemaphoreCount = 1;
+		submitInfo.pWaitSemaphores = &waitSemaphore;
+		submitInfo.pWaitDstStageMask = &waitPipelineStage;
+	}
+
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores = &signalSemaphore;
+
+	VkFence fence = frame.RequestFence();
+
+	queue.Submit({ submitInfo }, fence);
+
+	return signalSemaphore;
+}
+
+void vge::RenderContext::Submit(const Queue& queue, const std::vector<CommandBuffer*>& cmds)
+{
+	std::vector<VkCommandBuffer> cmdBufHandles(cmds.size(), VK_NULL_HANDLE);
+	std::transform(cmds.begin(), cmds.end(), cmdBufHandles.begin(), [](const CommandBuffer* cmdBuf) { return cmdBuf->GetHandle(); });
+
+	RenderFrame& frame = GetActiveFrame();
+
+	VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
+	submitInfo.commandBufferCount = ToU32(cmdBufHandles.size());
+	submitInfo.pCommandBuffers = cmdBufHandles.data();
+
+	VkFence fence = frame.RequestFence();
+
+	queue.Submit({ submitInfo }, fence);
 }
 
 void vge::RenderContext::BeginFrame()
@@ -285,52 +328,6 @@ void vge::RenderContext::BeginFrame()
 
 	// Wait on all resource to be freed from the previous render to this frame.
 	WaitFrame();
-}
-
-VkSemaphore vge::RenderContext::Submit(const Queue& queue, const std::vector<CommandBuffer*>& commandBuffers, VkSemaphore waitSemaphore, VkPipelineStageFlags waitPipelineStage)
-{
-	std::vector<VkCommandBuffer> cmdBufHandles(commandBuffers.size(), VK_NULL_HANDLE);
-	std::transform(commandBuffers.begin(), commandBuffers.end(), cmdBufHandles.begin(), [](const CommandBuffer* cmdBuf) { return cmdBuf->GetHandle(); });
-
-	RenderFrame& frame = GetActiveFrame();
-
-	VkSemaphore signalSemaphore = frame.RequestSemaphore();
-
-	VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
-	submitInfo.commandBufferCount = ToU32(cmdBufHandles.size());
-	submitInfo.pCommandBuffers = cmdBufHandles.data();
-
-	if (waitSemaphore != VK_NULL_HANDLE)
-	{
-		submitInfo.waitSemaphoreCount = 1;
-		submitInfo.pWaitSemaphores = &waitSemaphore;
-		submitInfo.pWaitDstStageMask = &waitPipelineStage;
-	}
-
-	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = &signalSemaphore;
-
-	VkFence fence = frame.RequestFence();
-
-	queue.Submit({ submitInfo }, fence);
-
-	return signalSemaphore;
-}
-
-void vge::RenderContext::Submit(const Queue& queue, const std::vector<CommandBuffer*>& commandBuffers)
-{
-	std::vector<VkCommandBuffer> cmdBufHandles(commandBuffers.size(), VK_NULL_HANDLE);
-	std::transform(commandBuffers.begin(), commandBuffers.end(), cmdBufHandles.begin(), [](const CommandBuffer* cmdBuf) { return cmdBuf->GetHandle(); });
-
-	RenderFrame& frame = GetActiveFrame();
-
-	VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
-	submitInfo.commandBufferCount = ToU32(cmdBufHandles.size());
-	submitInfo.pCommandBuffers = cmdBufHandles.data();
-
-	VkFence fence = frame.RequestFence();
-
-	queue.Submit({ submitInfo }, fence);
 }
 
 void vge::RenderContext::EndFrame(VkSemaphore semaphore)

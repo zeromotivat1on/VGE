@@ -1,4 +1,5 @@
 #include "Pipeline.h"
+#include "Core/Error.h"
 #include "Core/Device.h"
 
 vge::Pipeline::Pipeline(Device& device) 

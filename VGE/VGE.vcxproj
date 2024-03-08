@@ -114,7 +114,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;VK_NO_PROTOTYPES;STB_IMAGE_IMPLEMENTATION;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;VK_NO_PROTOTYPES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)Source;$(ProjectDir)Source\Game;$(ProjectDir)Source\Render;$(ProjectDir)Vendor;$(ProjectDir)Vendor\glm;$(ProjectDir)Vendor\GLFW\include;$(ProjectDir)Vendor\assimp\include;C:\VulkanSDK\1.3.250.1\Include;C:\VulkanSDK\1.3.243.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
@@ -132,7 +132,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;VK_NO_PROTOTYPES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;VK_NO_PROTOTYPES;STB_IMAGE_IMPLEMENTATION;VMA_IMPLEMENTATION;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)Source;$(ProjectDir)Source\Game;$(ProjectDir)Vendor;$(ProjectDir)Vendor\glm;$(ProjectDir)Vendor\GLFW\include;$(ProjectDir)Vendor\assimp\include;C:\VulkanSDK\1.3.250.1\Include;C:\VulkanSDK\1.3.243.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
@@ -148,6 +148,92 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Source\Applications\VgeApplication.cpp" />
+    <ClCompile Include="Source\Game\ECS\Components\AABBComponent.cpp" />
+    <ClCompile Include="Source\Game\ECS\Components\CameraComponent.cpp" />
+    <ClCompile Include="Source\Game\ECS\Components\ImageComponent.cpp" />
+    <ClCompile Include="Source\Game\ECS\Components\MaterialComponent.cpp" />
+    <ClCompile Include="Source\Game\ECS\Components\MeshComponent.cpp" />
+    <ClCompile Include="Source\Game\ECS\Components\ModelComponent.cpp" />
+    <ClCompile Include="Source\Game\ECS\Components\NodeComponent.cpp" />
+    <ClCompile Include="Source\Game\ECS\Components\SamplerComponent.cpp" />
+    <ClCompile Include="Source\Game\ECS\Components\TextureComponent.cpp" />
+    <ClCompile Include="Source\Game\ECS\Components\TransformComponent.cpp" />
+    <ClCompile Include="Source\Game\Scene.cpp" />
+    <ClCompile Include="Source\Platform\FileSystem.cpp">
+      <RuntimeLibrary>MultiThreadedDebugDll</RuntimeLibrary>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <Optimization>Disabled</Optimization>
+      <SupportJustMyCode>true</SupportJustMyCode>
+      <AssemblerOutput>NoListing</AssemblerOutput>
+      <AssemblerListingLocation>D:\VGE\Intermediate\x64\Debug\</AssemblerListingLocation>
+      <UndefineAllPreprocessorDefinitions>false</UndefineAllPreprocessorDefinitions>
+      <BrowseInformation>false</BrowseInformation>
+      <BrowseInformationFile>D:\VGE\Intermediate\x64\Debug\</BrowseInformationFile>
+      <CompileAs>Default</CompileAs>
+      <ConformanceMode>true</ConformanceMode>
+      <DiagnosticsFormat>Column</DiagnosticsFormat>
+      <DisableLanguageExtensions>false</DisableLanguageExtensions>
+      <ErrorReporting>Prompt</ErrorReporting>
+      <ExpandAttributedSource>false</ExpandAttributedSource>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <EnableASAN>false</EnableASAN>
+      <EnableFuzzer>false</EnableFuzzer>
+      <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <FloatingPointModel>Precise</FloatingPointModel>
+      <ForceConformanceInForLoopScope>true</ForceConformanceInForLoopScope>
+      <GenerateModuleDependencies>false</GenerateModuleDependencies>
+      <GenerateSourceDependencies>false</GenerateSourceDependencies>
+      <GenerateXMLDocumentationFiles>false</GenerateXMLDocumentationFiles>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
+      <IgnoreStandardIncludePath>false</IgnoreStandardIncludePath>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard_C>Default</LanguageStandard_C>
+      <MinimalRebuild>false</MinimalRebuild>
+      <ModuleDependenciesFile>D:\VGE\Intermediate\x64\Debug\</ModuleDependenciesFile>
+      <ModuleOutputFile>D:\VGE\Intermediate\x64\Debug\</ModuleOutputFile>
+      <OmitDefaultLibName>false</OmitDefaultLibName>
+      <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <ObjectFileName>D:\VGE\Intermediate\x64\Debug\</ObjectFileName>
+      <CallingConvention>Cdecl</CallingConvention>
+      <ProgramDataBaseFileName>D:\VGE\Intermediate\x64\Debug\vc143.pdb</ProgramDataBaseFileName>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>stdafx.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile>D:\VGE\Intermediate\x64\Debug\VGE.pch</PrecompiledHeaderOutputFile>
+      <PreprocessToFile>false</PreprocessToFile>
+      <PreprocessKeepComments>false</PreprocessKeepComments>
+      <PreprocessSuppressLineNumbers>false</PreprocessSuppressLineNumbers>
+      <RemoveUnreferencedCodeData>true</RemoveUnreferencedCodeData>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
+      <ShowIncludes>false</ShowIncludes>
+      <SourceDependenciesFile>D:\VGE\Intermediate\x64\Debug\</SourceDependenciesFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <BufferSecurityCheck>true</BufferSecurityCheck>
+      <SmallerTypeCheck>false</SmallerTypeCheck>
+      <SpectreMitigation>false</SpectreMitigation>
+      <StructMemberAlignment>Default</StructMemberAlignment>
+      <TrackerLogDirectory>D:\VGE\Intermediate\x64\Debug\VGE.tlog\</TrackerLogDirectory>
+      <TranslateIncludes>false</TranslateIncludes>
+      <MinimalRebuildFromTracking>true</MinimalRebuildFromTracking>
+      <TreatWarningAsError>false</TreatWarningAsError>
+      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
+      <UseFullPaths>true</UseFullPaths>
+      <WarningLevel>Level3</WarningLevel>
+      <XMLDocumentationFileName>D:\VGE\Intermediate\x64\Debug\</XMLDocumentationFileName>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <IntelJCCErratum>false</IntelJCCErratum>
+      <TreatAngleIncludeAsExternal>false</TreatAngleIncludeAsExternal>
+      <ExternalWarningLevel>InheritWarningLevel</ExternalWarningLevel>
+      <TreatExternalTemplatesAsInternal>true</TreatExternalTemplatesAsInternal>
+      <DisableAnalyzeExternal>false</DisableAnalyzeExternal>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;VK_NO_PROTOTYPES;_UNICODE;UNICODE;</PreprocessorDefinitions>
+      <Distributable>true</Distributable>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>D:\VGE\VGE\Source;D:\VGE\VGE\Source\Game;D:\VGE\VGE\Source\Render;D:\VGE\VGE\Vendor;D:\VGE\VGE\Vendor\glm;D:\VGE\VGE\Vendor\GLFW\include;D:\VGE\VGE\Vendor\assimp\include;C:\VulkanSDK\1.3.250.1\Include;C:\VulkanSDK\1.3.243.0\Include;</AdditionalIncludeDirectories>
+      <LinkCompiled>true</LinkCompiled>
+    </ClCompile>
     <ClCompile Include="Source\Platform\Windows\Entrypoint.cpp" />
     <ClCompile Include="Source\Platform\Windows\WindowsPlatform.cpp" />
     <ClCompile Include="Source\Platform\Windows\Context.cpp">
@@ -225,6 +311,7 @@
       <AdditionalIncludeDirectories>D:\VGE\VGE\Source;D:\VGE\VGE\Source\Game;D:\VGE\VGE\Source\Renderer;D:\VGE\VGE\Vendor;D:\VGE\VGE\Vendor\glm;D:\VGE\VGE\Vendor\GLFW\include;D:\VGE\VGE\Vendor\assimp\include;C:\VulkanSDK\1.3.250.1\Include;C:\VulkanSDK\1.3.243.0\Include;</AdditionalIncludeDirectories>
       <LinkCompiled>true</LinkCompiled>
     </ClCompile>
+    <ClCompile Include="Source\Render\Core\RenderPipeline.cpp" />
     <ClCompile Include="Source\Render\Core\ResourceReplay.cpp" />
     <ClCompile Include="Source\Render\Core\Pipeline.cpp" />
     <ClCompile Include="Source\Render\Core\ResourceCache.cpp" />
@@ -241,6 +328,9 @@
     <ClCompile Include="Source\Render\Core\RenderFrame.cpp" />
     <ClCompile Include="Source\Render\Core\RenderTarget.cpp" />
     <ClCompile Include="Source\Render\Core\CommandPool.cpp" />
+    <ClCompile Include="Source\Render\Core\Subpasses\ForwardSubpass.cpp" />
+    <ClCompile Include="Source\Render\Core\Subpasses\GeometrySubpass.cpp" />
+    <ClCompile Include="Source\Render\Core\Subpasses\LightingSubpass.cpp" />
     <ClCompile Include="Source\Render\Core\VkCommon.cpp" />
     <ClCompile Include="Source\Render\Core\Sampler.cpp" />
     <ClCompile Include="Source\Render\Core\Image.cpp" />
@@ -263,7 +353,6 @@
     <ClCompile Include="Source\Game\InputController.cpp" />
     <ClCompile Include="Source\Render\Core\Swapchain.cpp" />
     <ClCompile Include="Source\Game\Camera.cpp" />
-    <ClCompile Include="Source\Game\Components\TransformComponent.cpp" />
     <ClCompile Include="Source\Game\ECS\EntityManager.cpp" />
     <ClCompile Include="Source\Game\ECS\Entity.cpp" />
     <ClCompile Include="Source\Logging.cpp" />
@@ -277,11 +366,27 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Applications\VgeApplication.h" />
+    <ClInclude Include="Source\Game\ECS\Components\AABBComponent.h" />
+    <ClInclude Include="Source\Game\ECS\Components\CameraComponent.h" />
+    <ClInclude Include="Source\Game\ECS\Components\ImageComponent.h" />
+    <ClInclude Include="Source\Game\ECS\Components\InputComponent.h" />
+    <ClInclude Include="Source\Game\ECS\Components\MaterialComponent.h" />
+    <ClInclude Include="Source\Game\ECS\Components\MeshComponent.h" />
+    <ClInclude Include="Source\Game\ECS\Components\ModelComponent.h" />
+    <ClInclude Include="Source\Game\ECS\Components\NodeComponent.h" />
+    <ClInclude Include="Source\Game\ECS\Components\RenderComponent.h" />
+    <ClInclude Include="Source\Game\ECS\Components\SamplerComponent.h" />
+    <ClInclude Include="Source\Game\ECS\Components\TextureComponent.h" />
+    <ClInclude Include="Source\Game\ECS\Components\TransformComponent.h" />
+    <ClInclude Include="Source\Game\Scene.h" />
     <ClInclude Include="Source\Platform\AppInfo.h" />
     <ClInclude Include="Source\Platform\Entrypoint.h" />
     <ClInclude Include="Source\Platform\Context.h" />
+    <ClInclude Include="Source\Platform\FileSystem.h" />
     <ClInclude Include="Source\Platform\Windows\WindowsPlatform.h" />
     <ClInclude Include="Source\Platform\Windows\Context.h" />
+    <ClInclude Include="Source\Render\Core\Error.h" />
+    <ClInclude Include="Source\Render\Core\RenderPipeline.h" />
     <ClInclude Include="Source\Render\Core\ResourceReplay.h" />
     <ClInclude Include="Source\Render\Core\Pipeline.h" />
     <ClInclude Include="Source\Render\Core\ResourceCache.h" />
@@ -316,11 +421,12 @@
     <ClInclude Include="Source\Render\Core\Device.h" />
     <ClInclude Include="Source\Render\Core\Helpers.h" />
     <ClInclude Include="Source\Render\Core\Instance.h" />
+    <ClInclude Include="Source\Render\Core\Subpasses\ForwardSubpass.h" />
+    <ClInclude Include="Source\Render\Core\Subpasses\GeometrySubpass.h" />
+    <ClInclude Include="Source\Render\Core\Subpasses\LightingSubpass.h" />
     <ClInclude Include="Source\Render\Core\VkCommon.h" />
     <ClInclude Include="Source\Render\Core\PhysicalDevice.h" />
     <ClInclude Include="Source\Render\Core\Buffer.h" />
-    <ClInclude Include="Source\Game\Components\CameraComponent.h" />
-    <ClInclude Include="Source\Game\Components\InputComponent.h" />
     <ClInclude Include="Source\Game\ECS\Systems\CameraSystem.h" />
     <ClInclude Include="Source\Game\ECS\Systems\InputSystem.h" />
     <ClInclude Include="Source\Game\InputController.h" />
@@ -330,13 +436,11 @@
     <ClInclude Include="Source\VgeMath.h" />
     <ClInclude Include="Source\Game\Camera.h" />
     <ClInclude Include="Source\Algo.h" />
-    <ClInclude Include="Source\Game\Components\RenderComponent.h" />
     <ClInclude Include="Source\Game\ECS\ComponentManager.h" />
     <ClInclude Include="Source\Game\ECS\ComponentArray.h" />
     <ClInclude Include="Source\Game\ECS\Component.h" />
     <ClInclude Include="Source\Game\ECS\Coordinator.h" />
     <ClInclude Include="Source\Game\ECS\EntityManager.h" />
-    <ClInclude Include="Source\Game\Components\TransformComponent.h" />
     <ClInclude Include="Source\Game\ECS\Entity.h" />
     <ClInclude Include="Source\Game\ECS\System.h" />
     <ClInclude Include="Source\Game\ECS\SystemManager.h" />

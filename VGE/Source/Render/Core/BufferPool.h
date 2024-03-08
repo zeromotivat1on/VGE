@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/Buffer.h"
+#include "Core/Error.h"
 
 namespace vge
 {
@@ -83,7 +84,7 @@ public:
 	BufferPool(Device& device, VkDeviceSize blockSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage = VMA_MEMORY_USAGE_CPU_TO_GPU);
 
 public:
-	BufferBlock& RequestBufferBlock(VkDeviceSize minimum_size, bool minimal = false);
+	BufferBlock& RequestBufferBlock(VkDeviceSize minimumSize, bool minimal = false);
 	void Reset();
 
 private:

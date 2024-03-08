@@ -17,9 +17,9 @@ struct CompareExtent2D
 
 const vge::RenderTarget::CreateFunc vge::RenderTarget::DefaultCreateFunction = [](Image&& swapchainImage) -> std::unique_ptr<RenderTarget> 
 {
-	VkFormat depthFormat = GetSuitableDepthFormat(swapchainImage.GetDevice().GetGpu().GetHandle());
+	const VkFormat depthFormat = GetSuitableDepthFormat(swapchainImage.GetDevice().GetGpu().GetHandle());
 
-	Image depthImage = Image(swapchainImage.GetDevice(), swapchainImage.GetExtent(), depthFormat,
+	auto depthImage = Image(swapchainImage.GetDevice(), swapchainImage.GetExtent(), depthFormat,
 							VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,
 							VMA_MEMORY_USAGE_GPU_ONLY);
 
@@ -53,7 +53,7 @@ vge::RenderTarget::RenderTarget(std::vector<Image>&& images)
 		ENSURE_MSG(image.GetType() == VK_IMAGE_TYPE_2D, "Image type is not 2D.")
 
 		_Views.emplace_back(image, VK_IMAGE_VIEW_TYPE_2D);
-		_Attachments.emplace_back(Attachment(image.GetFormat(), image.GetSampleCount(), image.GetUsage()));
+		_Attachments.emplace_back(image.GetFormat(), image.GetSampleCount(), image.GetUsage());
 	}
 }
 
@@ -67,9 +67,9 @@ vge::RenderTarget::RenderTarget(std::vector<ImageView>&& imageViews)
 	// Returns the extent of the base mip level pointed at by a view.
 	auto getViewExtent = [](const ImageView& view) 
 	{
-		const VkExtent3D mip0Extent = view.GetImage().GetExtent();
+		const auto [width, height, depth] = view.GetImage().GetExtent();
 		const u32 mipLevel = view.GetSubresourceRange().baseMipLevel;
-		return VkExtent2D{ mip0Extent.width >> mipLevel, mip0Extent.height >> mipLevel };
+		return VkExtent2D{ width >> mipLevel, height >> mipLevel };
 	};
 
 	// Constructs a set of unique image extents given a vector of image views,
@@ -83,6 +83,6 @@ vge::RenderTarget::RenderTarget(std::vector<ImageView>&& imageViews)
 	for (auto& view : _Views)
 	{
 		const auto& image = view.GetImage();
-		_Attachments.emplace_back(Attachment(image.GetFormat(), image.GetSampleCount(), image.GetUsage()));
+		_Attachments.emplace_back(image.GetFormat(), image.GetSampleCount(), image.GetUsage());
 	}
 }

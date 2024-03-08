@@ -52,7 +52,7 @@ public:
 
 	bool IsImageFormatSupported(VkFormat format) const;
 
-	const Queue& GetQueueByFlags(VkQueueFlags requiedQueueFlags, u32 queueIndex) const;
+	const Queue& GetQueueByFlags(VkQueueFlags requiredQueueFlags, u32 queueIndex) const;
 	const Queue& GetQueueByPresent(u32 queueIndex) const;
 	const Queue& GetSuitableGraphicsQueue() const;
 	u32 GetQueueFamilyIndex(VkQueueFlagBits queueFlag) const;

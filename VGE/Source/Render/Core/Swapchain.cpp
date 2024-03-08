@@ -59,21 +59,21 @@ inline VkPresentModeKHR ChoosePresentMode(
 		// If nothing found, always default to FIFO.
 		VkPresentModeKHR chosenPresentMode = VK_PRESENT_MODE_FIFO_KHR;
 
-		for (auto& present_mode : presentModePriorityList)
+		for (auto& presentMode : presentModePriorityList)
 		{
-			if (std::find(availablePresentModes.begin(), availablePresentModes.end(), present_mode) != availablePresentModes.end())
+			if (std::find(availablePresentModes.begin(), availablePresentModes.end(), presentMode) != availablePresentModes.end())
 			{
-				chosenPresentMode = present_mode;
+				chosenPresentMode = presentMode;
 				break;
 			}
 		}
 
-		LOG(Warning, "Present mode %s not supported, selecting %s.", ToString(requestPresentMode), ToString(chosenPresentMode));
+		LOG(Warning, "Present mode %s not supported, selecting %s.", ToString(requestPresentMode).c_str(), ToString(chosenPresentMode).c_str());
 		return chosenPresentMode;
 	}
 	else
 	{
-		LOG(Log, "Present mode selected %s.", ToString(requestPresentMode));
+		LOG(Log, "Present mode selected %s.", ToString(requestPresentMode).c_str());
 		return *presentModeIt;
 	}
 }
@@ -102,7 +102,8 @@ inline VkSurfaceFormatKHR ChooseSurfaceFormat(
 		for (auto& surfaceFormat : surfaceFormatPriorityList)
 		{
 			surfaceFormatIt = std::find_if(availableSurfaceFormats.begin(), availableSurfaceFormats.end(),
-				[&surfaceFormat](const VkSurfaceFormatKHR& surface) {
+				[&surfaceFormat](const VkSurfaceFormatKHR& surface)
+				{
 					if (surface.format == surfaceFormat.format &&
 						surface.colorSpace == surfaceFormat.colorSpace)
 					{
@@ -114,18 +115,18 @@ inline VkSurfaceFormatKHR ChooseSurfaceFormat(
 
 			if (surfaceFormatIt != availableSurfaceFormats.end())
 			{
-				LOG(Warning, "Surface format %s not supported, selecting %s.", ToString(requestedSurfaceFormat), ToString(*surfaceFormatIt));
+				LOG(Warning, "Surface format (%s) not supported, selecting (%s).", ToString(requestedSurfaceFormat).c_str(), ToString(*surfaceFormatIt).c_str());
 				return *surfaceFormatIt;
 			}
 		}
 
 		// If nothing found, default the first support surface format.
 		surfaceFormatIt = availableSurfaceFormats.begin();
-		LOG(Warning, "Surface format %s not supported, selecting %s.", ToString(requestedSurfaceFormat), ToString(*surfaceFormatIt));
+		LOG(Warning, "Surface format %s not supported, selecting %s.", ToString(requestedSurfaceFormat).c_str(), ToString(*surfaceFormatIt).c_str());
 	}
 	else
 	{
-		LOG(Log, "Surface format selected %s.", ToString(requestedSurfaceFormat));
+		LOG(Log, "Surface format selected %s.", ToString(requestedSurfaceFormat).c_str());
 	}
 
 	return *surfaceFormatIt;
@@ -138,7 +139,7 @@ inline VkSurfaceTransformFlagBitsKHR ChooseTransform(VkSurfaceTransformFlagBitsK
 		return requestTransform;
 	}
 
-	LOG(Warning, "Surface transform %s not supported, selecting %s.", ToString(requestTransform), ToString(currentTransform));
+	LOG(Warning, "Surface transform %s not supported, selecting %s.", ToString(requestTransform).c_str(), ToString(currentTransform).c_str());
 
 	return currentTransform;
 }
@@ -162,7 +163,7 @@ inline VkCompositeAlphaFlagBitsKHR ChooseCompositeAlpha(VkCompositeAlphaFlagBits
 	{
 		if (compositeAlpha & supportedCompositeAlpha)
 		{
-			LOG(Warning, "Composite alpha %s not supported, selecting %s.", ToString(requestCompositeAlpha), ToString(compositeAlpha));
+			LOG(Warning, "Composite alpha %s not supported, selecting %s.", ToString(requestCompositeAlpha).c_str(), ToString(compositeAlpha).c_str());
 			return compositeAlpha;
 		}
 	}
@@ -192,18 +193,20 @@ inline std::set<VkImageUsageFlagBits> ChooseImageUsage(const std::set<VkImageUsa
 		}
 		else
 		{
-			LOG(Warning, "Image usage %s requested but not supported.", ToString(flag));
+			LOG(Warning, "Image usage %s requested but not supported.", ToString(flag).c_str());
 		}
 	}
 
 	if (validatedImageUsageFlags.empty())
 	{
 		// Pick the first format from list of defaults, if supported.
-		static const std::vector<VkImageUsageFlagBits> imageUsageFlags = {
+		static const std::vector<VkImageUsageFlagBits> imageUsageFlags =
+		{
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
 			VK_IMAGE_USAGE_STORAGE_BIT,
 			VK_IMAGE_USAGE_SAMPLED_BIT,
-			VK_IMAGE_USAGE_TRANSFER_DST_BIT };
+			VK_IMAGE_USAGE_TRANSFER_DST_BIT
+		};
 
 		for (VkImageUsageFlagBits imageUsage : imageUsageFlags)
 		{
@@ -218,12 +221,11 @@ inline std::set<VkImageUsageFlagBits> ChooseImageUsage(const std::set<VkImageUsa
 	if (!validatedImageUsageFlags.empty())
 	{
 		// Log image usage flags used.
-		std::string usageList;
+		LOG(Log, "Image usage flags:");
 		for (VkImageUsageFlagBits imageUsage : validatedImageUsageFlags)
 		{
-			usageList += ToString(imageUsage) + " ";
+			LOG(Log, "  \t%s", ToString(imageUsage).c_str());
 		}
-		LOG(Log, "Image usage flags: %s.", usageList);
 	}
 	else
 	{
@@ -337,9 +339,9 @@ vge::Swapchain::Swapchain(
 	VK_ENSURE(vkGetPhysicalDeviceSurfaceFormatsKHR(_Device.GetGpu().GetHandle(), surface, &surfaceFormatCount, _SurfaceFormats.data()));
 
 	LOG(Log, "Surface supports the following surface formats:");
-	for (auto& surface_format : _SurfaceFormats)
+	for (auto& surfaceFormat : _SurfaceFormats)
 	{
-		LOG(Log, "  \t%s", ToString(surface_format));
+		LOG(Log, "  \t%s", ToString(surfaceFormat).c_str());
 	}
 
 	u32 presentModeCount = 0;
@@ -348,9 +350,9 @@ vge::Swapchain::Swapchain(
 	VK_ENSURE(vkGetPhysicalDeviceSurfacePresentModesKHR(_Device.GetGpu().GetHandle(), surface, &presentModeCount, _PresentModes.data()));
 
 	LOG(Log, "Surface supports the following present modes:");
-	for (auto& present_mode : _PresentModes)
+	for (auto& mode : _PresentModes)
 	{
-		LOG(Log, "  \t%s", ToString(present_mode));
+		LOG(Log, "  \t%s", ToString(mode).c_str());
 	}
 
 	// Chose best properties based on surface capabilities.

@@ -31,7 +31,7 @@ public:
 public:
 	VkInstance GetHandle() const { return _Handle; }
 
-	PhysicalDevice& GetGirstGpu(); // find first discrete gpu
+	PhysicalDevice& GetFirstGpu(); // find first discrete gpu
 	PhysicalDevice& GetSuitableGpu(VkSurfaceKHR surface); // find first discrete gpu that can render to a given surface
 
 	bool IsExtensionEnabled(const char* extension) const;

@@ -2,6 +2,7 @@
 
 #include "Core/VulkanResource.h"
 #include "Core/Image.h"
+#include "Core/Error.h"
 
 namespace vge
 {

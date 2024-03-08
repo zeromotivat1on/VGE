@@ -1,5 +1,8 @@
 #include "Device.h"
 
+#define VMA_IMPLEMENTATION
+#include <vk_mem_alloc.h>
+
 vge::Device::Device(PhysicalDevice& gpu, VkSurfaceKHR surface, /*std::unique_ptr<DebugUtils>&& debug_utils,*/ std::unordered_map<const char*, bool> requestedExtensions /*= {}*/)
 	: VulkanResource(VK_NULL_HANDLE, this), _Gpu(gpu), _ResourceCache(*this)
 {
@@ -71,8 +74,7 @@ vge::Device::Device(PhysicalDevice& gpu, VkSurfaceKHR surface, /*std::unique_ptr
 
 	// For performance queries, we also use host query reset since queryPool resets cannot
 	// live in the same command buffer as beginQuery.
-	if (IsExtensionSupported("VK_KHR_performance_query") &&
-		IsExtensionSupported("VK_EXT_host_query_reset"))
+	if (IsExtensionSupported("VK_KHR_performance_query") && IsExtensionSupported("VK_EXT_host_query_reset"))
 	{
 		const auto perfCounterFeatures = gpu.RequestExtensionFeatures<VkPhysicalDevicePerformanceQueryFeaturesKHR>(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_QUERY_FEATURES_KHR);
 		const auto hostQueryResetFeatures = gpu.RequestExtensionFeatures<VkPhysicalDeviceHostQueryResetFeatures>(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES);
@@ -158,6 +160,8 @@ vge::Device::Device(PhysicalDevice& gpu, VkSurfaceKHR surface, /*std::unique_ptr
 	}
 
 	VmaVulkanFunctions vmaVulkanFuncs = {};
+	vmaVulkanFuncs.vkGetDeviceProcAddr = vkGetDeviceProcAddr;
+	vmaVulkanFuncs.vkGetInstanceProcAddr = vkGetInstanceProcAddr;
 	vmaVulkanFuncs.vkAllocateMemory = vkAllocateMemory;
 	vmaVulkanFuncs.vkBindBufferMemory = vkBindBufferMemory;
 	vmaVulkanFuncs.vkBindImageMemory = vkBindImageMemory;
@@ -288,7 +292,7 @@ bool vge::Device::IsImageFormatSupported(VkFormat format) const
 	return result != VK_ERROR_FORMAT_NOT_SUPPORTED;
 }
 
-const vge::Queue& vge::Device::GetQueueByFlags(VkQueueFlags requiedQueueFlags, u32 queueIndex) const
+const vge::Queue& vge::Device::GetQueueByFlags(VkQueueFlags requiredQueueFlags, u32 queueIndex) const
 {
 	for (u32 queueFamilyIndex = 0U; queueFamilyIndex < _Queues.size(); ++queueFamilyIndex)
 	{
@@ -296,7 +300,7 @@ const vge::Queue& vge::Device::GetQueueByFlags(VkQueueFlags requiedQueueFlags, u
 		const VkQueueFlags queueFlags = firstQueue.GetProperties().queueFlags;
 		const u32 queueCount = firstQueue.GetProperties().queueCount;
 
-		if (((queueFlags & requiedQueueFlags) == requiedQueueFlags) && queueIndex < queueCount)
+		if (((queueFlags & requiredQueueFlags) == requiredQueueFlags) && queueIndex < queueCount)
 		{
 			return _Queues[queueFamilyIndex][queueIndex];
 		}

@@ -23,11 +23,11 @@ VkResult vge::Queue::Submit(const std::vector<VkSubmitInfo>& submitInfos, VkFenc
 	return vkQueueSubmit(_Handle, ToU32(submitInfos.size()), submitInfos.data(), fence);
 }
 
-VkResult vge::Queue::Submit(const CommandBuffer& commandBuffer, VkFence fence) const
+VkResult vge::Queue::Submit(const CommandBuffer& cmd, VkFence fence) const
 {
 	VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBuffer.GetHandle();
+	submitInfo.pCommandBuffers = &cmd.GetHandle();
 
 	return Submit({ submitInfo }, fence);
 }

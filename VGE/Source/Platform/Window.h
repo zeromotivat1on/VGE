@@ -38,20 +38,20 @@ public:
 
 	struct OptionalProperties
 	{
-		std::optional<std::string> title;
-		std::optional<Mode> mode;
-		std::optional<bool> resizable;
-		std::optional<Vsync> vsync;
-		OptionalExtent extent;
+		std::optional<std::string> Title;
+		std::optional<Mode> Mode;
+		std::optional<bool> Resizable;
+		std::optional<Vsync> Vsync;
+		OptionalExtent Extent;
 	};
 
 	struct Properties
 	{
-		std::string title = "";
-		Mode mode = Mode::Default;
-		bool resizable = true;
-		Vsync vsync = Vsync::Default;
-		Extent extent = { 1280, 720 };
+		std::string Title = "";
+		Mode Mode = Mode::Default;
+		bool Resizable = true;
+		Vsync Vsync = Vsync::Default;
+		Extent Extent = { 1280, 720 };
 	};
 
 public:
@@ -61,8 +61,9 @@ public:
 
 public:
 	inline const Properties& GetProperties() const { return _Properties; }
-	inline const Extent& GetExtent() const { return _Properties.extent; }
-	inline Mode GetWindowMode() const { return _Properties.mode; }
+	inline const Extent& GetExtent() const { return _Properties.Extent; }
+	inline Mode GetWindowMode() const { return _Properties.Mode; }
+	inline bool IsHeadless() const { return _Properties.Mode == Mode::Headless; }
 	inline virtual float GetContentScaleFactor() const { return 1.0f; } // get the scale factor for systems with heterogeneous window and pixel coordinates
 	inline virtual bool GetDisplayPresentInfo(VkDisplayPresentInfoKHR* info, u32 srcWidth, u32 srcHeight) const { return false; }
 	inline virtual void ProcessEvents() {}

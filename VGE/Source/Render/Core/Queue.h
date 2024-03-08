@@ -27,9 +27,9 @@ public:
 	inline VkBool32 SupportPresent() const { return _CanPresent; }
 	inline VkResult WaitIdle() const { vkQueueWaitIdle(_Handle); }
 
-	VkResult Submit(const std::vector<VkSubmitInfo>& submitInfos, VkFence fence) const;
-	VkResult Submit(const CommandBuffer& commandBuffer, VkFence fence) const;
-	VkResult Present(const VkPresentInfoKHR& presentInfos) const;
+	VkResult Submit(const std::vector<VkSubmitInfo>&, VkFence) const;
+	VkResult Submit(const CommandBuffer&, VkFence) const;
+	VkResult Present(const VkPresentInfoKHR&) const;
 
 private:
 	Device& _Device;

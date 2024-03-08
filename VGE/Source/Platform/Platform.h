@@ -5,6 +5,7 @@
 #include "Platform/Window.h"
 #include "Platform/Context.h"
 #include "Platform/Application.h"
+#include "Core/Error.h"
 #include "Timer.h"
 
 namespace vge

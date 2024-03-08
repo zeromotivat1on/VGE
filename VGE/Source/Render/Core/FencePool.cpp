@@ -1,5 +1,6 @@
 #include "FencePool.h"
 #include "Device.h"
+#include "Core/Error.h"
 
 vge::FencePool::FencePool(Device& device) 
 	: _Device{ device }

@@ -4,23 +4,26 @@
 
 extern std::unique_ptr<vge::PlatformContext> CreatePlatformContext(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, INT nCmdShow);
 
-int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, INT nCmdShow)
+//int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, INT nCmdShow)
+int main(int argc, const char** argv)
 {
-	const auto context = CreatePlatformContext(hInstance, hPrevInstance, lpCmdLine, nCmdShow);
+	const auto vgeAppInfo = std::make_unique<vge::AppInfo>("Vulkan Game Engine", vge::CreateVgeApplication);
+	//const auto context = CreatePlatformContext(hInstance, hPrevInstance, lpCmdLine, nCmdShow);
+	const auto context = CreatePlatformContext(nullptr, nullptr, nullptr, 0);
 	auto platform = vge::WindowsPlatform(*context);
 
 	{
 		vge::Window::OptionalProperties windowProps;
-		windowProps.title = "VGE";
-		windowProps.resizable = true;
-		windowProps.vsync = vge::Window::Vsync::Default;
-		windowProps.mode = vge::Window::Mode::Default;
-		windowProps.extent = vge::Window::OptionalExtent{ 1024, 780 };
+		windowProps.Title = "VGE";
+		windowProps.Resizable = true;
+		windowProps.Vsync = vge::Window::Vsync::Default;
+		windowProps.Mode = vge::Window::Mode::Default;
+		windowProps.Extent = vge::Window::OptionalExtent{ 1024, 780 };
 		platform.SetWindowProperties(windowProps);
 	}
 
 	{
-		platform.RequestApplication(new vge::AppInfo("Vulkan Game Engine", vge::CreateVgeApplication));
+		platform.RequestApplication(vgeAppInfo.get());
 	}
 	
 	const auto result = platform.Initialize();

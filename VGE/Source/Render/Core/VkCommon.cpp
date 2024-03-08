@@ -165,7 +165,7 @@ VkFormat GetSuitableDepthFormat(VkPhysicalDevice physicalDevice, bool depthOnly,
 
 	if (depthFormat != VK_FORMAT_UNDEFINED)
 	{
-		LOG(Log, "Depth format selected: %s.", ToString(depthFormat));
+		LOG(Log, "Depth format selected: %s.", ToString(depthFormat).c_str());
 		return depthFormat;
 	}
 

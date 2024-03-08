@@ -174,7 +174,9 @@ vge::Instance::Instance(
 	bool headless /*= false*/,
 	u32 apiVersion /*= VK_API_VERSION_1_0*/)
 {
-	uint32_t instanceExtCount;
+	VK_ENSURE(volkInitialize());
+	
+	u32 instanceExtCount = 0;
 	VK_ENSURE(vkEnumerateInstanceExtensionProperties(nullptr, &instanceExtCount, nullptr));
 
 	std::vector<VkExtensionProperties> availableInstanceExts(instanceExtCount);
@@ -201,7 +203,7 @@ vge::Instance::Instance(
 #ifdef USE_VALIDATION_LAYER_FEATURES
 	bool validationFeatures = false;
 	{
-		uint32_t layerInstanceExtCount;
+		u32 layerInstanceExtCount;
 		VK_ENSURE(vkEnumerateInstanceExtensionProperties("VK_LAYER_KHRONOS_validation", &layerInstanceExtCount, nullptr));
 
 		std::vector<VkExtensionProperties> availableLayerInstanceExts(layerInstanceExtCount);
@@ -257,9 +259,9 @@ vge::Instance::Instance(
 		}
 	}
 
-	ENSURE_MSG(extensionError, "Required instance extensions are missing.");
+	ENSURE_MSG(!extensionError, "Required instance extensions are missing.");
 
-	uint32_t instanceLayerCount;
+	u32 instanceLayerCount;
 	VK_ENSURE(vkEnumerateInstanceLayerProperties(&instanceLayerCount, nullptr));
 
 	std::vector<VkLayerProperties> supportedValidationLayers(instanceLayerCount);
@@ -278,7 +280,7 @@ vge::Instance::Instance(
 		LOG(Log, "Enabled Validation Layers:")
 		for (const char* layer : requestedValidationLayers)
 		{
-			LOG_RAW("	\t%s", layer);
+			LOG(Log, "  \t%s", layer);
 		}
 	}
 	else
@@ -369,6 +371,7 @@ vge::Instance::Instance(
 vge::Instance::Instance(VkInstance instance) : _Handle(instance)
 {
 	ENSURE(_Handle);
+	VK_ENSURE(volkInitialize());
 	QueryGpus();
 }
 
@@ -391,7 +394,7 @@ vge::Instance::~Instance()
 	}
 }
 
-vge::PhysicalDevice& vge::Instance::GetGirstGpu()
+vge::PhysicalDevice& vge::Instance::GetFirstGpu()
 {
 	ASSERT_MSG(!_Gpus.empty(), "No physical devices were found on the system.")
 
@@ -454,7 +457,7 @@ bool vge::Instance::IsExtensionEnabled(const char* extension) const
 
 void vge::Instance::QueryGpus()
 {
-	uint32_t physicalDeviceCount = 0;
+	u32 physicalDeviceCount = 0;
 	VK_ENSURE(vkEnumeratePhysicalDevices(_Handle, &physicalDeviceCount, nullptr));
 
 	ENSURE_MSG(physicalDeviceCount > 0, "Couldn't find a physical device that supports Vulkan.");

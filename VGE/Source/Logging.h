@@ -1,8 +1,8 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
 #include <cstdarg>
 #include <string>
+
 #include "Types.h"
 #include "Macros.h"
 
@@ -37,9 +37,7 @@ namespace vge
 		Warning,
 		Error,
 	};
-
-	extern void NotifyVulkanEnsureFailure(VkResult result, const char* function, const char* filename, u32 line, const char* errMessage = nullptr);
-
+	
 	class Logger final
 	{
 	public:

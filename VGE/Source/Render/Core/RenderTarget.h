@@ -25,10 +25,8 @@ struct Attachment
 * RenderTarget contains three vectors for: Image, ImageView and Attachment.
 * The first two are Vulkan images and corresponding image views respectively.
 * Attachment (s) contain a description of the images, which has two main purposes:
-* - RenderPass creation only needs a list of Attachment (s), not the actual images, so we keep
-*   the minimum amount of information necessary.
-* - Creation of a RenderTarget becomes simpler, because the caller can just ask for some
-*   Attachment (s) without having to create the images.
+* - RenderPass creation only needs a list of Attachment (s), not the actual images, so we keep the minimum amount of information necessary.
+* - Creation of a RenderTarget becomes simpler, because the caller can just ask for some Attachment (s) without having to create the images.
 */
 class RenderTarget
 {
@@ -38,7 +36,7 @@ public:
 
 public:
 	RenderTarget(std::vector<Image>&& images);
-	RenderTarget(std::vector<ImageView>&& image_views);
+	RenderTarget(std::vector<ImageView>&& imageViews);
 
 	COPY_CTOR_DEL(RenderTarget);
 	MOVE_CTOR_DEL(RenderTarget);

@@ -1,5 +1,6 @@
 #include "GlfwWindow.h"
 #include <GLFW/glfw3.h>
+#include "Core/Error.h"
 #include "Platform/Platform.h"
 #include "Platform/InputEvens.h"
 
@@ -239,13 +240,13 @@ vge::GlfwWindow::GlfwWindow(Platform* platform, const Window::Properties& proper
 	glfwSetErrorCallback(ErrorCallback);
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-	switch (properties.mode)
+	switch (properties.Mode)
 	{
 	case Window::Mode::Fullscreen:
 	{
 		GLFWmonitor* monitor = glfwGetPrimaryMonitor();
 		const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-		_Handle = glfwCreateWindow(mode->width, mode->height, properties.title.c_str(), monitor, NULL);
+		_Handle = glfwCreateWindow(mode->width, mode->height, properties.Title.c_str(), monitor, NULL);
 		break;
 	}
 
@@ -257,7 +258,7 @@ vge::GlfwWindow::GlfwWindow(Platform* platform, const Window::Properties& proper
 		glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
 		glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
 		glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
-		_Handle = glfwCreateWindow(mode->width, mode->height, properties.title.c_str(), monitor, NULL);
+		_Handle = glfwCreateWindow(mode->width, mode->height, properties.Title.c_str(), monitor, NULL);
 		break;
 	}
 
@@ -268,11 +269,11 @@ vge::GlfwWindow::GlfwWindow(Platform* platform, const Window::Properties& proper
 	}
 
 	default:
-		_Handle = glfwCreateWindow(properties.extent.width, properties.extent.height, properties.title.c_str(), NULL, NULL);
+		_Handle = glfwCreateWindow(properties.Extent.width, properties.Extent.height, properties.Title.c_str(), NULL, NULL);
 		break;
 	}
 
-	Resize(Extent{ properties.extent.width, properties.extent.height });
+	Resize(Extent{ properties.Extent.width, properties.Extent.height });
 
 	ENSURE_MSG(_Handle, "Couldn't create glfw window.");
 

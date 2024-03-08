@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Types.h"
-#include "Macros.h"
+#include "Core/Error.h"
 #include "GlmCommon.h"
 #include "StringConversion.h"
 #include <glm/gtx/hash.hpp>

@@ -1,7 +1,5 @@
 ﻿#include "Context.h"
-
-#include "Logging.h"
-#include "Macros.h"
+#include "Render/Core/Error.h"
 
 namespace vge
 {
@@ -68,11 +66,11 @@ vge::WindowsPlatformContext::WindowsPlatformContext(HINSTANCE hInstance, HINSTAN
     _Arguments = GetArgs();
 
     // Attempt to attach to the parent process console if it exists.
-    if (!AttachConsole(ATTACH_PARENT_PROCESS))
-    {
-        // No parent console, allocate a new one for this process.
-        ENSURE(AllocConsole());
-    }
+    //if (!AttachConsole(ATTACH_PARENT_PROCESS))
+    //{
+    //    // No parent console, allocate a new one for this process.
+    //    ENSURE(AllocConsole());
+    //}
 
     FILE *fp;
     freopen_s(&fp, "conin$", "r", stdin);

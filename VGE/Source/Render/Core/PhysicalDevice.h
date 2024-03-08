@@ -1,6 +1,7 @@
 #pragma once
 
 #include "VkCommon.h"
+#include "Core/Error.h"
 #include "Core/Instance.h"
 
 namespace vge

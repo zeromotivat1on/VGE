@@ -47,6 +47,15 @@ public:
 	MOVE_OP_DEL(CommandBuffer);
 
 public:
+	inline void SetViewportState(const ViewportState& stateInfo) { _PipelineState.SetViewportState(stateInfo); }
+	inline void SetVertexInputState(const VertexInputState& stateInfo) { _PipelineState.SetVertexInputState(stateInfo); }
+	inline void SetInputAssemblyState(const InputAssemblyState& stateInfo) { _PipelineState.SetInputAssemblyState(stateInfo); }
+	inline void SetRasterizationState(const RasterizationState& stateInfo) { _PipelineState.SetRasterizationState(stateInfo); }
+	inline void SetMultisampleState(const MultisampleState& stateInfo) { _PipelineState.SetMultisampleState(stateInfo); }
+	inline void SetDepthStencilState(const DepthStencilState& stateInfo) { _PipelineState.SetDepthStencilState(stateInfo); }
+	inline void SetColorBlendState(const ColorBlendState& stateInfo) { _PipelineState.SetColorBlendState(stateInfo); }
+	inline void SetUpdateAfterBind(bool updateAfterBind) { _UpdateAfterBind = updateAfterBind; }
+	
 	void Flush(VkPipelineBindPoint pipelineBindPoint);
 	
 	VkResult Begin(VkCommandBufferUsageFlags flags, CommandBuffer* primaryCmdBuf = nullptr);
@@ -80,13 +89,13 @@ public:
 	void BindPipelineLayout(PipelineLayout& pipeline_layout);
 
 	template <class T>
-	inline void SetSpecializationConstant(u32 constantId, const T& data) { SetSpecializationConstant(constantId, ToBytes(data)); }
+	void SetSpecializationConstant(u32 constantId, const T& data) { SetSpecializationConstant(constantId, ToBytes(data)); }
 	template <>
-	inline void SetSpecializationConstant(u32 constantId, const bool& data) { SetSpecializationConstant(constantId, ToBytes(ToU32(data))); }
+	void SetSpecializationConstant(u32 constantId, const bool& data) { SetSpecializationConstant(constantId, ToBytes(ToU32(data))); }
 	void SetSpecializationConstant(u32 constantId, const std::vector<u8>& data);
 
 	template <typename T>
-	inline void PushConstants(const T& value) { PushConstants(ToBytes(value)); }
+	void PushConstants(const T& value) { PushConstants(ToBytes(value)); }
 	void PushConstants(const std::vector<u8>& values);
 
 	void BindBuffer(const Buffer& buffer, VkDeviceSize offset, VkDeviceSize range, u32 set, u32 binding, u32 arrayElement);
@@ -96,14 +105,6 @@ public:
 	void BindVertexBuffers(u32 firstBinding, const std::vector<std::reference_wrapper<const Buffer>>& buffers, const std::vector<VkDeviceSize>& offsets);
 	void BindIndexBuffer(const Buffer& buffer, VkDeviceSize offset, VkIndexType indexType);
 	void BindLighting(LightingState& lightingState, u32 set, u32 binding);
-
-	inline void SetViewportState(const ViewportState& stateInfo) { _PipelineState.SetViewportState(stateInfo); }
-	inline void SetVertexInputState(const VertexInputState& stateInfo) { _PipelineState.SetVertexInputState(stateInfo); }
-	inline void SetInputAssemblyState(const InputAssemblyState& stateInfo) { _PipelineState.SetInputAssemblyState(stateInfo); }
-	inline void SetRasterizationState(const RasterizationState& stateInfo) { _PipelineState.SetRasterizationState(stateInfo); }
-	inline void SetMultisampleState(const MultisampleState& stateInfo) { _PipelineState.SetMultisampleState(stateInfo); }
-	inline void SetDepthStencilState(const DepthStencilState& stateInfo) { _PipelineState.SetDepthStencilState(stateInfo); }
-	inline void SetColorBlendState(const ColorBlendState& stateInfo) { _PipelineState.SetColorBlendState(stateInfo); }
 
 	void SetViewport(u32 firstViewport, const std::vector<VkViewport>& viewports);
 	void SetScissor(u32 firstScissor, const std::vector<VkRect2D>& scissors);
@@ -131,9 +132,7 @@ public:
 
 	void BufferMemoryBarrier(const Buffer& buffer, VkDeviceSize offset, VkDeviceSize size, const vge::BufferMemoryBarrier& memoryBarrier);
 	void ImageMemoryBarrier(const ImageView& imageView, const vge::ImageMemoryBarrier& memoryBarrier) const;
-
-	inline void SetUpdateAfterBind(bool updateAfterBind) { _UpdateAfterBind = updateAfterBind; }
-
+	
 	//void ResetQueryPool(const QueryPool& queryPool, u32 firstQuery, u32 queryCount);
 	//void BeginQuery(const QueryPool& queryPool, u32 query, VkQueryControlFlags flags);
 	//void EndQuery(const QueryPool& queryPool, u32 query);

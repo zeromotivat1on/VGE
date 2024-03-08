@@ -8,7 +8,7 @@ vge::ImageView::ImageView(
 {
 	if (format == VK_FORMAT_UNDEFINED)
 	{
-		this->_Format = format = _Image->GetFormat();
+		_Format = format = _Image->GetFormat();
 	}
 
 	_SubresourceRange.baseMipLevel = baseMipLevel;

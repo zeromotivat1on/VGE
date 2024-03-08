@@ -1,5 +1,6 @@
 #include "ShaderModule.h"
 #include "File.h"
+#include "Core/Error.h"
 #include "Core/StringHelpers.h"
 
 /**

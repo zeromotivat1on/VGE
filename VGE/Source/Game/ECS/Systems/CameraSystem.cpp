@@ -1,4 +1,5 @@
 #include "CameraSystem.h"
+#include "Core/Error.h"
 #include "ECS/Coordinator.h"
 #include "Game/Camera.h"
 #include "Render/Window.h"

@@ -27,11 +27,7 @@ struct LightingState
 	BufferAllocation LightBuffer;
 };
 
-/**
-	* @brief Calculates the vulkan style projection matrix
-	* @param proj The projection matrix
-	* @return The vulkan style projection matrix
-	*/
+// Calculates the vulkan style projection matrix
 glm::mat4 VulkanStyleProjection(const glm::mat4& proj);
 
 extern const std::vector<std::string> GLightTypeDefinitions;

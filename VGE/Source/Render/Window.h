@@ -2,6 +2,7 @@
 
 #include "Common.h"
 #include "RenderCommon.h"
+#include "Core/Error.h"
 
 namespace vge
 {
@@ -21,7 +22,7 @@ namespace vge
 		inline void PollEvents() const { glfwPollEvents(); }
 		inline bool ShouldClose() const { return glfwWindowShouldClose(m_Handle); }
 		inline void GetFramebufferSize(i32& outw, i32& outh) const { glfwGetFramebufferSize(m_Handle, &outw, &outh); }
-		inline void CreateSurface(VkInstance instance, VkSurfaceKHR& outSurface) const { VK_ENSURE(glfwCreateWindowSurface(instance, m_Handle, nullptr, &outSurface)); }
+		//inline void CreateSurface(VkInstance instance, VkSurfaceKHR& outSurface) const { VK_ENSURE(glfwCreateWindowSurface(instance, m_Handle, nullptr, &outSurface)); }
 		inline bool WasResized() const { return m_FramebufferResized; }
 		inline void ResetResizedFlag() { m_FramebufferResized = false; }
 		inline i32 GetWidth() const { return m_Width; }
