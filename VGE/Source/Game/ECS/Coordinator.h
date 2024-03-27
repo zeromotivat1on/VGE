@@ -7,191 +7,132 @@
 
 namespace vge::ecs
 {
-inline class Coordinator* GCoordinator = nullptr;
-
 // General class for ECS usage.
 class Coordinator
 {
-public:
-	Coordinator() = default;
-
-	inline void Initialize()
+private:
+	Coordinator()
 	{
-		m_ComponentManager = std::make_unique<ComponentManager>();
-		m_EntityManager = std::make_unique<EntityManager>();
-		m_SystemManager = std::make_unique<SystemManager>();
+		_ComponentManager = std::make_unique<ComponentManager>();
+		_EntityManager = std::make_unique<EntityManager>();
+		_SystemManager = std::make_unique<SystemManager>();
 	}
 
-	inline void Destroy() {}
+public:
+	inline static Coordinator& Get()
+	{
+		static Coordinator coordinator;
+		return coordinator;
+	}
 
 public:
 	inline Entity CreateEntity()
 	{
-		return m_EntityManager->Create();
+		return _EntityManager->Create();
 	}
 
 	inline void DestroyEntity(Entity entity)
 	{
-		m_EntityManager->Destroy(entity);
-		m_ComponentManager->EntityDestroyed(entity);
-		m_SystemManager->EntityDestroyed(entity);
+		_EntityManager->Destroy(entity);
+		_ComponentManager->EntityDestroyed(entity);
+		_SystemManager->EntityDestroyed(entity);
 	}
 
 public:
 	template<typename T>
-	size_t GetComponentsNum() const { return m_ComponentManager->GetComponentsNum<T>(); }
+	size_t GetComponentsNum() const { return _ComponentManager->GetComponentsNum<T>(); }
 		
 	template<typename T>
-	T* GetComponents() { return m_ComponentManager->GetComponents<T>(); }
+	T* GetComponents() { return _ComponentManager->GetComponents<T>(); }
 	
 	template<typename T>
 	void RegisterComponent()
 	{
-		m_ComponentManager->RegisterComponent<T>();
+		_ComponentManager->RegisterComponent<T>();
 	}
 
 	template<typename T>
-	void AddComponent(Entity entity, const T& component)
+	void AddComponent(Entity entity, T&& component)
 	{
-		m_ComponentManager->Add<T>(entity, component);
+		_ComponentManager->Add<T>(entity, std::forward<T>(component));
 
-		auto signature = m_EntityManager->GetSignature(entity);
-		signature.set(m_ComponentManager->GetComponentType<T>(), true);
-		m_EntityManager->SetSignature(entity, signature);
+		auto signature = _EntityManager->GetSignature(entity);
+		signature.set(_ComponentManager->GetComponentType<T>(), true);
+		_EntityManager->SetSignature(entity, signature);
 
-		m_SystemManager->EntitySignatureChanged(entity, signature);
+		_SystemManager->EntitySignatureChanged(entity, signature);
 	}
 
 	template<typename T>
 	void RemoveComponent(Entity entity)
 	{
-		m_ComponentManager->Remove<T>(entity);
+		_ComponentManager->Remove<T>(entity);
 
-		auto signature = m_EntityManager->GetSignature(entity);
-		signature.set(m_ComponentManager->GetComponentType<T>(), false);
-		m_EntityManager->SetSignature(entity, signature);
+		auto signature = _EntityManager->GetSignature(entity);
+		signature.set(_ComponentManager->GetComponentType<T>(), false);
+		_EntityManager->SetSignature(entity, signature);
 
-		m_SystemManager->EntitySignatureChanged(entity, signature);
+		_SystemManager->EntitySignatureChanged(entity, signature);
 	}
 
 	template<typename T>
 	T& GetComponent(Entity entity)
 	{
-		return m_ComponentManager->GetComponent<T>(entity);
+		return _ComponentManager->GetComponent<T>(entity);
 	}
 
 	template<typename T>
 	ComponentType GetComponentType()
 	{
-		return m_ComponentManager->GetComponentType<T>();
+		return _ComponentManager->GetComponentType<T>();
 	}
 
 public:
 	template<typename T>
 	std::shared_ptr<T> RegisterSystem()
 	{
-		return m_SystemManager->RegisterSystem<T>();
+		return _SystemManager->RegisterSystem<T>();
 	}
 
 	template<typename T>
 	void SetSystemSignature(Signature signature)
 	{
-		m_SystemManager->SetSignature<T>(signature);
+		_SystemManager->SetSignature<T>(signature);
 	}
 
 private:
-	std::unique_ptr<ComponentManager> m_ComponentManager = nullptr;
-	std::unique_ptr<EntityManager> m_EntityManager = nullptr;
-	std::unique_ptr<SystemManager> m_SystemManager = nullptr;
+	std::unique_ptr<ComponentManager> _ComponentManager = nullptr;
+	std::unique_ptr<EntityManager> _EntityManager = nullptr;
+	std::unique_ptr<SystemManager> _SystemManager = nullptr;
 };
 
-inline Coordinator* CreateCoordinator()
-{
-	if (GCoordinator) return GCoordinator;
-	return (GCoordinator = new Coordinator());
-}
-
-inline bool DestroyCoordinator()
-{
-	if (!GCoordinator) return false;
-	GCoordinator->Destroy();
-	delete GCoordinator;
-	GCoordinator = nullptr;
-	return true;
-}
-
-inline Entity CreateEntity()
-{
-	ENSURE(GCoordinator);
-	return GCoordinator->CreateEntity();
-}
-
-inline void DestroyEntity(Entity entity)
-{
-	ENSURE(GCoordinator);
-	GCoordinator->DestroyEntity(entity);
-}
+inline Entity CreateEntity() { return Coordinator::Get().CreateEntity(); }
+inline void DestroyEntity(Entity entity) { Coordinator::Get().DestroyEntity(entity); }
 
 template<typename T>
-size_t GetComponentsNum()
-{
-	ENSURE(GCoordinator);
-	return GCoordinator->GetComponentsNum<T>();
-}
+size_t GetComponentsNum() { return Coordinator::Get().GetComponentsNum<T>(); }
 		
 template<typename T>
-T* GetComponents()
-{
-	ENSURE(GCoordinator);
-	return GCoordinator->GetComponents<T>();
-}
+T* GetComponents() { return Coordinator::Get().GetComponents<T>(); }
 	
 template<typename T>
-void RegisterComponent()
-{
-	ENSURE(GCoordinator);
-	GCoordinator->RegisterComponent<T>();
-}
+void RegisterComponent() { Coordinator::Get().RegisterComponent<T>(); }
 
 template<typename T>
-void AddComponent(Entity entity, const T& component)
-{
-	ENSURE(GCoordinator);
-	GCoordinator->AddComponent(entity, component);
-}
+void AddComponent(Entity entity, T&& component) { Coordinator::Get().AddComponent<T>(entity, std::forward<T>(component)); }
 
 template<typename T>
-void RemoveComponent(Entity entity)
-{
-	ENSURE(GCoordinator);
-	GCoordinator->RemoveComponent(entity);
-}
+void RemoveComponent(Entity entity) { Coordinator::Get().RemoveComponent<T>(entity); }
 
 template<typename T>
-T& GetComponent(Entity entity)
-{
-	ENSURE(GCoordinator);
-	return GCoordinator->GetComponent<T>(entity);
-}
+T& GetComponent(Entity entity) { return Coordinator::Get().GetComponent<T>(entity); }
 
 template<typename T>
-ComponentType GetComponentType()
-{
-	ENSURE(GCoordinator);
-	return GCoordinator->GetComponentType<T>();
-}
+ComponentType GetComponentType() { return Coordinator::Get().GetComponentType<T>(); }
 
 template<typename T>
-std::shared_ptr<T> RegisterSystem()
-{
-	ENSURE(GCoordinator);
-	return GCoordinator->RegisterSystem<T>();
-}
+std::shared_ptr<T> RegisterSystem() { return Coordinator::Get().RegisterSystem<T>(); }
 
 template<typename T>
-void SetSystemSignature(Signature signature)
-{
-	ENSURE(GCoordinator);
-	return GCoordinator->SetSystemSignature<T>(signature);
-}
+void SetSystemSignature(Signature signature) { return Coordinator::Get().SetSystemSignature<T>(signature); }
 }

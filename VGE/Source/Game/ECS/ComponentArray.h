@@ -4,7 +4,7 @@
 #include "Entity.h"
 #include "Core/Error.h"
 
-namespace vge
+namespace vge::ecs
 {
 class IComponentArray
 {
@@ -18,54 +18,66 @@ class ComponentArray : public IComponentArray
 {
 public:
 	inline size_t GetSize() const { return m_Size; }
-	inline T* GetComponents() { return m_Components.data(); }
-	
+	inline T* GetComponents() { return _Components.data(); }
+
 	inline void Add(Entity entity, const T& component)
 	{
-		ASSERT(m_EntityToIndex.find(entity) == m_EntityToIndex.end());
+		ASSERT(_EntityToIndex.find(entity) == _EntityToIndex.end());
 
-		size_t newIndex = m_Size;
-		m_EntityToIndex[entity] = newIndex;
-		m_IndexToEntity[newIndex] = entity;
-		m_Components[newIndex] = component;
+		const size_t newIndex = m_Size;
+		_EntityToIndex[entity] = newIndex;
+		_IndexToEntity[newIndex] = entity;
+		_Components[newIndex] = component;
+
+		++m_Size;
+	}
+
+	inline void Add(Entity entity, T&& component)
+	{
+		ASSERT(_EntityToIndex.find(entity) == _EntityToIndex.end());
+
+		const size_t newIndex = m_Size;
+		_EntityToIndex[entity] = newIndex;
+		_IndexToEntity[newIndex] = entity;
+		_Components[newIndex] = std::move(component);
 
 		++m_Size;
 	}
 
 	inline void Remove(Entity entity)
 	{
-		ASSERT(m_EntityToIndex.find(entity) != m_EntityToIndex.end());
+		ASSERT(_EntityToIndex.find(entity) != _EntityToIndex.end());
 
-		size_t indexOfRemovedEntity = m_EntityToIndex[entity];
-		size_t indexOfLastElement = m_Size - 1;
-		m_Components[indexOfRemovedEntity] = m_Components[indexOfLastElement];
+		const size_t indexOfRemovedEntity = _EntityToIndex[entity];
+		const size_t indexOfLastElement = m_Size - 1;
+		_Components[indexOfRemovedEntity] = std::move(_Components[indexOfLastElement]);
 
-		Entity entityOfLastElement = m_IndexToEntity[indexOfLastElement];
-		m_EntityToIndex[entityOfLastElement] = indexOfRemovedEntity;
-		m_IndexToEntity[indexOfRemovedEntity] = entityOfLastElement;
+		const Entity entityOfLastElement = _IndexToEntity[indexOfLastElement];
+		_EntityToIndex[entityOfLastElement] = indexOfRemovedEntity;
+		_IndexToEntity[indexOfRemovedEntity] = entityOfLastElement;
 
-		m_EntityToIndex.erase(entity);
-		m_IndexToEntity.erase(indexOfLastElement);
+		_EntityToIndex.erase(entity);
+		_IndexToEntity.erase(indexOfLastElement);
 
 		--m_Size;
 	}
 
 	inline T& Get(Entity entity)
 	{
-		ASSERT(m_EntityToIndex.find(entity) != m_EntityToIndex.end());
-		return m_Components[m_EntityToIndex[entity]];
+		ASSERT(_EntityToIndex.find(entity) != _EntityToIndex.end());
+		return _Components[_EntityToIndex[entity]];
 	}
 
 	inline void EntityDestroyed(Entity entity) override
 	{
-		ASSERT(m_EntityToIndex.find(entity) != m_EntityToIndex.end());
+		ASSERT(_EntityToIndex.find(entity) != _EntityToIndex.end());
 		Remove(entity);
 	}
 
 private:
 	size_t m_Size = 0;
-	std::array<T, GMaxEntities> m_Components = {};
-	std::unordered_map<Entity, size_t> m_EntityToIndex = {};
-	std::unordered_map<size_t, Entity> m_IndexToEntity = {};
+	std::array<T, GMaxEntities> _Components = {};
+	std::unordered_map<Entity, size_t> _EntityToIndex = {};
+	std::unordered_map<size_t, Entity> _IndexToEntity = {};
 };
 }

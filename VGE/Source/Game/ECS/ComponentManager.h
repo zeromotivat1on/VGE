@@ -8,7 +8,7 @@
 #include "Entity.h"
 #include "Core/Error.h"
 
-namespace vge
+namespace vge::ecs
 {
 class ComponentManager
 {
@@ -42,9 +42,9 @@ public:
 	}
 
 	template<typename T>
-	void Add(Entity entity, const T& component)
+	void Add(Entity entity, T&& component)
 	{
-		GetComponentArray<T>()->Add(entity, component);
+		GetComponentArray<T>()->Add(entity, std::forward<T>(component));
 	}
 
 	template<typename T>

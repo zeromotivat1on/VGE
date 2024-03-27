@@ -5,15 +5,15 @@
 
 namespace vge
 {
-	class InputSystem : public System
-	{
-	public:
-		InputSystem() = default;
+class InputSystem : public ecs::System
+{
+public:
+	InputSystem() = default;
 
-		void Initialize();
-		void Tick(f32 deltaTime);
+	void Initialize();
+	void Tick(f32 deltaTime);
 
-	private:
-		InputController m_InputController = {};
-	};
+private:
+	InputController _InputController = {};
+};
 }

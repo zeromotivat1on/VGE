@@ -139,7 +139,7 @@ public:
 		const ShaderVariant& shaderVariant);
 
 	COPY_CTOR_DEL(ShaderModule);
-	ShaderModule(ShaderModule&& other);
+	ShaderModule(ShaderModule&& other) noexcept;
 
 	COPY_OP_DEL(ShaderModule);
 	MOVE_OP_DEL(ShaderModule);
@@ -156,10 +156,10 @@ public:
 	inline void SetDebugName(const std::string& name) { _DebugName = name; }
 
 	/**
-		* @brief Flags a resource to use a different method of being bound to the shader
-		* @param resource_name The name of the shader resource
-		* @param resource_mode The mode of how the shader resource will be bound
-		*/
+	* @brief Flags a resource to use a different method of being bound to the shader
+	* @param resourceName The name of the shader resource
+	* @param resourceName The mode of how the shader resource will be bound
+	*/
 	void SetResourceMode(const std::string& resourceName, const ShaderResourceMode& resourceMode);
 
 private:

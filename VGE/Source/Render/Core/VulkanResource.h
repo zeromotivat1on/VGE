@@ -16,14 +16,14 @@ public:
 
 	COPY_CTOR_DEL(VulkanResource);
 
-	VulkanResource(VulkanResource&& other) : _Handle(other._Handle), _Device(other._Device)
+	VulkanResource(VulkanResource&& other) noexcept : _Handle(other._Handle), _Device(other._Device)
 	{
 		other._Handle = VK_NULL_HANDLE;
 	}
 
 	COPY_OP_DEL(VulkanResource);
 
-	VulkanResource& operator=(VulkanResource&& other)
+	VulkanResource& operator=(VulkanResource&& other) noexcept
 	{
 		_Handle = other._Handle;
 		_Device = other._Device;

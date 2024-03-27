@@ -4,17 +4,12 @@
 
 namespace vge
 {
-	class Camera;
+class CameraSystem : public ecs::System
+{
+public:
+	CameraSystem() = default;
 
-	class CameraSystem : public System
-	{
-	public:
-		CameraSystem() = default;
-
-		void Initialize(Camera* camera);
-		void Tick(f32 deltaTime);
-
-	private:
-		Camera* m_Camera = nullptr;
-	};
+	void Initialize();
+	void Tick(f32 deltaTime);
+};
 }

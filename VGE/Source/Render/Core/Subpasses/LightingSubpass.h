@@ -8,9 +8,9 @@
 
 namespace vge
 {
-class Camera;
-class Light;
 class Scene;
+struct Light;
+struct CameraComponent;
 
 // Light uniform structure for lighting shader.
 // Inverse view projection matrix and inverse resolution vector are used in lighting pass to reconstruct position from depth and frag coord.
@@ -31,14 +31,14 @@ struct alignas(16) DeferredLights
 class LightingSubpass : public Subpass
 {
 public:
-	LightingSubpass(RenderContext&, ShaderSource&& vertex, ShaderSource&& fragment, Camera&, Scene&);
+	LightingSubpass(RenderContext&, ShaderSource&& vertex, ShaderSource&& fragment, CameraComponent&, Scene&);
 
 public:
 	void Prepare() override;
 	void Draw(CommandBuffer&) override;
 
 private:
-	Camera& _Camera;
+	CameraComponent& _Camera;
 	Scene& _Scene;
 	ShaderVariant _LightingVariant;
 };

@@ -1,7 +1,7 @@
 #include "InputController.h"
 #include "Render/Window.h"
 #include "ECS/Coordinator.h"
-#include "Components/TransformComponent.h"
+#include "ECS/Components/TransformComponent.h"
 
 void vge::InputController::MoveInPlaneXZ(f32 deltaTime, const Entity& entity)
 {
@@ -9,25 +9,25 @@ void vge::InputController::MoveInPlaneXZ(f32 deltaTime, const Entity& entity)
 	auto& transform = ecs::GetComponent<TransformComponent>(entity);
 
 	// Handle rotation.
-	{
-		glm::vec3 normRot = GetNormRotation();
-		if (glm::dot(normRot, normRot) > FLT_EPSILON)
-		{
-			transform.Rotation += deltaTime * m_RotateSpeed * normRot;
-			transform.ClampRotation(glm::degrees(glm::two_pi<f32>()));
-			LOG_RAW("Rotation = {%.2f, %.2f, %.2f}\n", transform.Rotation.x, transform.Rotation.y, transform.Rotation.z);
-		}
-	}
+	// {
+	// 	glm::vec3 normRot = GetNormRotation();
+	// 	if (glm::dot(normRot, normRot) > FLT_EPSILON)
+	// 	{
+	// 		transform.Rotation += deltaTime * m_RotateSpeed * normRot;
+	// 		transform.ClampRotation(glm::degrees(glm::two_pi<f32>()));
+	// 		LOG_RAW("Rotation = {%.2f, %.2f, %.2f}\n", transform.Rotation.x, transform.Rotation.y, transform.Rotation.z);
+	// 	}
+	// }
 
 	// Handle movement.
-	{
-		glm::vec3 normMove = GetNormTranslation(transform.Rotation);
-		if (glm::dot(normMove, normMove) > FLT_EPSILON)
-		{
-			transform.Translation += deltaTime * m_MoveSpeed * normMove;
-			LOG_RAW("Translation = {%.2f, %.2f, %.2f}\n", transform.Translation.x, transform.Translation.y, transform.Translation.z);
-		}
-	}
+	// {
+	// 	glm::vec3 normMove = GetNormTranslation(transform.Rotation);
+	// 	if (glm::dot(normMove, normMove) > FLT_EPSILON)
+	// 	{
+	// 		transform.Translation += deltaTime * m_MoveSpeed * normMove;
+	// 		LOG_RAW("Translation = {%.2f, %.2f, %.2f}\n", transform.Translation.x, transform.Translation.y, transform.Translation.z);
+	// 	}
+	// }
 }
 
 glm::vec3 vge::InputController::GetNormRotation()

@@ -7,13 +7,22 @@
 
 namespace vge
 {
+class Scene;
 class Device;
 class Instance;
 class CommandPool;
 class SemaphorePool;
 class RenderContext;
 class RenderPipeline;
-    
+
+struct Vertex
+{
+    glm::vec3 Position;
+    glm::vec3 Color;
+    //glm::vec3 Normal;
+    glm::vec2 UV;
+};
+
 class VgeApplication final : public Application
 {
 public:
@@ -32,6 +41,8 @@ private:
     void CreateDevice();
     void CreateRenderContext();
     void PrepareRenderContext();
+    void PrepareEcs();
+    void PrepareScene();
     void CreateRenderPipeline();
     
     void Draw(CommandBuffer&, RenderTarget&); // prepares the render target and draws to it
@@ -48,14 +59,15 @@ private:
     std::unique_ptr<Device> _Device;
     std::unique_ptr<RenderContext> _RenderContext;
     std::unique_ptr<RenderPipeline> _RenderPipeline;
+    std::unique_ptr<Scene> _Scene;
     std::unique_ptr<SemaphorePool> _SemaphorePool;
 
     VkSurfaceKHR _Surface;
     
     u32 _ApiVersion = VK_API_VERSION_1_0;
     bool _HighPriorityGraphicsQueue = false;
-    std::unordered_map<const char *, bool> _DeviceExtensions;
-    std::unordered_map<const char *, bool> _InstanceExtensions;
+    std::unordered_map<const char*, bool> _DeviceExtensions;
+    std::unordered_map<const char*, bool> _InstanceExtensions;
 };
 
 std::unique_ptr<vge::VgeApplication> CreateVgeApplication();

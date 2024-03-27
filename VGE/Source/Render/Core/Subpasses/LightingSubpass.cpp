@@ -3,10 +3,11 @@
 #include "Camera.h"
 #include "Core/Device.h"
 #include "Core/RenderContext.h"
+#include "ECS/Components/CameraComponent.h"
 //#include "scene_graph/components/camera.h"
 //#include "scene_graph/scene.h"
 
-vge::LightingSubpass::LightingSubpass(RenderContext& renderContext, ShaderSource&& vertex, ShaderSource&& fragment, Camera& camera, Scene& scene)
+vge::LightingSubpass::LightingSubpass(RenderContext& renderContext, ShaderSource&& vertex, ShaderSource&& fragment, CameraComponent& camera, Scene& scene)
 	: Subpass(renderContext, std::move(vertex), std::move(fragment)), _Camera(camera), _Scene(scene)
 {
 }
@@ -24,15 +25,15 @@ void vge::LightingSubpass::Prepare()
 
 void vge::LightingSubpass::Draw(CommandBuffer& cmd)
 {
-	allocate_lights<DeferredLights>(_Scene.get_components<Light>(), MAX_DEFERRED_LIGHT_COUNT);
-	cmd.BindLighting(GetLightingState(), 0, 4);
+	//AllocateLights<DeferredLights>(_Scene.get_components<Light>(), MAX_DEFERRED_LIGHT_COUNT);
+	//cmd.BindLighting(GetLightingState(), 0, 4);
 
 	// Get shaders from cache.
 	auto& resourceCache = cmd.GetDevice().GetResourceCache();
 	auto& vertShaderModule = resourceCache.RequestShaderModule(VK_SHADER_STAGE_VERTEX_BIT, GetVertexShader(), _LightingVariant);
 	auto& fragShaderModule = resourceCache.RequestShaderModule(VK_SHADER_STAGE_FRAGMENT_BIT, GetFragmentShader(), _LightingVariant);
 
-	std::vector<ShaderModule *> shaderModules = { &vertShaderModule, &fragShaderModule };
+	const std::vector<ShaderModule*> shaderModules = { &vertShaderModule, &fragShaderModule };
 
 	// Create pipeline layout and bind it.
 	auto& pipelineLayout = resourceCache.RequestPipelineLayout(shaderModules);
@@ -43,7 +44,7 @@ void vge::LightingSubpass::Draw(CommandBuffer& cmd)
 	cmd.SetVertexInputState({});
 
 	// Get image views of the attachments.
-	auto& renderTarget = _RenderContext.GetActiveFrame().GetRenderTarget();
+	const auto& renderTarget = _RenderContext.GetActiveFrame().GetRenderTarget();
 	auto& targetViews  = renderTarget.GetViews();
 	ASSERT(targetViews.size() > 3);
 
@@ -70,7 +71,7 @@ void vge::LightingSubpass::Draw(CommandBuffer& cmd)
 	lightUniform.InvResolution.y = 1.0f / static_cast<float>(renderTarget.GetExtent().height);
 
 	// Inverse view projection.
-	lightUniform.InvViewProj = glm::inverse(VulkanStyleProjection(_Camera.GetProjection()) * _Camera.GetView());
+	lightUniform.InvViewProj = glm::inverse(VulkanStyleProjection(_Camera.GetProjMat4()) * _Camera.GetViewMat4());
 
 	// Allocate a buffer using the buffer pool from the active frame to store uniform values and bind it.
 	auto& renderFrame = _RenderContext.GetActiveFrame();

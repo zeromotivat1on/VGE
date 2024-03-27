@@ -31,7 +31,7 @@ public:
 	{
 		const auto endTime = std::chrono::high_resolution_clock::now();
 		const f32 diffTime = std::chrono::duration<f32, std::chrono::milliseconds::period>(endTime - m_StartTime).count();
-		LOG(Log, "%s: %.2fms", m_LogPrefix.data(), diffTime);
+		LOG(Log, "%s %.2fms", m_LogPrefix.data(), diffTime);
 	}
 
 private:

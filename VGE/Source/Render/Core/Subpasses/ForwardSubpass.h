@@ -8,10 +8,7 @@
 namespace vge
 {
 class Scene;
-class Node;
-class Mesh;
-class SubMesh;
-class Camera;
+struct CameraComponent;
 
 struct alignas(16) ForwardLights
 {
@@ -26,7 +23,7 @@ struct alignas(16) ForwardLights
 class ForwardSubpass : public GeometrySubpass
 {
 public:
-	ForwardSubpass(RenderContext&, ShaderSource&& vertex, ShaderSource&& fragment, Scene&, Camera&);
+	ForwardSubpass(RenderContext&, ShaderSource&& vertex, ShaderSource&& fragment, Scene&, CameraComponent&);
 
 	virtual ~ForwardSubpass() = default;
 

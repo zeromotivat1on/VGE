@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include "GlmCommon.h"
 #include "Types.h"
+#include "ECS/Component.h"
 
 namespace vge
 {
@@ -16,7 +17,7 @@ enum class AlphaMode : u8
     Blend   // output is combined with the background
 };
     
-struct MaterialComponent
+struct MaterialComponent : public Component
 {
     glm::vec3 Emissive = {0.0f, 0.0f, 0.0f}; // emissive color of the material
     bool DoubleSided = false;

@@ -5,7 +5,6 @@
 #include "Core/VkCommon.h"
 #include <assimp/Importer.hpp>
 
-
 // General purpose file operations.
 namespace vge::file
 {
@@ -17,6 +16,4 @@ namespace vge::file
 	const aiScene* LoadModel(const char* filename, Assimp::Importer& outImporter);
 
 	bool SyncReadFile(const char* filePath, u8* buffer, size_t bufferSize, size_t& outBytesRead);
-
-	std::string ReadTextFile(const char* filename);
 }

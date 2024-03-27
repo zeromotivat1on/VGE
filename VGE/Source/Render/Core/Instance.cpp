@@ -396,10 +396,10 @@ vge::Instance::~Instance()
 
 vge::PhysicalDevice& vge::Instance::GetFirstGpu()
 {
-	ASSERT_MSG(!_Gpus.empty(), "No physical devices were found on the system.")
+	ASSERT_MSG(!_Gpus.empty(), "No physical devices were found on the system.");
 
 	// Find a discrete GPU
-	for (auto& gpu : _Gpus)
+	for (const auto& gpu : _Gpus)
 	{
 		if (gpu->GetProperties().deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
 		{
@@ -414,7 +414,7 @@ vge::PhysicalDevice& vge::Instance::GetFirstGpu()
 
 vge::PhysicalDevice& vge::Instance::GetSuitableGpu(VkSurfaceKHR surface)
 {
-	ASSERT_MSG(!_Gpus.empty(), "No physical devices were found on the system.")
+	ASSERT_MSG(!_Gpus.empty(), "No physical devices were found on the system.");
 
 	// A GPU can be explicitly selected via the command line (see plugins/gpu_selection.cpp), this overrides the below GPU selection algorithm.
 	//if (selected_gpu_index.has_value())

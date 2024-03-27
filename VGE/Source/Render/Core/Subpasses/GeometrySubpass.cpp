@@ -1,5 +1,6 @@
 #include "Core/Subpasses/GeometrySubpass.h"
 
+#include "Scene.h"
 #include "Core/Device.h"
 #include "Core/VkCommon.h"
 #include "Core/RenderContext.h"
@@ -22,7 +23,7 @@
 
 vge::GeometrySubpass::GeometrySubpass(RenderContext& renderContext, ShaderSource&& vertex, ShaderSource&& fragment, Scene& scene, CameraComponent& camera)
     : Subpass(renderContext, std::move(vertex), std::move(fragment)),
-      _Scene(scene), _Camera(camera), _Models(scene.get_components<ModelComponent>())
+      _Scene(scene), _Camera(camera), _Models(scene.GetComponents<ModelComponent>())
 {
 }
 
@@ -45,20 +46,21 @@ void vge::GeometrySubpass::GetSortedNodes(
     std::multimap<float, std::pair<NodeComponent*, MeshComponent*>>& opaqueNodes,
     std::multimap<float, std::pair<NodeComponent*, MeshComponent*>>& transparentNodes)
 {
-    const auto cameraTransform = GetWorldMat4(_Camera.Node->Transform);
+    const auto cameraTransform = _Camera.Node->Transform.GetWorldMat4();
 
     for (const auto& model : _Models)
     {
         for (const auto& node : model->Nodes)
         {
-            const auto nodeTransform = GetWorldMat4(node->Transform);
+            const auto nodeTransform = node->Transform.GetWorldMat4();
 
             const AABBComponent& meshBounds = model->Bounds;
+            AABBComponent worldBounds = {};
+            worldBounds.Min = meshBounds.Min;
+            worldBounds.Max = meshBounds.Max;
+            worldBounds.Transform(nodeTransform);
 
-            AABBComponent worldBounds = { meshBounds.Min, meshBounds.Max };
-            Transform(worldBounds, nodeTransform);
-
-            const float distance = glm::length(glm::vec3(cameraTransform[3]) - GetCenter(worldBounds));
+            const float distance = glm::length(glm::vec3(cameraTransform[3]) - worldBounds.GetCenter());
 
             for (auto& mesh : model->Meshes)
             {
@@ -92,7 +94,7 @@ void vge::GeometrySubpass::Draw(CommandBuffer& cmd)
             UpdateUniform(cmd, *node, _ThreadIndex);
 
             // Invert the front face if the mesh was flipped.
-            const auto& scale = node->Transform.Scale;
+            const auto& scale = node->Transform.GetScale();
             const bool flipped = scale.x * scale.y * scale.z < 0;
             const VkFrontFace frontFace = flipped ? VK_FRONT_FACE_CLOCKWISE : VK_FRONT_FACE_COUNTER_CLOCKWISE;
 
@@ -133,14 +135,14 @@ void vge::GeometrySubpass::UpdateUniform(CommandBuffer& cmd, NodeComponent& node
 {
     GlobalUniform globalUniform;
 
-    globalUniform.CameraViewProj = _Camera.PreRotation * VulkanStyleProjection(GetProjMat4(_Camera)) * GetViewMat4(_Camera);
+    globalUniform.CameraViewProj = _Camera.PreRotation * VulkanStyleProjection(_Camera.GetProjMat4()) * _Camera.GetViewMat4();
 
     auto& renderFrame = _RenderContext.GetActiveFrame();
     auto& transform = node.Transform;
     auto allocation = renderFrame.AllocateBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(GlobalUniform), threadIndex);
 
-    globalUniform.Model = GetWorldMat4(transform);
-    globalUniform.CameraPosition = glm::vec3(glm::inverse(GetViewMat4(_Camera))[3]);
+    globalUniform.Model = transform.GetWorldMat4();
+    globalUniform.CameraPosition = glm::vec3(glm::inverse(_Camera.GetViewMat4())[3]);
 
     allocation.Update(globalUniform);
 
@@ -181,20 +183,20 @@ void vge::GeometrySubpass::DrawMesh(CommandBuffer& cmd, MeshComponent& mesh, VkF
         {
             cmd.BindImage(
                 *texture.second->Image->VkImageView,
-                texture.second->Sampler->VkSampler,
+                *texture.second->Sampler->VkSampler,
                 0, layoutBinding->binding, 0);
         }
     }
 
-    auto vertexInputResources = pipelineLayout.GetResources(ShaderResourceType::Input, VK_SHADER_STAGE_VERTEX_BIT);
+    const auto vertexInputResources = pipelineLayout.GetResources(ShaderResourceType::Input, VK_SHADER_STAGE_VERTEX_BIT);
 
     VertexInputState vertexInputState;
 
-    for (auto& inputResource : vertexInputResources)
+    for (const auto& inputResource : vertexInputResources)
     {
         VertexAttribute attribute;
 
-        if (!GetAttribute(mesh, inputResource.Name, attribute))
+        if (!mesh.GetAttribute(inputResource.Name, attribute))
         {
             continue;
         }
@@ -281,10 +283,10 @@ void vge::GeometrySubpass::PreparePushConstants(CommandBuffer& cmd, MeshComponen
 void vge::GeometrySubpass::DrawMeshCommand(CommandBuffer& cmd, MeshComponent& mesh)
 {
     // Draw submesh indexed if indices exists.
-    if (mesh.VertexIndices != 0)
+    if (mesh.IndicesCount != 0)
     {
         cmd.BindIndexBuffer(*mesh.IndexBuffer, mesh.IndexOffset, mesh.IndexType);
-        cmd.DrawIndexed(mesh.VertexIndices, 1, 0, 0, 0);
+        cmd.DrawIndexed(mesh.IndicesCount, 1, 0, 0, 0);
     }
     else
     {

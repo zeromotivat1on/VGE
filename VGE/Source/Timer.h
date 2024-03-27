@@ -23,7 +23,7 @@ public:
 public:
 	inline bool IsRunning() const { return _Running; }
 
-	// Starts the timer, Elapsed() now returns the duration since start()
+	// Starts the timer, Elapsed() now returns the duration since Start().
 	void Start()
 	{
 		if (!_Running)
@@ -33,17 +33,15 @@ public:
 		}
 	}
 
-	// Laps the timer, Elapsed() now returns the duration since the last lap()
+	// Laps the timer, Elapsed() now returns the duration since the last Lap().
 	void Lap()
 	{
 		_Lapping = true;
 		_LapTime = Clock::now();
 	}
 
-	/**
-	 * @brief Stops the timer, elapsed() now returns 0
-	 * @return The total execution time between `start()` and `stop()`
-	 */
+	// Stops the timer, Elapsed() now returns 0.
+	// @return The total execution time between Start() and Stop().
 	template <typename T = DefaultResolution>
 	double Stop()
 	{

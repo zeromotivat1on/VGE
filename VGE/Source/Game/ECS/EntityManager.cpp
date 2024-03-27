@@ -1,7 +1,7 @@
 #include "EntityManager.h"
 #include "Entity.h"
 
-vge::EntityManager::EntityManager()
+vge::ecs::EntityManager::EntityManager()
 {
 	for (Entity entity = 0; entity < GMaxEntities; ++entity)
 	{
@@ -9,7 +9,7 @@ vge::EntityManager::EntityManager()
 	}
 }
 
-vge::Entity vge::EntityManager::Create()
+vge::Entity vge::ecs::EntityManager::Create()
 {
 	ASSERT(m_LivingEntityCount < GMaxEntities);
 
@@ -20,7 +20,7 @@ vge::Entity vge::EntityManager::Create()
 	return id;
 }
 
-void vge::EntityManager::Destroy(Entity entity)
+void vge::ecs::EntityManager::Destroy(Entity entity)
 {
 	ASSERT(entity < GMaxEntities);
 

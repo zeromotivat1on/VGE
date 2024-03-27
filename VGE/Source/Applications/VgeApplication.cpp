@@ -1,4 +1,7 @@
 ﻿#include "VgeApplication.h"
+
+#include "Platform/FileSystem.h"
+#include "Scene.h"
 #include "Core/Error.h"
 #include "Core/Device.h"
 #include "Core/Instance.h"
@@ -6,6 +9,63 @@
 #include "Core/RenderPipeline.h"
 #include "Core/Subpasses/GeometrySubpass.h"
 #include "Platform/Window.h"
+#include "ECS/Coordinator.h"
+#include "ECS/Components/AABBComponent.h"
+#include "ECS/Components/CameraComponent.h"
+#include "ECS/Components/ImageComponent.h"
+#include "ECS/Components/InputComponent.h"
+#include "ECS/Components/MaterialComponent.h"
+#include "ECS/Components/TextureComponent.h"
+#include "ECS/Components/ModelComponent.h"
+#include "ECS/Components/MeshComponent.h"
+#include "ECS/Components/SamplerComponent.h"
+
+namespace vge
+{
+// TODO: finalize mesh component creation.
+MeshComponent ReadMesh(const aiMesh* mesh)
+{
+    constexpr glm::vec3 DontCareColor = glm::vec3(0.0f);
+
+    std::vector<Vertex> vertices(mesh->mNumVertices);
+    std::vector<u32> indices = {};
+
+    for (u32 i = 0; i < mesh->mNumVertices; ++i)
+    {
+        vertices[i].Color = DontCareColor;
+
+        vertices[i].Position.x = mesh->mVertices[i].x;
+        vertices[i].Position.y = mesh->mVertices[i].y;
+        vertices[i].Position.z = mesh->mVertices[i].z;
+
+        if (mesh->mTextureCoords[0])
+        {
+            vertices[i].UV.x = mesh->mTextureCoords[0][i].x;
+            vertices[i].UV.y = mesh->mTextureCoords[0][i].y;
+        }
+        else
+        {
+            vertices[i].UV.x = 0.0f;
+            vertices[i].UV.x = 0.0f;
+        }
+    }
+
+    for (u32 i = 0; i < mesh->mNumFaces; ++i)
+    {
+        const aiFace face = mesh->mFaces[i];
+        for (u32 j = 0; j < face.mNumIndices; ++j)
+        {
+            indices.push_back(face.mIndices[j]);
+        }
+    }
+
+    MeshComponent meshComponent = {};
+    meshComponent.VerticesCount = ToU32(vertices.size());
+    meshComponent.IndicesCount = ToU32(indices.size());
+
+    return meshComponent;
+}
+}
 
 std::unique_ptr<vge::VgeApplication> vge::CreateVgeApplication()
 {
@@ -47,6 +107,10 @@ bool vge::VgeApplication::Prepare(const ApplicationOptions& options)
 
     CreateRenderContext();
     PrepareRenderContext();
+
+    PrepareEcs();
+    PrepareScene();
+    
     CreateRenderPipeline();
     
     return true;
@@ -135,11 +199,69 @@ void vge::VgeApplication::PrepareRenderContext()
     _RenderContext->Prepare();
 }
 
+void vge::VgeApplication::PrepareEcs()
+{
+    ecs::RegisterComponent<NodeComponent>();
+    ecs::RegisterComponent<CameraComponent>();
+    ecs::RegisterComponent<TransformComponent>();
+    ecs::RegisterComponent<ModelComponent>();
+    ecs::RegisterComponent<MeshComponent>();
+    ecs::RegisterComponent<ImageComponent>();
+    ecs::RegisterComponent<TextureComponent>();
+    ecs::RegisterComponent<SamplerComponent>();
+    ecs::RegisterComponent<AABBComponent>();
+    ecs::RegisterComponent<InputComponent>();
+    ecs::RegisterComponent<MaterialComponent>();
+}
+
+void vge::VgeApplication::PrepareScene()
+{
+    static const char* DefaultSceneName = "default_scene";
+    
+    _Scene = std::make_unique<Scene>(DefaultSceneName);
+
+    const Entity rootEntity = ecs::CreateEntity();
+    ENSURE_MSG(rootEntity == 0, "Root Entity should be the first created entity.");
+    
+    NodeComponent rootNode = {};
+    rootNode.Id = 0;
+    rootNode.Name = DefaultSceneName;
+    
+    ecs::AddComponent<NodeComponent>(rootEntity, std::move(rootNode));
+    
+    _Scene->SetRoot(ecs::GetComponent<NodeComponent>(rootEntity));
+
+    const Entity cameraEntity = ecs::CreateEntity();
+
+    NodeComponent cameraNode = {};
+    cameraNode.Id = -1;
+    cameraNode.Name = "default_camera";
+
+    ecs::AddComponent<NodeComponent>(cameraEntity, std::move(cameraNode));
+    auto& defaultCameraNode = ecs::GetComponent<NodeComponent>(cameraEntity);
+    
+    CameraComponent defaultCamera = CameraComponent::CreateDefault();
+    defaultCamera.Node = &defaultCameraNode;
+
+    ecs::AddComponent<CameraComponent>(cameraEntity, std::move(defaultCamera));
+    auto& defaultCameraComponent = ecs::GetComponent<CameraComponent>(cameraEntity);
+    
+    defaultCameraNode.Components.insert_or_assign(ecs::GetComponentType<NodeComponent>(), &defaultCameraComponent);
+
+    _Scene->AddChild(defaultCameraNode);
+    _Scene->AddComponent<CameraComponent>(defaultCameraComponent);
+
+    Assimp::Importer importer;
+    const auto assimpScene = fs::assimp::ReadAsset("Models/male.obj", importer);
+    //_Scene->AddComponent<ModelComponent>();
+}
+
 void vge::VgeApplication::CreateRenderPipeline()
 {
     ShaderSource vertex("Shaders/first.vert");
     ShaderSource fragment("Shaders/first.frag");
-    auto subpass = std::make_unique<GeometrySubpass>(_RenderContext, std::move(vertex), std::move(fragment), ,);
+    auto subpass = std::make_unique<GeometrySubpass>(
+        *_RenderContext, std::move(vertex), std::move(fragment), *_Scene, ecs::GetComponent<CameraComponent>(1));
 
     auto renderPipeline = RenderPipeline();
     renderPipeline.AddSubpass(std::move(subpass));

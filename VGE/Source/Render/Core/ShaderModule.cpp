@@ -1,35 +1,34 @@
 #include "ShaderModule.h"
-#include "File.h"
+
+#include "GLSLCompiler.h"
+#include "SPIRVReflection.h"
+#include "Platform/FileSystem.h"
 #include "Core/Error.h"
 #include "Core/StringHelpers.h"
 
-/**
-	* @brief Pre-compiles project shader files to include header code
-	* @param source The shader file
-	* @returns A byte array of the final shader
-	*/
 namespace vge
 {
+// Pre-compiles project shader files to include header code.
 std::vector<std::string> PrecompileShader(const std::string& source)
 {
 	std::vector<std::string> finalFile;
 
-	auto lines = Split(source, '\n');
+	const auto lines = Split(source, '\n');
 
-	for (auto& line : lines)
+	for (const auto& line : lines)
 	{
 		if (line.find("#include \"") == 0)
 		{
-			// Include paths are relative to the base shader directory
+			// Include paths are relative to the base shader directory.
 			std::string includePath = line.substr(10);
-			size_t lastQuote = includePath.find("\"");
+			const size_t lastQuote = includePath.find('\"');
 			if (!includePath.empty() && lastQuote != std::string::npos)
 			{
 				includePath = includePath.substr(0, lastQuote);
 			}
 
-			auto includeFile = PrecompileShader(file::ReadTextFile(includePath.c_str()));
-			for (auto& includeFileLine : includeFile)
+			const auto includeFile = PrecompileShader(fs::ReadTextFile(includePath));
+			for (const auto& includeFileLine : includeFile)
 			{
 				finalFile.push_back(includeFileLine);
 			}
@@ -56,7 +55,7 @@ std::vector<u8> ToBytes(std::vector<std::string>& lines)
 
 	return bytes;
 }
-}	// namespace vge
+} // namespace vge
 
 vge::ShaderModule::ShaderModule(
 	Device& device, VkShaderStageFlagBits stage, const vge::ShaderSource& glslSource, const std::string& entryPoint, const vge::ShaderVariant& shaderVariant) 
@@ -77,32 +76,26 @@ vge::ShaderModule::ShaderModule(
 	auto glslFinalSource = PrecompileShader(source);
 
 	// Compile the GLSL source.
-	//GLSLCompiler glslCompiler;
-	//if (!glslCompiler.compile_to_spirv(stage, ToBytes(glslFinalSource), entryPoint, shaderVariant, _Spirv, _InfoLog))
-	//{
-	//	LOG(Error, "Shader compilation failed for shader %s", glslSource.GetFilename());
-	//	LOG(Error, "%s", _InfoLog);
-	//	ENSURE_MSG(false, "Shader compilation failed, see errors above.");
-	//}
+	GLSLCompiler glslCompiler;
+	if (!glslCompiler.CompileToSpirv(stage, ToBytes(glslFinalSource), entryPoint, shaderVariant, _Spirv, _InfoLog))
+	{
+		LOG(Error, "Shader compilation failed for shader '%s'.", glslSource.GetFilename().c_str());
+		LOG(Error, "Info: %s", _InfoLog.c_str());
+		ENSURE_MSG(false, "Shader compilation failed, see errors above.");
+	}
 
 	// Reflect all shader resources.
-	//SPIRVReflection spirvReflection;
-	//ENSURE(spirvReflection.reflect_shader_resources(stage, _Spirv, _Resources, shaderVariant));
+	SPIRVReflection spirvReflection;
+	ENSURE(spirvReflection.ReflectShaderResources(stage, _Spirv, _Resources, shaderVariant));
 
 	// Generate a unique id, determined by source and variant.
 	std::hash<std::string> hasher = {};
 	_Id = hasher(std::string(reinterpret_cast<const char*>(_Spirv.data()), reinterpret_cast<const char*>(_Spirv.data() + _Spirv.size())));
 }
 
-vge::ShaderModule::ShaderModule(vge::ShaderModule&& other) :
-	_Device(other._Device),
-	_Id(other._Id),
-	_Stage(other._Stage),
-	_EntryPoint(other._EntryPoint),
-	_DebugName(other._DebugName),
-	_Spirv(other._Spirv),
-	_Resources(other._Resources),
-	_InfoLog(other._InfoLog)
+vge::ShaderModule::ShaderModule(vge::ShaderModule&& other) noexcept
+	: _Device(other._Device), _Id(other._Id), _Stage(other._Stage), _EntryPoint(other._EntryPoint),
+	_DebugName(other._DebugName), _Spirv(other._Spirv), _Resources(other._Resources), _InfoLog(other._InfoLog)
 {
 	other._Stage = {};
 }
@@ -121,7 +114,7 @@ void vge::ShaderModule::SetResourceMode(const std::string& resourceName, const S
 			}
 			else
 			{
-				LOG(Warning, "Resource %s does not support dynamic.", resourceName);
+				LOG(Warning, "Resource %s does not support dynamic.", resourceName.c_str());
 			}
 		}
 		else
@@ -131,7 +124,7 @@ void vge::ShaderModule::SetResourceMode(const std::string& resourceName, const S
 	}
 	else
 	{
-		LOG(Warning, "Resource %s not found for shader.", resourceName);
+		LOG(Warning, "Resource %s not found for shader.", resourceName.c_str());
 	}
 }
 
@@ -155,8 +148,8 @@ void vge::ShaderVariant::AddDefine(const std::string& def)
 
 	std::string tmpDef = def;
 
-	// The "=" needs to turn into a space
-	size_t posEqual = tmpDef.find_first_of("=");
+	// The '=' needs to turn into a space.
+	const size_t posEqual = tmpDef.find_first_of('=');
 	if (posEqual != std::string::npos)
 	{
 		tmpDef[posEqual] = ' ';
@@ -202,15 +195,15 @@ void vge::ShaderVariant::UpdateId()
 }
 
 vge::ShaderSource::ShaderSource(const std::string& filename) 
-	: _Filename(filename), _Source(file::ReadTextFile(filename.c_str()))
+	: _Filename(filename), _Source(fs::ReadTextFile(filename))
 {
 	std::hash<std::string> hasher = {};
 	_Id = hasher(std::string(_Source.cbegin(), _Source.cend()));
 }
 
-void vge::ShaderSource::SetSource(const std::string& source_)
+void vge::ShaderSource::SetSource(const std::string& source)
 {
-	_Source = source_;
+	_Source = source;
 	std::hash<std::string> hasher{};
 	_Id = hasher(std::string(_Source.cbegin(), _Source.cend()));
 }

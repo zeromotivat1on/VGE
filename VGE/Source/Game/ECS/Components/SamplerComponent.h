@@ -1,11 +1,12 @@
 ﻿#pragma once
 
+#include "ECS/Component.h"
 #include "Render/Core/Sampler.h"
 
 namespace vge
 {
-struct SamplerComponent
+struct SamplerComponent : public Component
 {
-    Sampler VkSampler;
+    std::unique_ptr<Sampler> VkSampler;
 };
 }   // namespace vge

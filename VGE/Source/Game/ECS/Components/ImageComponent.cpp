@@ -124,39 +124,30 @@ static VkFormat MaybeCoerceToSrgb(VkFormat fmt)
 }
 }	// namespace vge
 
-vge::ImageComponent vge::CreateFromPath(const std::string& uri, ImageContentType contentType)
+vge::ImageComponent vge::ImageComponent::CreateFromPath(const std::string& uri, ImageContentType contentType)
 {
 	const auto extension = fs::GetExtension(uri);
 
-	switch(extension)
+	ImageComponent image = {};
+
+	if (extension == "png" || extension == "jpg")
 	{
-	case "png":
-	case "jpg":
-		ImageComponent image;
 		image.Data = fs::ReadAsset(uri);
 		image.ImagePath = uri;
 		image.ContentType = contentType;
-
-		return image;
-		//case "astc":
-		//case "ktx":
-		//case "ktx2":
-	default:
-		ENSURE_MSG(false, "Can't load image of unsupported type '%s'.", extension.c_str());
 	}
+
+	LOG(Warning, "Can't load image of unsupported type '%s', returning empty.", extension.c_str());
+	
+	return image;
 }
 
-void vge::GenerateMipmaps(ImageComponent& image)
+void vge::ImageComponent::GenerateMipmaps()
 {
-	ASSERT_MSG(image.Mipmaps.size() == 1, "Mipmaps already generated");
-
-	if (image.Mipmaps.size() > 1)
-	{
-		return;        // Do not generate again
-	}
+	ASSERT_MSG(Mipmaps.size() > 1, "Mipmaps already generated.");
 
 	constexpr i32 channels = 4;
-	const auto extent = GetExtent(image);
+	const auto extent = GetExtent();
 	u32 nextWidth  = std::max<u32>(1u, extent.width / 2);
 	u32 nextHeight = std::max<u32>(1u, extent.height / 2);
 	u32 nextSize = nextWidth * nextHeight * channels;
@@ -164,10 +155,10 @@ void vge::GenerateMipmaps(ImageComponent& image)
 	while (true)
 	{
 		// Make space for next mipmap.
-		const u32 oldSize = ToU32(image.Data.size());
-		image.Data.resize(oldSize + nextSize);
+		const u32 oldSize = ToU32(Data.size());
+		Data.resize(oldSize + nextSize);
 
-		auto& prevMipmap = image.Mipmaps.back();
+		const auto& prevMipmap = Mipmaps.back();
 
 		// Update mipmaps.
 		Mipmap nextMipmap = {};
@@ -176,10 +167,10 @@ void vge::GenerateMipmaps(ImageComponent& image)
 		nextMipmap.Extent = { nextWidth, nextHeight, 1u };
 
 		// Fill next mipmap memory.
-		stbir_resize_uint8(image.Data.data() + prevMipmap.Offset, prevMipmap.Extent.width, prevMipmap.Extent.height, 0,
-		                   image.Data.data() + nextMipmap.Offset, nextMipmap.Extent.width, nextMipmap.Extent.height, 0, channels);
+		stbir_resize_uint8(Data.data() + prevMipmap.Offset, prevMipmap.Extent.width, prevMipmap.Extent.height, 0,
+		                   Data.data() + nextMipmap.Offset, nextMipmap.Extent.width, nextMipmap.Extent.height, 0, channels);
 
-		image.Mipmaps.emplace_back(std::move(nextMipmap));
+		Mipmaps.emplace_back(nextMipmap);
 
 		// Next mipmap values.
 		nextWidth = std::max<u32>(1u, nextWidth / 2);
@@ -193,20 +184,14 @@ void vge::GenerateMipmaps(ImageComponent& image)
 	}
 }
 
-void vge::CreateVkImage(ImageComponent& image, const Device& device, VkImageViewType imageViewType, VkImageCreateFlags flags)
+void vge::ImageComponent::CreateVkImage(const Device& device, VkImageViewType imageViewType, VkImageCreateFlags flags)
 {
-	ASSERT(!image.VkImage && !image.VkImageView, "Vulkan image already constructed");
+	ASSERT_MSG(!VkImage && !VkImageView, "Vulkan image already constructed");
 
-	image.VkImage = std::make_unique<Image>(device, GetExtent(image), image.Format,
+	VkImage = std::make_unique<Image>(device, GetExtent(), Format,
 										VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
 										VMA_MEMORY_USAGE_GPU_ONLY, VK_SAMPLE_COUNT_1_BIT,
-										ToU32(image.Mipmaps.size()), image.Layers, VK_IMAGE_TILING_OPTIMAL, flags);
+										ToU32(Mipmaps.size()), Layers, VK_IMAGE_TILING_OPTIMAL, flags);
 
-	image.VkImageView = std::make_unique<ImageView>(*image.VkImage, imageViewType);
-}
-
-const VkExtent3D& vge::GetExtent(const ImageComponent& image)
-{
-	ASSERT(!image.Mipmaps.empty());
-	return image.Mipmaps[0].Extent;
+	VkImageView = std::make_unique<ImageView>(*VkImage, imageViewType);
 }

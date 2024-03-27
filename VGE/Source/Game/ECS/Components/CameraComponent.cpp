@@ -3,17 +3,16 @@
 #include "TransformComponent.h"
 #include "Core/Error.h"
 
-glm::mat4 vge::GetViewMat4(const CameraComponent& camera)
+glm::mat4 vge::CameraComponent::GetViewMat4()
 {
-    auto& transform = camera.Node->Transform;
-    return glm::inverse(GetWorldMat4(transform));
+    return glm::inverse(Node->Transform.GetWorldMat4());
 }
 
-glm::mat4 vge::GetProjMat4(const CameraComponent& camera)
+glm::mat4 vge::CameraComponent::GetProjMat4()
 {
-    const auto& projData = camera.ProjData;
+    const auto& projData = ProjData;
     
-    switch (camera.ViewType)
+    switch (ViewType)
     {
     case CameraViewType::Orthographic:
         return glm::ortho(
@@ -32,6 +31,19 @@ glm::mat4 vge::GetProjMat4(const CameraComponent& camera)
             projData[3]);
         
     default:
-        ENSURE_MSG(false, "Unknown camera type %d", camera.ViewType);
+        ENSURE_MSG(false, "Unknown camera view type used %d.", ViewType);
     }
+}
+
+vge::CameraComponent vge::CameraComponent::CreateDefault()
+{
+    CameraComponent camera = {};
+    camera.ProjData[0] = 1.0f;
+    camera.ProjData[1] = 1.77f;
+    camera.ProjData[2] = 0.1f;
+    camera.ProjData[3] = 1000.0f;
+    camera.ProjData[4] = 0.0f;
+    camera.ProjData[5] = 0.0f;
+
+    return camera;
 }

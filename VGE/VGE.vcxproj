@@ -116,14 +116,14 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;VK_NO_PROTOTYPES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)Source;$(ProjectDir)Source\Game;$(ProjectDir)Source\Render;$(ProjectDir)Vendor;$(ProjectDir)Vendor\glm;$(ProjectDir)Vendor\GLFW\include;$(ProjectDir)Vendor\assimp\include;C:\VulkanSDK\1.3.250.1\Include;C:\VulkanSDK\1.3.243.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Source;$(ProjectDir)Source\Game;$(ProjectDir)Source\Render;$(ProjectDir)Vendor;$(ProjectDir)Vendor\glm;$(ProjectDir)Vendor\GLFW\include;$(ProjectDir)Vendor\assimp\include;$(ProjectDir)Vendor\glslang\include;$(ProjectDir)Vendor\spirv\include;C:\VulkanSDK\1.3.250.1\Include;C:\VulkanSDK\1.3.243.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(ProjectDir)Vendor\GLFW\lib-vc2022;$(ProjectDir)Vendor\assimp\lib\RelWithDebInfo;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>glfw3.lib;assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)Vendor\GLFW\lib-vc2022;$(ProjectDir)Vendor\assimp\lib\RelWithDebInfo;$(ProjectDir)Vendor\glslang\lib\debug;$(ProjectDir)Vendor\spirv\lib\debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>glfw3.lib;assimp-vc143-mt.lib;glslangd.lib;glslang-default-resource-limitsd.lib;MachineIndependentd.lib;OSDependentd.lib;SPIRVd.lib;SPIRV-Toolsd.lib;SPIRV-Tools-optd.lib;SPVRemapperd.lib;GenericCodeGend.lib;spirv-cross-cored.lib;spirv-cross-glsld.lib;spirv-cross-cppd.lib;spirv-cross-reflectd.lib;spirv-cross-utild.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -134,7 +134,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;VK_NO_PROTOTYPES;STB_IMAGE_IMPLEMENTATION;VMA_IMPLEMENTATION;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)Source;$(ProjectDir)Source\Game;$(ProjectDir)Vendor;$(ProjectDir)Vendor\glm;$(ProjectDir)Vendor\GLFW\include;$(ProjectDir)Vendor\assimp\include;C:\VulkanSDK\1.3.250.1\Include;C:\VulkanSDK\1.3.243.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Source;$(ProjectDir)Source\Game;$(ProjectDir)Vendor;$(ProjectDir)Vendor\glm;$(ProjectDir)Vendor\GLFW\include;$(ProjectDir)Vendor\assimp\include;$(ProjectDir)Vendor\glslang\include;$(ProjectDir)Vendor\spirv\include;C:\VulkanSDK\1.3.250.1\Include;C:\VulkanSDK\1.3.243.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -142,8 +142,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(ProjectDir)Vendor\GLFW\lib-vc2022;$(ProjectDir)Vendor\assimp\lib\RelWithDebInfo;C:\VulkanSDK\1.3.250.1\Lib;C:\VulkanSDK\1.3.243.0\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)Vendor\GLFW\lib-vc2022;$(ProjectDir)Vendor\assimp\lib\RelWithDebInfo;$(ProjectDir)Vendor\spirv\lib\release;$(ProjectDir)Vendor\glslang\lib\release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;assimp-vc143-mt.lib;glslang.lib;spirv-cross-cpp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -153,9 +153,7 @@
     <ClCompile Include="Source\Game\ECS\Components\ImageComponent.cpp" />
     <ClCompile Include="Source\Game\ECS\Components\MaterialComponent.cpp" />
     <ClCompile Include="Source\Game\ECS\Components\MeshComponent.cpp" />
-    <ClCompile Include="Source\Game\ECS\Components\ModelComponent.cpp" />
     <ClCompile Include="Source\Game\ECS\Components\NodeComponent.cpp" />
-    <ClCompile Include="Source\Game\ECS\Components\SamplerComponent.cpp" />
     <ClCompile Include="Source\Game\ECS\Components\TextureComponent.cpp" />
     <ClCompile Include="Source\Game\ECS\Components\TransformComponent.cpp" />
     <ClCompile Include="Source\Game\Scene.cpp" />
@@ -354,7 +352,6 @@
     <ClCompile Include="Source\Render\Core\Swapchain.cpp" />
     <ClCompile Include="Source\Game\Camera.cpp" />
     <ClCompile Include="Source\Game\ECS\EntityManager.cpp" />
-    <ClCompile Include="Source\Game\ECS\Entity.cpp" />
     <ClCompile Include="Source\Logging.cpp" />
     <ClCompile Include="Source\File.cpp" />
     <ClCompile Include="Source\Macros.h" />
@@ -362,6 +359,8 @@
     <ClCompile Include="Source\Render\Core\VulkanResource.cpp" />
     <ClCompile Include="Source\Render\Core\Subpass.cpp" />
     <ClCompile Include="Source\Platform\Window.cpp" />
+    <ClCompile Include="Source\Render\GLSLCompiler.cpp" />
+    <ClCompile Include="Source\Render\SPIRVReflection.cpp" />
     <ClCompile Include="Vendor\volk.c" />
   </ItemGroup>
   <ItemGroup>
@@ -433,6 +432,8 @@
     <ClInclude Include="Source\Render\Core\StringConversion.h" />
     <ClInclude Include="Source\Render\Core\StringHelpers.h" />
     <ClInclude Include="Source\Render\Core\Swapchain.h" />
+    <ClInclude Include="Source\Render\GLSLCompiler.h" />
+    <ClInclude Include="Source\Render\SPIRVReflection.h" />
     <ClInclude Include="Source\VgeMath.h" />
     <ClInclude Include="Source\Game\Camera.h" />
     <ClInclude Include="Source\Algo.h" />
@@ -457,6 +458,7 @@
     <ClInclude Include="Source\Timer.h" />
     <ClInclude Include="Vendor\Color.h" />
     <ClInclude Include="Vendor\stb_image.h" />
+    <ClInclude Include="Vendor\stb_image_resize.h" />
     <ClInclude Include="Vendor\volk.h" />
     <ClInclude Include="Source\Platform\Window.h" />
   </ItemGroup>

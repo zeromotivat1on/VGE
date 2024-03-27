@@ -15,7 +15,7 @@ namespace std
 template <>
 struct hash<vge::ShaderSource>
 {
-	size_t operator()(const vge::ShaderSource& shaderSource) const
+	size_t operator()(const vge::ShaderSource& shaderSource) const noexcept
 	{
 		size_t result = 0;
 		vge::HashCombine(result, shaderSource.GetId());
@@ -26,7 +26,7 @@ struct hash<vge::ShaderSource>
 template <>
 struct hash<vge::ShaderVariant>
 {
-	size_t operator()(const vge::ShaderVariant& ShaderVariant) const
+	size_t operator()(const vge::ShaderVariant& ShaderVariant) const noexcept
 	{
 		size_t result = 0;
 		vge::HashCombine(result, ShaderVariant.GetId());
@@ -37,7 +37,7 @@ struct hash<vge::ShaderVariant>
 template <>
 struct hash<vge::ShaderModule>
 {
-	size_t operator()(const vge::ShaderModule& shaderModule) const
+	size_t operator()(const vge::ShaderModule& shaderModule) const noexcept
 	{
 		size_t result = 0;
 		vge::HashCombine(result, shaderModule.GetId());
@@ -48,7 +48,7 @@ struct hash<vge::ShaderModule>
 template <>
 struct hash<vge::DescriptorSetLayout>
 {
-	size_t operator()(const vge::DescriptorSetLayout& descriptorSetLayout) const
+	size_t operator()(const vge::DescriptorSetLayout& descriptorSetLayout) const noexcept
 	{
 		size_t result = 0;
 		vge::HashCombine(result, descriptorSetLayout.GetHandle());
@@ -59,7 +59,7 @@ struct hash<vge::DescriptorSetLayout>
 template <>
 struct hash<vge::DescriptorPool>
 {
-	size_t operator()(const vge::DescriptorPool& descriptorPool) const
+	size_t operator()(const vge::DescriptorPool& descriptorPool) const noexcept
 	{
 		size_t result = 0;
 		vge::HashCombine(result, descriptorPool.GetDescriptorSetLayout());
@@ -70,7 +70,7 @@ struct hash<vge::DescriptorPool>
 template <>
 struct hash<vge::PipelineLayout>
 {
-	size_t operator()(const vge::PipelineLayout& pipelineLayout) const
+	size_t operator()(const vge::PipelineLayout& pipelineLayout) const noexcept
 	{
 		size_t result = 0;
 		vge::HashCombine(result, pipelineLayout.GetHandle());
@@ -81,7 +81,7 @@ struct hash<vge::PipelineLayout>
 template <>
 struct hash<vge::RenderPass>
 {
-	size_t operator()(const vge::RenderPass& renderPass) const
+	size_t operator()(const vge::RenderPass& renderPass) const noexcept
 	{
 		size_t result = 0;
 		vge::HashCombine(result, renderPass.GetHandle());
@@ -92,13 +92,13 @@ struct hash<vge::RenderPass>
 template <>
 struct hash<vge::Attachment>
 {
-	size_t operator()(const vge::Attachment& attachment) const
+	size_t operator()(const vge::Attachment& attachment) const noexcept
 	{
 		size_t result = 0;
-		vge::HashCombine(result, static_cast<std::underlying_type<VkFormat>::type>(attachment.Format));
-		vge::HashCombine(result, static_cast<std::underlying_type<VkSampleCountFlagBits>::type>(attachment.Samples));
+		vge::HashCombine(result, static_cast<std::underlying_type_t<VkFormat>>(attachment.Format));
+		vge::HashCombine(result, static_cast<std::underlying_type_t<VkSampleCountFlagBits>>(attachment.Samples));
 		vge::HashCombine(result, attachment.Usage);
-		vge::HashCombine(result, static_cast<std::underlying_type<VkImageLayout>::type>(attachment.InitialLayout));
+		vge::HashCombine(result, static_cast<std::underlying_type_t<VkImageLayout>>(attachment.InitialLayout));
 		return result;
 	}
 };
@@ -106,11 +106,11 @@ struct hash<vge::Attachment>
 template <>
 struct hash<vge::LoadStoreInfo>
 {
-	size_t operator()(const vge::LoadStoreInfo& loadStoreInfo) const
+	size_t operator()(const vge::LoadStoreInfo& loadStoreInfo) const noexcept
 	{
 		size_t result = 0;
-		vge::HashCombine(result, static_cast<std::underlying_type<VkAttachmentLoadOp>::type>(loadStoreInfo.LoadOp));
-		vge::HashCombine(result, static_cast<std::underlying_type<VkAttachmentStoreOp>::type>(loadStoreInfo.StoreOp));
+		vge::HashCombine(result, static_cast<std::underlying_type_t<VkAttachmentLoadOp>>(loadStoreInfo.LoadOp));
+		vge::HashCombine(result, static_cast<std::underlying_type_t<VkAttachmentStoreOp>>(loadStoreInfo.StoreOp));
 		return result;
 	}
 };
@@ -118,7 +118,7 @@ struct hash<vge::LoadStoreInfo>
 template <>
 struct hash<vge::SubpassInfo>
 {
-	size_t operator()(const vge::SubpassInfo& subpassInfo) const
+	size_t operator()(const vge::SubpassInfo& subpassInfo) const noexcept
 	{
 		size_t result = 0;
 
@@ -148,16 +148,16 @@ struct hash<vge::SubpassInfo>
 template <>
 struct hash<vge::SpecializationConstantState>
 {
-	size_t operator()(const vge::SpecializationConstantState& specializationConstantState) const
+	size_t operator()(const vge::SpecializationConstantState& specializationConstantState) const noexcept
 	{
 		size_t result = 0;
 
-		for (auto constants : specializationConstantState.GetSpecializationConstantState())
+		for (const auto& [constantId, data] : specializationConstantState.GetSpecializationConstantState())
 		{
-			vge::HashCombine(result, constants.first);
-			for (const auto data : constants.second)
+			vge::HashCombine(result, constantId);
+			for (const auto byte : data)
 			{
-				vge::HashCombine(result, data);
+				vge::HashCombine(result, byte);
 			}
 		}
 
@@ -168,7 +168,7 @@ struct hash<vge::SpecializationConstantState>
 template <>
 struct hash<vge::ShaderResource>
 {
-	size_t operator()(const vge::ShaderResource& shaderResource) const
+	size_t operator()(const vge::ShaderResource& shaderResource) const noexcept
 	{
 		size_t result = 0;
 
@@ -182,7 +182,7 @@ struct hash<vge::ShaderResource>
 
 		vge::HashCombine(result, shaderResource.Set);
 		vge::HashCombine(result, shaderResource.Binding);
-		vge::HashCombine(result, static_cast<std::underlying_type<vge::ShaderResourceType>::type>(shaderResource.Type));
+		vge::HashCombine(result, static_cast<std::underlying_type_t<vge::ShaderResourceType>>(shaderResource.Type));
 		vge::HashCombine(result, shaderResource.Mode);
 
 		return result;
@@ -192,7 +192,7 @@ struct hash<vge::ShaderResource>
 template <>
 struct hash<VkDescriptorBufferInfo>
 {
-	size_t operator()(const VkDescriptorBufferInfo& descriptorBufferInfo) const
+	size_t operator()(const VkDescriptorBufferInfo& descriptorBufferInfo) const noexcept
 	{
 		size_t result = 0;
 		vge::HashCombine(result, descriptorBufferInfo.buffer);
@@ -205,11 +205,11 @@ struct hash<VkDescriptorBufferInfo>
 template <>
 struct hash<VkDescriptorImageInfo>
 {
-	size_t operator()(const VkDescriptorImageInfo& descriptorImageInfo) const
+	size_t operator()(const VkDescriptorImageInfo& descriptorImageInfo) const noexcept
 	{
 		size_t result = 0;
 		vge::HashCombine(result, descriptorImageInfo.imageView);
-		vge::HashCombine(result, static_cast<std::underlying_type<VkImageLayout>::type>(descriptorImageInfo.imageLayout));
+		vge::HashCombine(result, static_cast<std::underlying_type_t<VkImageLayout>>(descriptorImageInfo.imageLayout));
 		vge::HashCombine(result, descriptorImageInfo.sampler);
 		return result;
 	}
@@ -218,7 +218,7 @@ struct hash<VkDescriptorImageInfo>
 template <>
 struct hash<VkWriteDescriptorSet>
 {
-	size_t operator()(const VkWriteDescriptorSet& writeDescriptorSet) const
+	size_t operator()(const VkWriteDescriptorSet& writeDescriptorSet) const noexcept
 	{
 		size_t result = 0;
 
@@ -262,7 +262,7 @@ struct hash<VkWriteDescriptorSet>
 		default:
 			// Not implemented
 			break;
-		};
+		}
 
 		return result;
 	}
@@ -271,11 +271,11 @@ struct hash<VkWriteDescriptorSet>
 template <>
 struct hash<VkVertexInputAttributeDescription>
 {
-	size_t operator()(const VkVertexInputAttributeDescription& vertexAttribute) const
+	size_t operator()(const VkVertexInputAttributeDescription& vertexAttribute) const noexcept
 	{
 		size_t result = 0;
 		vge::HashCombine(result, vertexAttribute.binding);
-		vge::HashCombine(result, static_cast<std::underlying_type<VkFormat>::type>(vertexAttribute.format));
+		vge::HashCombine(result, static_cast<std::underlying_type_t<VkFormat>>(vertexAttribute.format));
 		vge::HashCombine(result, vertexAttribute.location);
 		vge::HashCombine(result, vertexAttribute.offset);
 		return result;
@@ -285,11 +285,11 @@ struct hash<VkVertexInputAttributeDescription>
 template <>
 struct hash<VkVertexInputBindingDescription>
 {
-	size_t operator()(const VkVertexInputBindingDescription& vertexBinding) const
+	size_t operator()(const VkVertexInputBindingDescription& vertexBinding) const noexcept
 	{
 		size_t result = 0;
 		vge::HashCombine(result, vertexBinding.binding);
-		vge::HashCombine(result, static_cast<std::underlying_type<VkVertexInputRate>::type>(vertexBinding.inputRate));
+		vge::HashCombine(result, static_cast<std::underlying_type_t<VkVertexInputRate>>(vertexBinding.inputRate));
 		vge::HashCombine(result, vertexBinding.stride);
 		return result;
 	}
@@ -298,13 +298,13 @@ struct hash<VkVertexInputBindingDescription>
 template <>
 struct hash<vge::StencilOpState>
 {
-	size_t operator()(const vge::StencilOpState& stencil) const
+	size_t operator()(const vge::StencilOpState& stencil) const noexcept
 	{
 		size_t result = 0;
-		vge::HashCombine(result, static_cast<std::underlying_type<VkCompareOp>::type>(stencil.CompareOp));
-		vge::HashCombine(result, static_cast<std::underlying_type<VkStencilOp>::type>(stencil.DepthFailOp));
-		vge::HashCombine(result, static_cast<std::underlying_type<VkStencilOp>::type>(stencil.FailOp));
-		vge::HashCombine(result, static_cast<std::underlying_type<VkStencilOp>::type>(stencil.PassOp));
+		vge::HashCombine(result, static_cast<std::underlying_type_t<VkCompareOp>>(stencil.CompareOp));
+		vge::HashCombine(result, static_cast<std::underlying_type_t<VkStencilOp>>(stencil.DepthFailOp));
+		vge::HashCombine(result, static_cast<std::underlying_type_t<VkStencilOp>>(stencil.FailOp));
+		vge::HashCombine(result, static_cast<std::underlying_type_t<VkStencilOp>>(stencil.PassOp));
 		return result;
 	}
 };
@@ -312,7 +312,7 @@ struct hash<vge::StencilOpState>
 template <>
 struct hash<VkExtent2D>
 {
-	size_t operator()(const VkExtent2D& extent) const
+	size_t operator()(const VkExtent2D& extent) const noexcept
 	{
 		size_t result = 0;
 		vge::HashCombine(result, extent.width);
@@ -324,7 +324,7 @@ struct hash<VkExtent2D>
 template <>
 struct hash<VkOffset2D>
 {
-	size_t operator()(const VkOffset2D& offset) const
+	size_t operator()(const VkOffset2D& offset) const noexcept
 	{
 		size_t result = 0;
 		vge::HashCombine(result, offset.x);
@@ -336,7 +336,7 @@ struct hash<VkOffset2D>
 template <>
 struct hash<VkRect2D>
 {
-	size_t operator()(const VkRect2D& rect) const
+	size_t operator()(const VkRect2D& rect) const noexcept
 	{
 		size_t result = 0;
 		vge::HashCombine(result, rect.extent);
@@ -348,7 +348,7 @@ struct hash<VkRect2D>
 template <>
 struct hash<VkViewport>
 {
-	size_t operator()(const VkViewport& viewport) const
+	size_t operator()(const VkViewport& viewport) const noexcept
 	{
 		size_t result = 0;
 		vge::HashCombine(result, viewport.width);
@@ -364,17 +364,17 @@ struct hash<VkViewport>
 template <>
 struct hash<vge::ColorBlendAttachmentState>
 {
-	size_t operator()(const vge::ColorBlendAttachmentState& colorBlendAttachment) const
+	size_t operator()(const vge::ColorBlendAttachmentState& colorBlendAttachment) const noexcept
 	{
 		size_t result = 0;
-		vge::HashCombine(result, static_cast<std::underlying_type<VkBlendOp>::type>(colorBlendAttachment.AlphaBlendOp));
+		vge::HashCombine(result, static_cast<std::underlying_type_t<VkBlendOp>>(colorBlendAttachment.AlphaBlendOp));
 		vge::HashCombine(result, colorBlendAttachment.BlendEnable);
-		vge::HashCombine(result, static_cast<std::underlying_type<VkBlendOp>::type>(colorBlendAttachment.ColorBlendOp));
+		vge::HashCombine(result, static_cast<std::underlying_type_t<VkBlendOp>>(colorBlendAttachment.ColorBlendOp));
 		vge::HashCombine(result, colorBlendAttachment.ColorWriteMask);
-		vge::HashCombine(result, static_cast<std::underlying_type<VkBlendFactor>::type>(colorBlendAttachment.DstAlphaBlendFactor));
-		vge::HashCombine(result, static_cast<std::underlying_type<VkBlendFactor>::type>(colorBlendAttachment.DstColorBlendFactor));
-		vge::HashCombine(result, static_cast<std::underlying_type<VkBlendFactor>::type>(colorBlendAttachment.SrcAlphaBlendFactor));
-		vge::HashCombine(result, static_cast<std::underlying_type<VkBlendFactor>::type>(colorBlendAttachment.SrcColorBlendFactor));
+		vge::HashCombine(result, static_cast<std::underlying_type_t<VkBlendFactor>>(colorBlendAttachment.DstAlphaBlendFactor));
+		vge::HashCombine(result, static_cast<std::underlying_type_t<VkBlendFactor>>(colorBlendAttachment.DstColorBlendFactor));
+		vge::HashCombine(result, static_cast<std::underlying_type_t<VkBlendFactor>>(colorBlendAttachment.SrcAlphaBlendFactor));
+		vge::HashCombine(result, static_cast<std::underlying_type_t<VkBlendFactor>>(colorBlendAttachment.SrcColorBlendFactor));
 		return result;
 	}
 };
@@ -382,7 +382,7 @@ struct hash<vge::ColorBlendAttachmentState>
 template <>
 struct hash<vge::RenderTarget>
 {
-	size_t operator()(const vge::RenderTarget& renderTarget) const
+	size_t operator()(const vge::RenderTarget& renderTarget) const noexcept
 	{
 		size_t result = 0;
 
@@ -399,24 +399,24 @@ struct hash<vge::RenderTarget>
 template <>
 struct hash<vge::PipelineState>
 {
-	size_t operator()(const vge::PipelineState& pipelineState) const
+	size_t operator()(const vge::PipelineState& pipelineState) const noexcept
 	{
 		size_t result = 0;
 
 		vge::HashCombine(result, pipelineState.GetPipelineLayout().GetHandle());
 
 		// For graphics only.
-		if (auto render_pass = pipelineState.GetRenderPass())
+		if (const auto renderPass = pipelineState.GetRenderPass())
 		{
-			vge::HashCombine(result, render_pass->GetHandle());
+			vge::HashCombine(result, renderPass->GetHandle());
 		}
 
 		vge::HashCombine(result, pipelineState.GetSpecializationConstantState());
 		vge::HashCombine(result, pipelineState.GetSubpassIndex());
 
-		for (auto shader_module : pipelineState.GetPipelineLayout().GetShaderModules())
+		for (const auto shaderModule : pipelineState.GetPipelineLayout().GetShaderModules())
 		{
-			vge::HashCombine(result, shader_module->GetId());
+			vge::HashCombine(result, shaderModule->GetId());
 		}
 
 		// VkPipelineVertexInputStateCreateInfo
@@ -432,7 +432,7 @@ struct hash<vge::PipelineState>
 
 		// VkPipelineInputAssemblyStateCreateInfo
 		vge::HashCombine(result, pipelineState.GetInputAssemblyState().PrimitiveRestartEnable);
-		vge::HashCombine(result, static_cast<std::underlying_type<VkPrimitiveTopology>::type>(pipelineState.GetInputAssemblyState().Topology));
+		vge::HashCombine(result, static_cast<std::underlying_type_t<VkPrimitiveTopology>>(pipelineState.GetInputAssemblyState().Topology));
 
 		//VkPipelineViewportStateCreateInfo
 		vge::HashCombine(result, pipelineState.GetViewportState().ViewportCount);
@@ -442,29 +442,29 @@ struct hash<vge::PipelineState>
 		vge::HashCombine(result, pipelineState.GetRasterizationState().CullMode);
 		vge::HashCombine(result, pipelineState.GetRasterizationState().DepthBiasEnable);
 		vge::HashCombine(result, pipelineState.GetRasterizationState().DepthClampEnable);
-		vge::HashCombine(result, static_cast<std::underlying_type<VkFrontFace>::type>(pipelineState.GetRasterizationState().FrontFace));
-		vge::HashCombine(result, static_cast<std::underlying_type<VkPolygonMode>::type>(pipelineState.GetRasterizationState().PolygonMode));
+		vge::HashCombine(result, static_cast<std::underlying_type_t<VkFrontFace>>(pipelineState.GetRasterizationState().FrontFace));
+		vge::HashCombine(result, static_cast<std::underlying_type_t<VkPolygonMode>>(pipelineState.GetRasterizationState().PolygonMode));
 		vge::HashCombine(result, pipelineState.GetRasterizationState().RasterizerDiscardEnable);
 
 		// VkPipelineMultisampleStateCreateInfo
 		vge::HashCombine(result, pipelineState.GetMultisampleState().AlphaToCoverageEnable);
 		vge::HashCombine(result, pipelineState.GetMultisampleState().AlphaToOneEnable);
 		vge::HashCombine(result, pipelineState.GetMultisampleState().MinSampleShading);
-		vge::HashCombine(result, static_cast<std::underlying_type<VkSampleCountFlagBits>::type>(pipelineState.GetMultisampleState().RasterizationSamples));
+		vge::HashCombine(result, static_cast<std::underlying_type_t<VkSampleCountFlagBits>>(pipelineState.GetMultisampleState().RasterizationSamples));
 		vge::HashCombine(result, pipelineState.GetMultisampleState().SampleShadingEnable);
 		vge::HashCombine(result, pipelineState.GetMultisampleState().SampleMask);
 
 		// VkPipelineDepthStencilStateCreateInfo
 		vge::HashCombine(result, pipelineState.GetDepthStencilState().Back);
 		vge::HashCombine(result, pipelineState.GetDepthStencilState().DepthBoundsTestEnable);
-		vge::HashCombine(result, static_cast<std::underlying_type<VkCompareOp>::type>(pipelineState.GetDepthStencilState().DepthCompareOp));
+		vge::HashCombine(result, static_cast<std::underlying_type_t<VkCompareOp>>(pipelineState.GetDepthStencilState().DepthCompareOp));
 		vge::HashCombine(result, pipelineState.GetDepthStencilState().DepthTestEnable);
 		vge::HashCombine(result, pipelineState.GetDepthStencilState().DepthWriteEnable);
 		vge::HashCombine(result, pipelineState.GetDepthStencilState().Front);
 		vge::HashCombine(result, pipelineState.GetDepthStencilState().StencilTestEnable);
 
 		// VkPipelineColorBlendStateCreateInfo
-		vge::HashCombine(result, static_cast<std::underlying_type<VkLogicOp>::type>(pipelineState.GetColorBlendState().LogicOp));
+		vge::HashCombine(result, static_cast<std::underlying_type_t<VkLogicOp>>(pipelineState.GetColorBlendState().LogicOp));
 		vge::HashCombine(result, pipelineState.GetColorBlendState().LogicOpEnable);
 
 		for (auto& attachment : pipelineState.GetColorBlendState().Attachments)
@@ -528,9 +528,9 @@ inline void HashParam<std::vector<SubpassInfo>>(size_t& seed, const std::vector<
 template <>
 inline void HashParam<std::vector<ShaderModule*>>(size_t& seed, const std::vector<ShaderModule*>& value)
 {
-	for (auto& shader_module : value)
+	for (auto& shaderModule : value)
 	{
-		HashCombine(seed, shader_module->GetId());
+		HashCombine(seed, shaderModule->GetId());
 	}
 }
 
@@ -653,8 +653,6 @@ struct RecordHelper<GraphicsPipeline, Args...>
 template <class T, class... Args>
 T& RequestResource(Device& device, ResourceRecord* recorder, std::unordered_map<size_t, T>& resources, Args&... args)
 {
-	RecordHelper<T, Args...> recordHelper;
-
 	size_t hash = 0;
 	HashParam(hash, args...);
 
@@ -667,7 +665,7 @@ T& RequestResource(Device& device, ResourceRecord* recorder, std::unordered_map<
 
 	// If we do not have it already, create and cache it.
 	const char* resType = typeid(T).name();
-	size_t resId = resources.size();
+	const size_t resId = resources.size();
 
 	LOG(Log, "Building %d cache object (%s).", resId, resType);
 
@@ -681,6 +679,7 @@ T& RequestResource(Device& device, ResourceRecord* recorder, std::unordered_map<
 
 		if (recorder)
 		{
+			RecordHelper<T, Args...> recordHelper;
 			size_t index = recordHelper.Record(*recorder, args...);
 			recordHelper.Index(*recorder, index, resIt->second);
 		}

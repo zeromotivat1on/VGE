@@ -83,17 +83,3 @@ bool vge::file::SyncReadFile(const char* filePath, u8* buffer, size_t bufferSize
 	outBytesRead = 0;
 	return false;
 }
-
-std::string vge::file::ReadTextFile(const char* filename)
-{
-	std::vector<std::string> data;
-
-	std::ifstream file;
-
-	file.open(filename, std::ios::in);
-
-	ENSURE_MSG(file.is_open(), "Failed to open file: %s", filename);
-
-	return std::string((std::istreambuf_iterator<char>(file)),
-					   (std::istreambuf_iterator<char>()));
-}

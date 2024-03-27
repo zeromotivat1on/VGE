@@ -3,6 +3,35 @@
 #include "Logging.h"
 #include "VkCommon.h"
 
+#if defined(__clang__)
+	// CLANG ENABLE/DISABLE WARNING DEFINITION
+	#define VKBP_DISABLE_WARNINGS()												\
+	_Pragma("clang diagnostic push")											\
+		_Pragma("clang diagnostic ignored \"-Wall\"")							\
+			_Pragma("clang diagnostic ignored \"-Wextra\"")						\
+				_Pragma("clang diagnostic ignored \"-Wtautological-compare\"")
+
+	#define VGE_ENABLE_WARNINGS() \
+		_Pragma("clang diagnostic pop")
+#elif defined(__GNUC__) || defined(__GNUG__)
+	// GCC ENABLE/DISABLE WARNING DEFINITION
+	#define VGE_DISABLE_WARNINGS()												\
+	_Pragma("GCC diagnostic push")												\
+		_Pragma("GCC diagnostic ignored \"-Wall\"")								\
+			_Pragma("GCC diagnostic ignored \"-Wextra\"")						\
+				_Pragma("GCC diagnostic ignored \"-Wtautological-compare\"")
+
+	#define VGE_ENABLE_WARNINGS() \
+		_Pragma("GCC diagnostic pop")
+#elif defined(_MSC_VER)
+	// MSVC ENABLE/DISABLE WARNING DEFINITION
+	#define VGE_DISABLE_WARNINGS() \
+		__pragma(warning(push, 0))
+
+	#define VGE_ENABLE_WARNINGS() \
+		__pragma(warning(pop))
+#endif
+
 #define ASSERT(expr) assert(expr)
 #define ASSERT_MSG(expr, msg) assert(expr && msg)
 

@@ -5,7 +5,7 @@
 #include "ECS/Component.h"
 #include "Core/Error.h"
 
-namespace vge
+namespace vge::ecs
 {
 class EntityManager
 {

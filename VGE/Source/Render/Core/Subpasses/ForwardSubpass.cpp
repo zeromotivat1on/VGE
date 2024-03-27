@@ -3,6 +3,8 @@
 #include "Core/Device.h"
 #include "Core/VkCommon.h"
 #include "Core/RenderContext.h"
+#include "ECS/Components/MeshComponent.h"
+#include "ECS/Components/ModelComponent.h"
 //#include "scene_graph/components/camera.h"
 //#include "scene_graph/components/image.h"
 //#include "scene_graph/components/material.h"
@@ -13,7 +15,7 @@
 //#include "scene_graph/node.h"
 //#include "scene_graph/scene.h"
 
-vge::ForwardSubpass::ForwardSubpass(RenderContext& renderContext, ShaderSource&& vertex, ShaderSource&& fragment, Scene& scene, Camera& camera)
+vge::ForwardSubpass::ForwardSubpass(RenderContext& renderContext, ShaderSource&& vertex, ShaderSource&& fragment, Scene& scene, CameraComponent& camera)
 	: GeometrySubpass(renderContext, std::move(vertex), std::move(fragment), scene, camera)
 {
 }
@@ -21,26 +23,26 @@ vge::ForwardSubpass::ForwardSubpass(RenderContext& renderContext, ShaderSource&&
 void vge::ForwardSubpass::Prepare()
 {
 	auto& device = _RenderContext.GetDevice();
-	for (auto& mesh : meshes)
+	for (auto& model : _Models)
 	{
-		for (auto& subMesh : mesh->get_submeshes())
+		for (auto& mesh : model->Meshes)
 		{
-			auto& variant = subMesh->get_mut_shader_variant();
+			auto& variant = mesh->ShaderVariant;
 
 			// Same as Geometry except adds lighting definitions to sub mesh variants.
-			variant.add_definitions({"MAX_LIGHT_COUNT " + std::to_string(MAX_FORWARD_LIGHT_COUNT)});
-			variant.add_definitions(GLightTypeDefinitions);
+			variant.AddDefinitions({"MAX_LIGHT_COUNT " + std::to_string(MAX_FORWARD_LIGHT_COUNT)});
+			variant.AddDefinitions(GLightTypeDefinitions);
 
-			auto& vertModule = device.GetResourceCache().RequestShaderModule(VK_SHADER_STAGE_VERTEX_BIT, GetVertexShader(), variant);
-			auto& fragModule = device.GetResourceCache().RequestShaderModule(VK_SHADER_STAGE_FRAGMENT_BIT, GetFragmentShader(), variant);
+			const auto& vertModule = device.GetResourceCache().RequestShaderModule(VK_SHADER_STAGE_VERTEX_BIT, GetVertexShader(), variant);
+			const auto& fragModule = device.GetResourceCache().RequestShaderModule(VK_SHADER_STAGE_FRAGMENT_BIT, GetFragmentShader(), variant);
 		}
 	}
 }
 
 void vge::ForwardSubpass::Draw(CommandBuffer& cmd)
 {
-	allocate_lights<ForwardLights>(scene.get_components<Light>(), MAX_FORWARD_LIGHT_COUNT);
-	cmd.BindLighting(GetLightingState(), 0, 4);
+	//AllocateLights<ForwardLights>(scene.get_components<Light>(), MAX_FORWARD_LIGHT_COUNT);
+	//cmd.BindLighting(GetLightingState(), 0, 4);
 
-	GeometrySubpass::draw(cmd);
+	GeometrySubpass::Draw(cmd);
 }

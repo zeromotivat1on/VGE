@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "ECS/Component.h"
 #include "ECS/Components/AABBComponent.h"
 
 namespace vge
@@ -7,7 +8,7 @@ namespace vge
 struct NodeComponent;
 struct MeshComponent;
     
-struct ModelComponent
+struct ModelComponent : public Component
 {
     AABBComponent Bounds;
     std::vector<NodeComponent*> Nodes;

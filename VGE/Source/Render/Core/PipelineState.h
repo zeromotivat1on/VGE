@@ -57,7 +57,7 @@ struct DepthStencilState
 {
 	VkBool32 DepthTestEnable = VK_TRUE;
 	VkBool32 DepthWriteEnable = VK_TRUE;
-	VkCompareOp DepthCompareOp = VK_COMPARE_OP_GREATER; // using reversed depth-buffer for increased precision, so greater depth values are kept.
+	VkCompareOp DepthCompareOp = VK_COMPARE_OP_GREATER; // using reversed depth-buffer for increased precision, so greater depth values are kept
 	VkBool32 DepthBoundsTestEnable = VK_FALSE;
 	VkBool32 StencilTestEnable = VK_FALSE;
 	StencilOpState Front = {};	
